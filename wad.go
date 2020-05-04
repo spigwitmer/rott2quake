@@ -29,6 +29,7 @@ func (l *LumpHeader) NameString() string {
 }
 
 type IWAD struct {
+    fhnd io.ReadSeeker
     Header WADHeader
     LumpDirectory []*LumpHeader
 }
@@ -50,6 +51,7 @@ func readLumpHeadersFromIWAD(r io.ReadSeeker, wad *IWAD) (error) {
 
 func NewIWAD(r io.ReadSeeker) (*IWAD, error) {
     var i IWAD
+    i.fhnd = r
 
     if err := binary.Read(r, binary.LittleEndian, &i.Header); err != nil {
         return nil, err
@@ -72,4 +74,12 @@ func (i *IWAD) PrintLumps() {
         lumpHeader := i.LumpDirectory[nl]
         fmt.Printf("%s (%d bytes at 0x%x)\n", lumpHeader.NameString(), lumpHeader.Size, lumpHeader.FilePos)
     }
+}
+
+func (i *IWAD) LumpData(l *LumpHeader) (io.Reader, error) {
+    if _, err := i.fhnd.Seek(int64(l.FilePos), io.SeekStart); err != nil {
+        return nil, err
+    }
+    // TODO: virtual lump entries with 0 size?
+    return io.LimitReader(i.fhnd, int64(l.Size)), nil
 }
