@@ -64,7 +64,7 @@ func main() {
     }
 
     if rtl != nil && printRTLInfo {
-        fmt.Printf("RTL Map Name: %s\n", rtl.MapName())
+        rtl.PrintMetadata()
     }
 
     fhnd, err := os.Open(flag.Arg(0))
