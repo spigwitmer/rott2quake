@@ -36,13 +36,35 @@ func dumpLumpDataToFile(wadFile *IWAD, lumpInfo *LumpHeader, destFname string) {
 
 func main() {
     var dumpLumpData, printLumps bool
+    var rtlFile string
+    var rtl *RTL
+    var printRTLInfo bool
 
     flag.BoolVar(&dumpLumpData, "dump-data", false, "Dump Lump Data")
+    flag.BoolVar(&printRTLInfo, "print-rtl-info", false, "Print RTL metadata")
     flag.BoolVar(&printLumps, "print-lumps", false, "Print Lump Directory")
+    flag.StringVar(&rtlFile, "rtl", "", "RTL file")
     flag.Parse()
     if flag.NArg() < 1 {
         flag.Usage()
         os.Exit(2)
+    }
+
+    if rtlFile != "" {
+        rtlFhnd, err := os.Open(rtlFile)
+        if err != nil {
+            log.Fatalf("Could not open RTL file %s: %v\n", rtlFile, err)
+        }
+        defer rtlFhnd.Close()
+
+        rtl, err = NewRTL(rtlFhnd)
+        if err != nil {
+            log.Fatalf("Could not parse RTL file: %v\n", err)
+        }
+    }
+
+    if rtl != nil && printRTLInfo {
+        fmt.Printf("RTL Map Name: %s\n", rtl.MapName())
     }
 
     fhnd, err := os.Open(flag.Arg(0))

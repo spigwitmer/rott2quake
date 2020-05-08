@@ -4,18 +4,16 @@ import (
     "bytes"
     "encoding/binary"
     "fmt"
+    "io"
 )
 
 var (
     rtlMagic = [4]byte{'R', 'T', 'L', '\x00'}
 )
 
-type RTLVersion struct {
+type RTLHeader struct {
     Signature [4]byte
     Version uint32
-}
-
-type RTLHeader struct {
     Used uint32
     CRC [4]byte
     RLEWTag [4]byte
@@ -30,24 +28,25 @@ type RTLHeader struct {
 }
 
 type RTL struct {
-    RTLVersion
-    RTLHeader
     fhnd io.ReadSeeker
+    Header RTLHeader
 }
 
-func NewRTL(r io.ReadSeeker) (*RTL, error) {
+func NewRTL(rfile io.ReadSeeker) (*RTL, error) {
     var r RTL
-    r.fhnd = r
+    r.fhnd = rfile
 
-    if err := binary.Read(r, binary.LittleEndian, &i); err != nil {
+    if err := binary.Read(rfile, binary.LittleEndian, &r.Header); err != nil {
         return nil, err
     }
 
-    if !bytes.Equal(i.Signature[:], rtlMagic[:]) {
+    if !bytes.Equal(r.Header.Signature[:], rtlMagic[:]) {
         return nil, fmt.Errorf("not an RTL file")
     }
+
+    return &r, nil
 }
 
 func (r *RTL) MapName() (string) {
-    return string(bytes.Trin(l.Name[:], "\x00"))
+    return string(bytes.Trim(r.Header.Name[:], "\x00"))
 }
