@@ -36,14 +36,15 @@ func dumpLumpDataToFile(wadFile *IWAD, lumpInfo *LumpHeader, destFname string) {
 
 func main() {
     var dumpLumpData, printLumps bool
-    var rtlFile string
+    var rtlFile, rtlMapFile string
     var rtl *RTL
     var printRTLInfo bool
 
-    flag.BoolVar(&dumpLumpData, "dump-data", false, "Dump Lump Data")
-    flag.BoolVar(&printRTLInfo, "print-rtl-info", false, "Print RTL metadata")
-    flag.BoolVar(&printLumps, "print-lumps", false, "Print Lump Directory")
     flag.StringVar(&rtlFile, "rtl", "", "RTL file")
+    flag.BoolVar(&printRTLInfo, "print-rtl-info", false, "Print RTL metadata")
+    flag.StringVar(&rtlMapFile, "rtl-map-file", "", "Write RTL ASCII map out to this file")
+    flag.BoolVar(&dumpLumpData, "dump-data", false, "Dump Lump Data out to dest dir")
+    flag.BoolVar(&printLumps, "print-lumps", false, "Print Lump Directory")
     flag.Parse()
     if flag.NArg() < 1 {
         flag.Usage()
@@ -65,6 +66,17 @@ func main() {
 
     if rtl != nil && printRTLInfo {
         rtl.PrintMetadata()
+    }
+
+    if rtlMapFile != "" {
+        wallFhnd, err := os.Create(rtlMapFile)
+        if err != nil {
+            log.Fatalf("Could not open %s for writing: %v\n", rtlMapFile, err)
+        }
+        err = rtl.DumpWallToFile(wallFhnd)
+        if err != nil {
+            log.Fatalf("Could not write map to %s: %v\n", rtlMapFile, err)
+        }
     }
 
     fhnd, err := os.Open(flag.Arg(0))

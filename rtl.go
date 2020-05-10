@@ -63,7 +63,7 @@ func NewRTL(rfile io.ReadSeeker) (*RTL, error) {
 func (r *RTL) decompressPlane(plane *[128][128]uint16, rlewtag uint32) (error) {
     var curValue uint16
     
-    for i := 0; i < 128; {
+    for i := 0; i < 128*128; {
         if err := binary.Read(r.fhnd, binary.LittleEndian, &curValue); err != nil {
             return err
         }
@@ -81,9 +81,12 @@ func (r *RTL) decompressPlane(plane *[128][128]uint16, rlewtag uint32) (error) {
                 return err
             }
 
-            for j := uint16(0); j < count; j += 1 {
+            for j := uint16(0); j < count; j++ {
                 plane[i / 128][i % 128] = curValue
                 i += 1
+                if i >= 128*128 {
+                    break
+                }
             }
         }
     }
@@ -92,17 +95,51 @@ func (r *RTL) decompressPlane(plane *[128][128]uint16, rlewtag uint32) (error) {
 }
 
 func (r *RTL) decompressWallPlane() (error) {
+    _, err := r.fhnd.Seek(int64(r.Header.WallPlaneOffset), io.SeekStart)
+    if err != nil {
+        return err
+    }
     return r.decompressPlane(&r.WallPlane, r.Header.RLEWTag)
 }
 func (r *RTL) decompressSpritePlane() (error) {
+    _, err := r.fhnd.Seek(int64(r.Header.SpritePlaneOffset), io.SeekStart)
+    if err != nil {
+        return err
+    }
     return r.decompressPlane(&r.SpritePlane, r.Header.RLEWTag)
 }
 func (r *RTL) decompressInfoPlane() (error) {
+    _, err := r.fhnd.Seek(int64(r.Header.InfoPlaneOffset), io.SeekStart)
+    if err != nil {
+        return err
+    }
     return r.decompressPlane(&r.InfoPlane, r.Header.RLEWTag)
 }
 
 func (r *RTL) MapName() (string) {
     return string(bytes.Trim(r.Header.Name[:], "\x00"))
+}
+
+func (r *RTL) DumpWallToFile(w io.Writer) (error) {
+    var err error
+    for i := 0; i < 128; i++ {
+        for j := 0; j < 128; j++ {
+            dispValue := r.WallPlane[i][j] & 255
+            if dispValue > 0 {
+                _, err = fmt.Fprintf(w, " %02x ", dispValue)
+            } else {
+                _, err = fmt.Fprintf(w, "    ")
+            }
+            if err != nil {
+                return err
+            }
+        }
+        _, err = w.Write([]byte{'\r', '\n'})
+        if err != nil {
+            return err
+        }
+    }
+    return nil
 }
 
 func (r *RTL) PrintMetadata() {
