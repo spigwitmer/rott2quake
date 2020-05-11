@@ -14,6 +14,9 @@ var (
 type RTLHeader struct {
     Signature [4]byte
     Version uint32
+}
+
+type RTLMapHeader struct {
     Used uint32
     CRC [4]byte
     RLEWTag uint32
@@ -27,12 +30,18 @@ type RTLHeader struct {
     Name [24]byte
 }
 
-type RTL struct {
-    fhnd io.ReadSeeker
-    Header RTLHeader
+type RTLMapData struct {
+    Header RTLMapHeader
     WallPlane [128][128]uint16
     SpritePlane [128][128]uint16
     InfoPlane [128][128]uint16
+    rtl *RTL
+}
+
+type RTL struct {
+    fhnd io.ReadSeeker
+    Header RTLHeader
+    MapData [100]RTLMapData
 }
 
 func NewRTL(rfile io.ReadSeeker) (*RTL, error) {
@@ -47,24 +56,34 @@ func NewRTL(rfile io.ReadSeeker) (*RTL, error) {
         return nil, fmt.Errorf("not an RTL file")
     }
 
-    if err := r.decompressWallPlane(); err != nil {
-        return nil, err
+    for i := 0; i < 100; i++ {
+        if err := binary.Read(rfile, binary.LittleEndian, &r.MapData[i].Header); err != nil {
+            return nil, err
+        }
+
+        r.MapData[i].rtl = &r
     }
-    if err := r.decompressSpritePlane(); err != nil {
-        return nil, err
-    }
-    if err := r.decompressInfoPlane(); err != nil {
-        return nil, err
+
+    for i := 0; i < 100; i++ {
+        if err := r.MapData[i].decompressWallPlane(); err != nil {
+            return nil, err
+        }
+        if err := r.MapData[i].decompressSpritePlane(); err != nil {
+            return nil, err
+        }
+        if err := r.MapData[i].decompressInfoPlane(); err != nil {
+            return nil, err
+        }
     }
 
     return &r, nil
 }
 
-func (r *RTL) decompressPlane(plane *[128][128]uint16, rlewtag uint32) (error) {
+func (r *RTLMapData) decompressPlane(plane *[128][128]uint16, rlewtag uint32) (error) {
     var curValue uint16
     
     for i := 0; i < 128*128; {
-        if err := binary.Read(r.fhnd, binary.LittleEndian, &curValue); err != nil {
+        if err := binary.Read(r.rtl.fhnd, binary.LittleEndian, &curValue); err != nil {
             return err
         }
 
@@ -74,10 +93,10 @@ func (r *RTL) decompressPlane(plane *[128][128]uint16, rlewtag uint32) (error) {
         } else {
             var count uint16
 
-            if err := binary.Read(r.fhnd, binary.LittleEndian, &count); err != nil {
+            if err := binary.Read(r.rtl.fhnd, binary.LittleEndian, &count); err != nil {
                 return err
             }
-            if err := binary.Read(r.fhnd, binary.LittleEndian, &curValue); err != nil {
+            if err := binary.Read(r.rtl.fhnd, binary.LittleEndian, &curValue); err != nil {
                 return err
             }
 
@@ -94,33 +113,33 @@ func (r *RTL) decompressPlane(plane *[128][128]uint16, rlewtag uint32) (error) {
     return nil
 }
 
-func (r *RTL) decompressWallPlane() (error) {
-    _, err := r.fhnd.Seek(int64(r.Header.WallPlaneOffset), io.SeekStart)
+func (r *RTLMapData) decompressWallPlane() (error) {
+    _, err := r.rtl.fhnd.Seek(int64(r.Header.WallPlaneOffset), io.SeekStart)
     if err != nil {
         return err
     }
     return r.decompressPlane(&r.WallPlane, r.Header.RLEWTag)
 }
-func (r *RTL) decompressSpritePlane() (error) {
-    _, err := r.fhnd.Seek(int64(r.Header.SpritePlaneOffset), io.SeekStart)
+func (r *RTLMapData) decompressSpritePlane() (error) {
+    _, err := r.rtl.fhnd.Seek(int64(r.Header.SpritePlaneOffset), io.SeekStart)
     if err != nil {
         return err
     }
     return r.decompressPlane(&r.SpritePlane, r.Header.RLEWTag)
 }
-func (r *RTL) decompressInfoPlane() (error) {
-    _, err := r.fhnd.Seek(int64(r.Header.InfoPlaneOffset), io.SeekStart)
+func (r *RTLMapData) decompressInfoPlane() (error) {
+    _, err := r.rtl.fhnd.Seek(int64(r.Header.InfoPlaneOffset), io.SeekStart)
     if err != nil {
         return err
     }
     return r.decompressPlane(&r.InfoPlane, r.Header.RLEWTag)
 }
 
-func (r *RTL) MapName() (string) {
+func (r *RTLMapData) MapName() (string) {
     return string(bytes.Trim(r.Header.Name[:], "\x00"))
 }
 
-func (r *RTL) DumpWallToFile(w io.Writer) (error) {
+func (r *RTLMapData) DumpWallToFile(w io.Writer) (error) {
     var err error
     for i := 0; i < 128; i++ {
         for j := 0; j < 128; j++ {
@@ -144,13 +163,18 @@ func (r *RTL) DumpWallToFile(w io.Writer) (error) {
 
 func (r *RTL) PrintMetadata() {
     fmt.Printf("Version: 0x%x\n", r.Header.Version)
-    fmt.Printf("CRC: 0x%x\n", r.Header.CRC)
-    fmt.Printf("RLEWTag: 0x%x\n", r.Header.RLEWTag)
-    fmt.Printf("Wall Plane Offset: %d\n", r.Header.WallPlaneOffset)
-    fmt.Printf("Sprite Plane Offset: %d\n", r.Header.SpritePlaneOffset)
-    fmt.Printf("Info Plane Offset: %d\n", r.Header.InfoPlaneOffset)
-    fmt.Printf("Wall Plane Length: %d\n", r.Header.WallPlaneLength)
-    fmt.Printf("Sprite Plane Length: %d\n", r.Header.SpritePlaneLength)
-    fmt.Printf("Info Plane Length: %d\n", r.Header.InfoPlaneLength)
-    fmt.Printf("Map Name: %s\n", r.MapName())
+
+    for idx, md := range r.MapData {
+        fmt.Printf("Map #%d\n", idx+1)
+        fmt.Printf("\tUsed: %d\n", md.Header.Used)
+        fmt.Printf("\tCRC: 0x%x\n", md.Header.CRC)
+        fmt.Printf("\tRLEWTag: 0x%x\n", md.Header.RLEWTag)
+        fmt.Printf("\tWall Plane Offset: %d\n", md.Header.WallPlaneOffset)
+        fmt.Printf("\tSprite Plane Offset: %d\n", md.Header.SpritePlaneOffset)
+        fmt.Printf("\tInfo Plane Offset: %d\n", md.Header.InfoPlaneOffset)
+        fmt.Printf("\tWall Plane Length: %d\n", md.Header.WallPlaneLength)
+        fmt.Printf("\tSprite Plane Length: %d\n", md.Header.SpritePlaneLength)
+        fmt.Printf("\tInfo Plane Length: %d\n", md.Header.InfoPlaneLength)
+        fmt.Printf("\tMap Name: %s\n", md.MapName())
+    }
 }
