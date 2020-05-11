@@ -73,6 +73,9 @@ func main() {
             log.Fatalf("Could not create outdir: %v\n", err)
         }
         for idx, md := range rtl.MapData {
+            if md.Header.Used == 0 {
+                continue
+            }
             rtlMapFile := fmt.Sprintf("%s/map%03d.txt", rtlMapOutdir, idx+1)
             wallFhnd, err := os.Create(rtlMapFile)
             if err != nil {

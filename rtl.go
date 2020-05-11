@@ -165,6 +165,9 @@ func (r *RTL) PrintMetadata() {
     fmt.Printf("Version: 0x%x\n", r.Header.Version)
 
     for idx, md := range r.MapData {
+        if md.Header.Used == 0 {
+            continue
+        }
         fmt.Printf("Map #%d\n", idx+1)
         fmt.Printf("\tUsed: %d\n", md.Header.Used)
         fmt.Printf("\tCRC: 0x%x\n", md.Header.CRC)
