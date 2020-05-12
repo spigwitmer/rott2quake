@@ -76,6 +76,15 @@ func (i *IWAD) PrintLumps() {
     }
 }
 
+func (i *IWAD) GetLump(name string) (*LumpHeader, error) {
+    for _, ld := range i.LumpDirectory {
+        if ld.NameString() == name {
+            return ld, nil
+        }
+    }
+    return nil, fmt.Errorf("lump %s not found", name)
+}
+
 func (i *IWAD) LumpData(l *LumpHeader) (io.Reader, error) {
     if _, err := i.fhnd.Seek(int64(l.FilePos), io.SeekStart); err != nil {
         return nil, err

@@ -1,6 +1,7 @@
 package main
 
 import (
+    "encoding/binary"
     "errors"
     "flag"
     "fmt"
@@ -10,6 +11,14 @@ import (
     "io"
     "log"
     "os"
+)
+
+type Palette struct {
+    R, G, B uint8
+}
+
+var (
+    PaletteData [256]Palette
 )
 
 func init() {
@@ -38,10 +47,11 @@ func dumpWallDataToFile(destFhnd io.WriteSeeker, lumpReader io.Reader) (int64, e
         return 0, errors.New("numRead != width*height???")
     }
 
-    img := image.NewGray(image.Rect(0, 0, width, height))
+    img := image.NewRGBA(image.Rect(0, 0, width, height))
     for i := 0; i < height; i++ {
         for j := 0; j < width; j++ {
-            img.SetGray(i, j, color.Gray{uint8(rawImgData[(i*width)+j])})
+            palette := PaletteData[rawImgData[(i*width)+j]]
+            img.SetRGBA(i, j, color.RGBA{palette.R, palette.G, palette.B, 255})
         }
     }
 
@@ -155,6 +165,18 @@ func main() {
             os.Exit(2)
         }
         destDir := flag.Arg(1)
+
+        paletteLump, err := wadFile.GetLump("PAL")
+        if err != nil {
+            log.Fatal(err)
+        }
+        paletteLumpData, err := wadFile.LumpData(paletteLump)
+        if err != nil {
+            log.Fatal(err)
+        }
+        if err = binary.Read(paletteLumpData, binary.LittleEndian, &PaletteData); err != nil {
+            log.Fatal(err)
+        }
 
         if err := os.MkdirAll(destDir, 0755); err != nil {
             log.Fatalf("Could not create dest dir: %v\n", err)
