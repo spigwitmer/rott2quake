@@ -1,8 +1,12 @@
 package main
 
 import (
+    "errors"
     "flag"
     "fmt"
+    "image"
+    "image/color"
+    "image/png"
     "io"
     "log"
     "os"
@@ -15,22 +19,64 @@ func init() {
     }
 }
 
-func dumpLumpDataToFile(wadFile *IWAD, lumpInfo *LumpHeader, destFname string) {
+func dumpRawLumpDataToFile(destFhnd io.WriteSeeker, lumpReader io.Reader) (int64, error) {
+    return io.Copy(destFhnd, lumpReader)
+}
+
+// convert to PNG before writing
+func dumpWallDataToFile(destFhnd io.WriteSeeker, lumpReader io.Reader) (int64, error) {
+    // assumes 64x64
+    // TODO: color
+    const width, height = 64, 64
+
+    var rawImgData [width*height]byte
+    numRead, err := lumpReader.Read(rawImgData[:])
+    if err != nil {
+        return 0, err
+    }
+    if numRead != width*height {
+        return 0, errors.New("numRead != width*height???")
+    }
+
+    img := image.NewGray(image.Rect(0, 0, width, height))
+    for i := 0; i < height; i++ {
+        for j := 0; j < width; j++ {
+            img.SetGray(i, j, color.Gray{uint8(rawImgData[(i*width)+j])})
+        }
+    }
+
+    if err := png.Encode(destFhnd, img); err != nil {
+        return 0, err
+    }
+
+    return destFhnd.Seek(0, io.SeekCurrent)
+}
+
+func dumpLumpDataToFile(wadFile *IWAD, lumpInfo *LumpHeader, destFname string,
+                        wallData bool) {
     lumpReader, err := wadFile.LumpData(lumpInfo)
     if err != nil {
         log.Fatalf("Could not get lump data reader for %s: %v\n", destFname, err)
     }
+    if wallData {
+        destFname = fmt.Sprintf("%s.png", destFname)
+    } else {
+        destFname = fmt.Sprintf("%s.dat", destFname)
+    }
+    fmt.Printf("dumping %s\n", destFname)
     destfhnd, err := os.Create(destFname)
     if err != nil {
         log.Fatalf("Could not write to %s: %v\n", destFname, err)
     }
     defer destfhnd.Close()
-    numWritten, err := io.Copy(destfhnd, lumpReader)
+
+    if wallData {
+        _, err = dumpWallDataToFile(destfhnd, lumpReader)
+    } else {
+        _, err = dumpRawLumpDataToFile(destfhnd, lumpReader)
+    }
     if err != nil {
         log.Fatalf("Could not copy to %s: %v\n", destFname, err)
-    }
-    if numWritten != int64(lumpInfo.Size) {
-        log.Fatalf("numWritten != lumpInfo.Size ??!\n")
     }
 }
 
@@ -109,11 +155,24 @@ func main() {
             os.Exit(2)
         }
         destDir := flag.Arg(1)
+
+        if err := os.MkdirAll(destDir, 0755); err != nil {
+            log.Fatalf("Could not create dest dir: %v\n", err)
+        }
+
+        wallData := false
         for i := uint32(0); i < wadFile.Header.NumLumps; i += 1 {
             lumpInfo := wadFile.LumpDirectory[i]
-            destFname := fmt.Sprintf("%s/%s.dat", destDir, lumpInfo.NameString())
-            fmt.Printf("dumping %s\n", destFname)
-            dumpLumpDataToFile(wadFile, lumpInfo, destFname)
+            switch lumpInfo.NameString() {
+            case "WALLSTRT":
+                wallData = true
+            case "WALLSTOP":
+                wallData = false
+            }
+            if lumpInfo.Size > 0 {
+                destFname := fmt.Sprintf("%s/%s", destDir, lumpInfo.NameString())
+                dumpLumpDataToFile(wadFile, lumpInfo, destFname, wallData)
+            }
         }
     }
 }
