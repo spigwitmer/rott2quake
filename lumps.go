@@ -63,15 +63,10 @@ func dumpWallDataToFile(destFhnd io.WriteSeeker, lumpReader io.Reader) (int64, e
 }
 
 func dumpLumpDataToFile(wadFile *IWAD, lumpInfo *LumpHeader, destFname string,
-                        wallData bool) {
+                        dataType string) {
     lumpReader, err := wadFile.LumpData(lumpInfo)
     if err != nil {
         log.Fatalf("Could not get lump data reader for %s: %v\n", destFname, err)
-    }
-    if wallData {
-        destFname = fmt.Sprintf("%s.png", destFname)
-    } else {
-        destFname = fmt.Sprintf("%s.dat", destFname)
     }
     fmt.Printf("dumping %s\n", destFname)
     destfhnd, err := os.Create(destFname)
@@ -80,11 +75,15 @@ func dumpLumpDataToFile(wadFile *IWAD, lumpInfo *LumpHeader, destFname string,
     }
     defer destfhnd.Close()
 
-    if wallData {
-        _, err = dumpWallDataToFile(destfhnd, lumpReader)
-    } else {
-        _, err = dumpRawLumpDataToFile(destfhnd, lumpReader)
+    switch dataType {
+        case "wall":
+            _, err = dumpWallDataToFile(destfhnd, lumpReader)
+        case "midi":
+            _, err = dumpRawLumpDataToFile(destfhnd, lumpReader)
+        default:
+            _, err = dumpRawLumpDataToFile(destfhnd, lumpReader)
     }
+
     if err != nil {
         log.Fatalf("Could not copy to %s: %v\n", destFname, err)
     }
@@ -182,18 +181,64 @@ func main() {
             log.Fatalf("Could not create dest dir: %v\n", err)
         }
 
-        wallData := false
+        dataType := "raw"
         for i := uint32(0); i < wadFile.Header.NumLumps; i += 1 {
             lumpInfo := wadFile.LumpDirectory[i]
             switch lumpInfo.NameString() {
             case "WALLSTRT":
-                wallData = true
+                dataType = "wall"
             case "WALLSTOP":
-                wallData = false
+                dataType = "raw"
+            case "SONGSTRT":
+                dataType = "midi"
+            case "ANIMSTRT":
+                dataType = "wall"
+            case "EXITSTRT":
+                dataType = "raw"
+            case "ABVWSTRT":
+                dataType = "raw"
+            case "ABVMSTRT":
+                dataType = "raw"
+            case "HMSKSTRT":
+                dataType = "raw"
+            case "GUNSTART":
+                dataType = "raw"
+            case "ELEVSTRT":
+                dataType = "raw"
+            case "DOORSTRT":
+                dataType = "raw"
+            case "SIDESTRT":
+                dataType = "raw"
+            case "MASKSTRT":
+                dataType = "raw"
+            case "UPDNSTRT":
+                dataType = "raw"
+            case "SKYSTART":
+                dataType = "raw"
+            case "ORDRSTRT":
+                dataType = "raw"
+            case "SHAPSTRT":
+                dataType = "raw"
+            case "DIGISTRT":
+                dataType = "raw"
+            case "G_START":
+                dataType = "raw"
+            case "PCSTART":
+                dataType = "raw"
+            case "ADSTART":
+                dataType = "raw"
             }
             if lumpInfo.Size > 0 {
                 destFname := fmt.Sprintf("%s/%s", destDir, lumpInfo.NameString())
-                dumpLumpDataToFile(wadFile, lumpInfo, destFname, wallData)
+                switch dataType {
+                    case "wall":
+                        destFname = fmt.Sprintf("%s.png", destFname)
+                    case "midi":
+                        destFname = fmt.Sprintf("%s.mid", destFname)
+                    default:
+                        destFname = fmt.Sprintf("%s.dat", destFname)
+                }
+                dumpLumpDataToFile(wadFile, lumpInfo, destFname, dataType)
             }
         }
     }
