@@ -1,6 +1,7 @@
 package main
 
 import (
+    "bytes"
     "encoding/binary"
     "errors"
     "flag"
@@ -32,10 +33,9 @@ func dumpRawLumpDataToFile(destFhnd io.WriteSeeker, lumpReader io.Reader) (int64
     return io.Copy(destFhnd, lumpReader)
 }
 
-// convert to PNG before writing
+// convert wall data to PNG before writing
 func dumpWallDataToFile(destFhnd io.WriteSeeker, lumpReader io.Reader) (int64, error) {
-    // assumes 64x64
-    // TODO: color
+    // assumes 64x64 (standard mandated by ROTT)
     const width, height = 64, 64
 
     var rawImgData [width*height]byte
@@ -62,6 +62,83 @@ func dumpWallDataToFile(destFhnd io.WriteSeeker, lumpReader io.Reader) (int64, e
     return destFhnd.Seek(0, io.SeekCurrent)
 }
 
+// convert patch data to PNG before writing
+func dumpPatchDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lumpReader io.Reader) (int64, error) {
+    // https://doomwiki.org/wiki/Picture_format
+
+    // read entire lump to perform random access
+    patchBytes := make([]byte, lumpInfo.Size)
+    _, err := lumpReader.Read(patchBytes)
+    if err != nil {
+        return 0, err
+    }
+    lumpBuffer := bytes.NewReader(patchBytes)
+
+    var patchHeader RottPatchHeader
+    if err := binary.Read(lumpBuffer, binary.LittleEndian, &patchHeader); err != nil {
+        log.Fatal(err)
+    }
+
+    columnOffsets := make([]uint16, patchHeader.Width)
+    if err := binary.Read(lumpBuffer, binary.LittleEndian, &columnOffsets); err != nil {
+        return 0, err
+    }
+
+    img := image.NewRGBA(image.Rect(0, 0, int(patchHeader.Width), int(patchHeader.Height)))
+    for idx, cOffset := range columnOffsets {
+        _, err := lumpBuffer.Seek(int64(cOffset), io.SeekStart)
+        if err != nil {
+            return 0, err
+        }
+        rowstart := byte(0)
+        for rowstart != 255 {
+            rowstart, err := lumpBuffer.ReadByte()
+            if err != nil {
+                return 0, err
+            }
+            if rowstart == 255 {
+                break
+            }
+
+            var pixelCount uint8
+            err = binary.Read(lumpBuffer, binary.LittleEndian, &pixelCount)
+            if err != nil {
+                return 0, err
+            }
+
+            // read dummy byte
+            _, err = lumpBuffer.ReadByte()
+            if err != nil {
+                return 0, err
+            }
+
+            for i := uint8(0); i < pixelCount - 1; {
+                paletteCode, err := lumpBuffer.ReadByte()
+                if err != nil {
+                    return 0, err
+                }
+
+                pixel := PaletteData[paletteCode]
+                img.SetRGBA(idx, int(i+rowstart), color.RGBA{pixel.R, pixel.G, pixel.B, 255})
+            }
+
+            // read another dummy byte
+            _, err = lumpBuffer.ReadByte()
+            if err != nil {
+                return 0, err
+            }
+        }
+    }
+
+    if err = png.Encode(destFhnd, img); err != nil {
+        return 0, err
+    }
+
+    return destFhnd.Seek(0, io.SeekCurrent)
+}
+
+
+
 func dumpLumpDataToFile(wadFile *IWAD, lumpInfo *LumpHeader, destFname string,
                         dataType string) {
     lumpReader, err := wadFile.LumpData(lumpInfo)
@@ -80,6 +157,8 @@ func dumpLumpDataToFile(wadFile *IWAD, lumpInfo *LumpHeader, destFname string,
             _, err = dumpWallDataToFile(destfhnd, lumpReader)
         case "midi":
             _, err = dumpRawLumpDataToFile(destfhnd, lumpReader)
+        case "patch":
+            _, err = dumpPatchDataToFile(destfhnd, lumpInfo, lumpReader)
         default:
             _, err = dumpRawLumpDataToFile(destfhnd, lumpReader)
     }
@@ -206,7 +285,7 @@ func main() {
             case "ELEVSTRT":
                 dataType = "raw"
             case "DOORSTRT":
-                dataType = "raw"
+                dataType = "patch"
             case "SIDESTRT":
                 dataType = "raw"
             case "MASKSTRT":

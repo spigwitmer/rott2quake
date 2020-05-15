@@ -24,6 +24,15 @@ type LumpHeader struct {
     Name [8]byte
 }
 
+type RottPatchHeader struct {
+    OrigSize uint16
+    Width uint16
+    Height uint16
+    LeftOffset uint16
+    TopOffset uint16
+    Transparency uint16
+}
+
 func (l *LumpHeader) NameString() string {
     return string(bytes.Trim(l.Name[:], "\x00"))
 }
