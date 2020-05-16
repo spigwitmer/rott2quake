@@ -1,4 +1,4 @@
-package main
+package wad
 
 import (
 	"bytes"
@@ -25,11 +25,11 @@ type LumpHeader struct {
 }
 
 type PatchHeader struct {
-	OrigSize     uint16
-	Width        uint16
-	Height       uint16
-	LeftOffset   uint16
-	TopOffset    uint16
+	OrigSize   uint16
+	Width      uint16
+	Height     uint16
+	LeftOffset uint16
+	TopOffset  uint16
 }
 
 type RottPatchHeader struct {

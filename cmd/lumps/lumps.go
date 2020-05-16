@@ -12,6 +12,9 @@ import (
 	"io"
 	"log"
 	"os"
+
+	rtlfile "gitlab.com/camtap/lumps/pkg/rtl"
+	"gitlab.com/camtap/lumps/pkg/wad"
 )
 
 type Palette struct {
@@ -63,7 +66,7 @@ func dumpWallDataToFile(destFhnd io.WriteSeeker, lumpReader io.Reader) (int64, e
 }
 
 // convert patch data to PNG before writing
-func dumpPatchDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lumpReader io.Reader) (int64, error) {
+func dumpPatchDataToFile(destFhnd io.WriteSeeker, lumpInfo *wad.LumpHeader, lumpReader io.Reader) (int64, error) {
 	// https://doomwiki.org/wiki/Picture_format
 
 	// read entire lump to perform random access
@@ -74,7 +77,7 @@ func dumpPatchDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lumpRead
 	}
 	lumpBuffer := bytes.NewReader(patchBytes)
 
-	var patchHeader PatchHeader
+	var patchHeader wad.PatchHeader
 	if err := binary.Read(lumpBuffer, binary.LittleEndian, &patchHeader); err != nil {
 		log.Fatal(err)
 	}
@@ -132,7 +135,7 @@ func dumpPatchDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lumpRead
 }
 
 // convert translucent patch data to PNG before writing
-func dumpTransPatchDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lumpReader io.Reader) (int64, error) {
+func dumpTransPatchDataToFile(destFhnd io.WriteSeeker, lumpInfo *wad.LumpHeader, lumpReader io.Reader) (int64, error) {
 	// https://doomwiki.org/wiki/Picture_format
 
 	// read entire lump to perform random access
@@ -143,7 +146,7 @@ func dumpTransPatchDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lum
 	}
 	lumpBuffer := bytes.NewReader(patchBytes)
 
-	var patchHeader RottPatchHeader
+	var patchHeader wad.RottPatchHeader
 	if err := binary.Read(lumpBuffer, binary.LittleEndian, &patchHeader); err != nil {
 		log.Fatal(err)
 	}
@@ -206,7 +209,7 @@ func dumpTransPatchDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lum
 	return destFhnd.Seek(0, io.SeekCurrent)
 }
 
-func dumpLumpDataToFile(wadFile *IWAD, lumpInfo *LumpHeader, destFname string,
+func dumpLumpDataToFile(wadFile *wad.IWAD, lumpInfo *wad.LumpHeader, destFname string,
 	dataType string) {
 	lumpReader, err := wadFile.LumpData(lumpInfo)
 	if err != nil {
@@ -233,35 +236,35 @@ func dumpLumpDataToFile(wadFile *IWAD, lumpInfo *LumpHeader, destFname string,
 	}
 
 	if err != nil {
-        if dataType != "raw" {
-            // just dump the raw data instead then
-            destfhnd.Close()
-            _ = os.Remove(destFname)
-            newFname := fmt.Sprintf("%s.dat", destFname)
-            log.Printf("Could not copy to %s (%v), writing raw to %s instead", destFname, err, newFname)
-            lumpReader, err = wadFile.LumpData(lumpInfo)
-            if err != nil {
-                log.Fatal(err)
-            }
-            newfhnd, err := os.Create(newFname)
-            if err != nil {
-                log.Fatalf("Could not write to %s: %v", newFname, err)
-            }
-            defer newfhnd.Close()
-            _, err = dumpRawLumpDataToFile(newfhnd, lumpReader)
-            if err != nil {
-                log.Fatal(err)
-            }
-        } else {
-            log.Fatalf("Could not copy to %s: %v\n", destFname, err)
-        }
+		if dataType != "raw" {
+			// just dump the raw data instead then
+			destfhnd.Close()
+			_ = os.Remove(destFname)
+			newFname := fmt.Sprintf("%s.dat", destFname)
+			log.Printf("Could not copy to %s (%v), writing raw to %s instead", destFname, err, newFname)
+			lumpReader, err = wadFile.LumpData(lumpInfo)
+			if err != nil {
+				log.Fatal(err)
+			}
+			newfhnd, err := os.Create(newFname)
+			if err != nil {
+				log.Fatalf("Could not write to %s: %v", newFname, err)
+			}
+			defer newfhnd.Close()
+			_, err = dumpRawLumpDataToFile(newfhnd, lumpReader)
+			if err != nil {
+				log.Fatal(err)
+			}
+		} else {
+			log.Fatalf("Could not copy to %s: %v\n", destFname, err)
+		}
 	}
 }
 
 func main() {
 	var dumpLumpData, printLumps bool
 	var rtlFile, rtlMapOutdir string
-	var rtl *RTL
+	var rtl *rtlfile.RTL
 	var printRTLInfo bool
 
 	flag.StringVar(&rtlFile, "rtl", "", "RTL file")
@@ -282,7 +285,7 @@ func main() {
 		}
 		defer rtlFhnd.Close()
 
-		rtl, err = NewRTL(rtlFhnd)
+		rtl, err = rtlfile.NewRTL(rtlFhnd)
 		if err != nil {
 			log.Fatalf("Could not parse RTL file: %v\n", err)
 		}
@@ -317,7 +320,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Could not open file: %v\n", err)
 	}
-	wadFile, err := NewIWAD(fhnd)
+	wadFile, err := wad.NewIWAD(fhnd)
 	if err != nil {
 		log.Fatalf("Could not open IWAD: %v\n", err)
 	}
@@ -426,9 +429,9 @@ func main() {
 			if lumpInfo.Size > 0 {
 				destFname := fmt.Sprintf("%s/%s", destDir, lumpInfo.NameString())
 				switch dataType {
-                case "patch":
+				case "patch":
 					destFname = fmt.Sprintf("%s.png", destFname)
-                case "tpatch":
+				case "tpatch":
 					destFname = fmt.Sprintf("%s.png", destFname)
 				case "wall":
 					destFname = fmt.Sprintf("%s.png", destFname)
