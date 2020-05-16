@@ -74,6 +74,75 @@ func dumpPatchDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lumpRead
 	}
 	lumpBuffer := bytes.NewReader(patchBytes)
 
+	var patchHeader PatchHeader
+	if err := binary.Read(lumpBuffer, binary.LittleEndian, &patchHeader); err != nil {
+		log.Fatal(err)
+	}
+
+	columnOffsets := make([]uint16, patchHeader.Width)
+	if err := binary.Read(lumpBuffer, binary.LittleEndian, &columnOffsets); err != nil {
+		return 0, err
+	}
+
+	img := image.NewRGBA(image.Rect(0, 0, int(patchHeader.Width), int(patchHeader.Height)))
+	for idx, cOffset := range columnOffsets {
+		_, err := lumpBuffer.Seek(int64(cOffset), io.SeekStart)
+		if err != nil {
+			return 0, err
+		}
+		rowstart := byte(0)
+		for rowstart != 255 {
+			rowstart, err := lumpBuffer.ReadByte()
+			if err != nil {
+				return 0, err
+			}
+			if rowstart == 255 {
+				break
+			}
+
+			var pixelCount uint8
+			err = binary.Read(lumpBuffer, binary.LittleEndian, &pixelCount)
+			if err != nil {
+				return 0, err
+			}
+
+			for i := uint8(0); i < pixelCount-1; i++ {
+				paletteCode, err := lumpBuffer.ReadByte()
+				if err != nil {
+					return 0, err
+				}
+
+				pixel := PaletteData[paletteCode]
+				img.SetRGBA(idx, int(i+rowstart), color.RGBA{pixel.R, pixel.G, pixel.B, 255})
+			}
+
+			// read dummy byte
+			_, err = lumpBuffer.ReadByte()
+			if err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	if err = png.Encode(destFhnd, img); err != nil {
+		return 0, err
+	}
+
+	return destFhnd.Seek(0, io.SeekCurrent)
+}
+
+// convert translucent patch data to PNG before writing
+func dumpTransPatchDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lumpReader io.Reader) (int64, error) {
+	// https://doomwiki.org/wiki/Picture_format
+
+	// read entire lump to perform random access
+	patchBytes := make([]byte, lumpInfo.Size)
+	_, err := lumpReader.Read(patchBytes)
+	if err != nil {
+		return 0, err
+	}
+	lumpBuffer := bytes.NewReader(patchBytes)
+
 	var patchHeader RottPatchHeader
 	if err := binary.Read(lumpBuffer, binary.LittleEndian, &patchHeader); err != nil {
 		log.Fatal(err)
@@ -112,7 +181,7 @@ func dumpPatchDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lumpRead
 				return 0, err
 			}
 
-			for i := uint8(0); i < pixelCount-1; {
+			for i := uint8(0); i < pixelCount-1; i++ {
 				paletteCode, err := lumpBuffer.ReadByte()
 				if err != nil {
 					return 0, err
@@ -143,7 +212,7 @@ func dumpLumpDataToFile(wadFile *IWAD, lumpInfo *LumpHeader, destFname string,
 	if err != nil {
 		log.Fatalf("Could not get lump data reader for %s: %v\n", destFname, err)
 	}
-	fmt.Printf("dumping %s\n", destFname)
+	fmt.Printf("dumping %s as %s\n", destFname, dataType)
 	destfhnd, err := os.Create(destFname)
 	if err != nil {
 		log.Fatalf("Could not write to %s: %v\n", destFname, err)
@@ -157,12 +226,35 @@ func dumpLumpDataToFile(wadFile *IWAD, lumpInfo *LumpHeader, destFname string,
 		_, err = dumpRawLumpDataToFile(destfhnd, lumpReader)
 	case "patch":
 		_, err = dumpPatchDataToFile(destfhnd, lumpInfo, lumpReader)
+	case "tpatch":
+		_, err = dumpTransPatchDataToFile(destfhnd, lumpInfo, lumpReader)
 	default:
 		_, err = dumpRawLumpDataToFile(destfhnd, lumpReader)
 	}
 
 	if err != nil {
-		log.Fatalf("Could not copy to %s: %v\n", destFname, err)
+        if dataType != "raw" {
+            // just dump the raw data instead then
+            destfhnd.Close()
+            _ = os.Remove(destFname)
+            newFname := fmt.Sprintf("%s.dat", destFname)
+            log.Printf("Could not copy to %s (%v), writing raw to %s instead", destFname, err, newFname)
+            lumpReader, err = wadFile.LumpData(lumpInfo)
+            if err != nil {
+                log.Fatal(err)
+            }
+            newfhnd, err := os.Create(newFname)
+            if err != nil {
+                log.Fatalf("Could not write to %s: %v", newFname, err)
+            }
+            defer newfhnd.Close()
+            _, err = dumpRawLumpDataToFile(newfhnd, lumpReader)
+            if err != nil {
+                log.Fatal(err)
+            }
+        } else {
+            log.Fatalf("Could not copy to %s: %v\n", destFname, err)
+        }
 	}
 }
 
@@ -279,11 +371,11 @@ func main() {
 			case "HMSKSTRT":
 				dataType = "raw"
 			case "GUNSTART":
-				dataType = "raw"
+				dataType = "patch"
 			case "ELEVSTRT":
 				dataType = "raw"
 			case "DOORSTRT":
-				dataType = "patch"
+				dataType = "tpatch"
 			case "SIDESTRT":
 				dataType = "raw"
 			case "MASKSTRT":
@@ -304,10 +396,40 @@ func main() {
 				dataType = "raw"
 			case "ADSTART":
 				dataType = "raw"
+			case "EXITSTOP":
+				dataType = "raw"
+			case "ELEVSTOP":
+				dataType = "raw"
+			case "DOORSTOP":
+				dataType = "raw"
+			case "SIDESTOP":
+				dataType = "raw"
+			case "MASKSTOP":
+				dataType = "raw"
+			case "UPDNSTOP":
+				dataType = "raw"
+			case "SKYSTOP":
+				dataType = "raw"
+			case "ORDRSTOP":
+				dataType = "raw"
+			case "SHAPSTOP":
+				dataType = "raw"
+			case "DIGISTOP":
+				dataType = "raw"
+			case "PCSTOP":
+				dataType = "raw"
+			case "ADSTOP":
+				dataType = "raw"
+			case "PAL":
+				dataType = "raw"
 			}
 			if lumpInfo.Size > 0 {
 				destFname := fmt.Sprintf("%s/%s", destDir, lumpInfo.NameString())
 				switch dataType {
+                case "patch":
+					destFname = fmt.Sprintf("%s.png", destFname)
+                case "tpatch":
+					destFname = fmt.Sprintf("%s.png", destFname)
 				case "wall":
 					destFname = fmt.Sprintf("%s.png", destFname)
 				case "midi":
