@@ -392,9 +392,6 @@ func main() {
 			case "WALLSTRT":
 				dataType = "wall"
 				subdir = "wall"
-			case "WALLSTOP":
-				dataType = "raw"
-				subdir = ""
 			case "SONGSTRT":
 				dataType = "midi"
 				subdir = "music"
@@ -452,40 +449,7 @@ func main() {
 			case "ADSTART":
 				dataType = "raw"
 				subdir = ""
-			case "EXITSTOP":
-				dataType = "raw"
-				subdir = ""
-			case "ELEVSTOP":
-				dataType = "raw"
-				subdir = ""
-			case "DOORSTOP":
-				dataType = "raw"
-				subdir = ""
-			case "SIDESTOP":
-				dataType = "raw"
-				subdir = ""
-			case "MASKSTOP":
-				dataType = "raw"
-				subdir = ""
-			case "UPDNSTOP":
-				dataType = "raw"
-				subdir = ""
-			case "SKYSTOP":
-				dataType = "raw"
-				subdir = ""
-			case "ORDRSTOP":
-				dataType = "raw"
-				subdir = ""
-			case "SHAPSTOP":
-				dataType = "raw"
-				subdir = ""
-			case "DIGISTOP":
-				dataType = "raw"
-				subdir = ""
-			case "PCSTOP":
-				dataType = "raw"
-				subdir = ""
-			case "ADSTOP":
+			case "WALLSTOP", "EXITSTOP", "ELEVSTOP", "DOORSTOP", "SIDESTOP", "MASKSTOP", "UPDNSTOP", "SKYSTOP", "ORDRSTOP", "SHAPSTOP", "DIGISTOP", "PCSTOP", "ADSTOP":
 				dataType = "raw"
 				subdir = ""
 			case "PAL":
