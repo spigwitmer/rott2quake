@@ -38,7 +38,7 @@ func dumpRawLumpDataToFile(destFhnd io.WriteSeeker, lumpReader io.Reader) (int64
 
 // convert palette image data to PNG before writing
 func dumpPalettedImageDataToFile(destFhnd io.WriteSeeker, lumpReader io.Reader, width int, height int) (int64, error) {
-    rawImgData := make([]byte, width*height)
+	rawImgData := make([]byte, width*height)
 	numRead, err := lumpReader.Read(rawImgData[:])
 	if err != nil {
 		return 0, err
@@ -249,10 +249,10 @@ func dumpLumpDataToFile(wadFile *wad.IWAD, lumpInfo *wad.LumpHeader, destFname s
 
 	switch dataType {
 	case "wall":
-        // assumes 64x64 (standard mandated by ROTT)
+		// assumes 64x64 (standard mandated by ROTT)
 		_, err = dumpPalettedImageDataToFile(destfhnd, lumpReader, 64, 64)
 	case "sky":
-        // assumes 256x200 (standard mandated by ROTT)
+		// assumes 256x200 (standard mandated by ROTT)
 		_, err = dumpPalettedImageDataToFile(destfhnd, lumpReader, 256, 200)
 	case "midi":
 		_, err = dumpRawLumpDataToFile(destfhnd, lumpReader)
@@ -384,81 +384,124 @@ func main() {
 			log.Fatalf("Could not create dest dir: %v\n", err)
 		}
 
+		subdir := ""
 		dataType := "raw"
 		for i := uint32(0); i < wadFile.Header.NumLumps; i += 1 {
 			lumpInfo := wadFile.LumpDirectory[i]
 			switch lumpInfo.NameString() {
 			case "WALLSTRT":
 				dataType = "wall"
+				subdir = "wall"
 			case "WALLSTOP":
 				dataType = "raw"
+				subdir = ""
 			case "SONGSTRT":
 				dataType = "midi"
+				subdir = "music"
 			case "ANIMSTRT":
 				dataType = "wall"
+				subdir = "anim"
 			case "EXITSTRT":
 				dataType = "raw"
+				subdir = ""
 			case "ABVWSTRT":
 				dataType = "raw"
+				subdir = ""
 			case "ABVMSTRT":
 				dataType = "raw"
+				subdir = ""
 			case "HMSKSTRT":
 				dataType = "raw"
+				subdir = ""
 			case "GUNSTART":
 				dataType = "patch"
+				subdir = "guns"
 			case "ELEVSTRT":
 				dataType = "raw"
+				subdir = ""
 			case "DOORSTRT":
 				dataType = "patch"
+				subdir = "doors"
 			case "SIDESTRT":
 				dataType = "patch"
+				subdir = "side"
 			case "MASKSTRT":
 				dataType = "raw"
+				subdir = ""
 			case "UPDNSTRT":
 				dataType = "lpic"
+				subdir = "floors-ceilings"
 			case "SKYSTART":
 				dataType = "sky"
+				subdir = "skies"
 			case "ORDRSTRT":
 				dataType = "raw"
+				subdir = ""
 			case "SHAPSTRT":
-				dataType = "raw"
+				dataType = "patch"
+				subdir = "shapes"
 			case "DIGISTRT":
 				dataType = "raw"
+				subdir = "sounds"
 			case "G_START":
 				dataType = "raw"
+				subdir = "sounds"
 			case "PCSTART":
 				dataType = "raw"
+				subdir = ""
 			case "ADSTART":
 				dataType = "raw"
+				subdir = ""
 			case "EXITSTOP":
 				dataType = "raw"
+				subdir = ""
 			case "ELEVSTOP":
 				dataType = "raw"
+				subdir = ""
 			case "DOORSTOP":
 				dataType = "raw"
+				subdir = ""
 			case "SIDESTOP":
 				dataType = "raw"
+				subdir = ""
 			case "MASKSTOP":
 				dataType = "raw"
+				subdir = ""
 			case "UPDNSTOP":
 				dataType = "raw"
+				subdir = ""
 			case "SKYSTOP":
 				dataType = "raw"
+				subdir = ""
 			case "ORDRSTOP":
 				dataType = "raw"
+				subdir = ""
 			case "SHAPSTOP":
 				dataType = "raw"
+				subdir = ""
 			case "DIGISTOP":
 				dataType = "raw"
+				subdir = ""
 			case "PCSTOP":
 				dataType = "raw"
+				subdir = ""
 			case "ADSTOP":
 				dataType = "raw"
+				subdir = ""
 			case "PAL":
 				dataType = "raw"
+				subdir = "misc"
 			}
 			if lumpInfo.Size > 0 {
-				destFname := fmt.Sprintf("%s/%s", destDir, lumpInfo.NameString())
+				var destFname string
+				if subdir == "" {
+					destFname = fmt.Sprintf("%s/%s", destDir, lumpInfo.NameString())
+				} else {
+					if err := os.MkdirAll(destDir+"/"+subdir, 0755); err != nil {
+						log.Fatal(err)
+					}
+					destFname = fmt.Sprintf("%s/%s/%s", destDir, subdir, lumpInfo.NameString())
+				}
 				switch dataType {
 				case "patch":
 					destFname = fmt.Sprintf("%s.png", destFname)
