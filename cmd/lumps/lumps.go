@@ -36,12 +36,9 @@ func dumpRawLumpDataToFile(destFhnd io.WriteSeeker, lumpReader io.Reader) (int64
 	return io.Copy(destFhnd, lumpReader)
 }
 
-// convert wall data to PNG before writing
-func dumpWallDataToFile(destFhnd io.WriteSeeker, lumpReader io.Reader) (int64, error) {
-	// assumes 64x64 (standard mandated by ROTT)
-	const width, height = 64, 64
-
-	var rawImgData [width * height]byte
+// convert palette image data to PNG before writing
+func dumpPalettedImageDataToFile(destFhnd io.WriteSeeker, lumpReader io.Reader, width int, height int) (int64, error) {
+    rawImgData := make([]byte, width*height)
 	numRead, err := lumpReader.Read(rawImgData[:])
 	if err != nil {
 		return 0, err
@@ -252,7 +249,11 @@ func dumpLumpDataToFile(wadFile *wad.IWAD, lumpInfo *wad.LumpHeader, destFname s
 
 	switch dataType {
 	case "wall":
-		_, err = dumpWallDataToFile(destfhnd, lumpReader)
+        // assumes 64x64 (standard mandated by ROTT)
+		_, err = dumpPalettedImageDataToFile(destfhnd, lumpReader, 64, 64)
+	case "sky":
+        // assumes 256x200 (standard mandated by ROTT)
+		_, err = dumpPalettedImageDataToFile(destfhnd, lumpReader, 256, 200)
 	case "midi":
 		_, err = dumpRawLumpDataToFile(destfhnd, lumpReader)
 	case "patch":
@@ -416,7 +417,7 @@ func main() {
 			case "UPDNSTRT":
 				dataType = "lpic"
 			case "SKYSTART":
-				dataType = "raw"
+				dataType = "sky"
 			case "ORDRSTRT":
 				dataType = "raw"
 			case "SHAPSTRT":
@@ -466,6 +467,8 @@ func main() {
 				case "lpic":
 					destFname = fmt.Sprintf("%s.png", destFname)
 				case "wall":
+					destFname = fmt.Sprintf("%s.png", destFname)
+				case "sky":
 					destFname = fmt.Sprintf("%s.png", destFname)
 				case "midi":
 					destFname = fmt.Sprintf("%s.mid", destFname)
