@@ -45,10 +45,10 @@ type RottPatchHeader struct {
 
 // floors and ceilings
 type RottLpicHeader struct {
-    Width uint16
-    Height uint16
-    OrgX uint16
-    OrgY uint16
+	Width  uint16
+	Height uint16
+	OrgX   uint16
+	OrgY   uint16
 }
 
 func (l *LumpHeader) NameString() string {

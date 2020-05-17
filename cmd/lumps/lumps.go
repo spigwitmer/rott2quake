@@ -141,21 +141,21 @@ func dumpLpicDataToFile(destFhnd io.WriteSeeker, lumpInfo *wad.LumpHeader, lumpR
 		return 0, err
 	}
 
-    rawData := make([]uint8, 128*128)
+	rawData := make([]uint8, 128*128)
 
-    if err := binary.Read(lumpReader, binary.LittleEndian, rawData); err != nil {
-        return 0, err
-    }
+	if err := binary.Read(lumpReader, binary.LittleEndian, rawData); err != nil {
+		return 0, err
+	}
 
 	img := image.NewRGBA(image.Rect(0, 0, 128, 128))
-    for i := 0; i < 128; i++ {
-        for j := 0; j < 128; j++ {
-            pixel := PaletteData[rawData[(i*128)+j]]
-            img.SetRGBA(j, i, color.RGBA{pixel.R, pixel.G, pixel.B, 255})
-        }
-    }
+	for i := 0; i < 128; i++ {
+		for j := 0; j < 128; j++ {
+			pixel := PaletteData[rawData[(i*128)+j]]
+			img.SetRGBA(j, i, color.RGBA{pixel.R, pixel.G, pixel.B, 255})
+		}
+	}
 
-    if err := png.Encode(destFhnd, img); err != nil {
+	if err := png.Encode(destFhnd, img); err != nil {
 		return 0, err
 	}
 
@@ -259,8 +259,8 @@ func dumpLumpDataToFile(wadFile *wad.IWAD, lumpInfo *wad.LumpHeader, destFname s
 		_, err = dumpPatchDataToFile(destfhnd, lumpInfo, lumpReader)
 	case "tpatch":
 		_, err = dumpTransPatchDataToFile(destfhnd, lumpInfo, lumpReader)
-    case "lpic":
-        _, err = dumpLpicDataToFile(destfhnd, lumpInfo, lumpReader)
+	case "lpic":
+		_, err = dumpLpicDataToFile(destfhnd, lumpInfo, lumpReader)
 	default:
 		_, err = dumpRawLumpDataToFile(destfhnd, lumpReader)
 	}
