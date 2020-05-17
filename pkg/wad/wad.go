@@ -24,6 +24,7 @@ type LumpHeader struct {
 	Name    [8]byte
 }
 
+// sprites (guns, actors, etc.)
 type PatchHeader struct {
 	OrigSize   uint16
 	Width      uint16
@@ -32,6 +33,7 @@ type PatchHeader struct {
 	TopOffset  uint16
 }
 
+// wall and sky textures
 type RottPatchHeader struct {
 	OrigSize     uint16
 	Width        uint16
@@ -39,6 +41,14 @@ type RottPatchHeader struct {
 	LeftOffset   uint16
 	TopOffset    uint16
 	Transparency uint16
+}
+
+// floors and ceilings
+type RottLpicHeader struct {
+    Width uint16
+    Height uint16
+    OrgX uint16
+    OrgY uint16
 }
 
 func (l *LumpHeader) NameString() string {

@@ -134,6 +134,34 @@ func dumpPatchDataToFile(destFhnd io.WriteSeeker, lumpInfo *wad.LumpHeader, lump
 	return destFhnd.Seek(0, io.SeekCurrent)
 }
 
+// convert floor and ceiling data to PNG
+func dumpLpicDataToFile(destFhnd io.WriteSeeker, lumpInfo *wad.LumpHeader, lumpReader io.Reader) (int64, error) {
+	var header wad.RottLpicHeader
+	if err := binary.Read(lumpReader, binary.LittleEndian, &header); err != nil {
+		return 0, err
+	}
+
+    rawData := make([]uint8, 128*128)
+
+    if err := binary.Read(lumpReader, binary.LittleEndian, rawData); err != nil {
+        return 0, err
+    }
+
+	img := image.NewRGBA(image.Rect(0, 0, 128, 128))
+    for i := 0; i < 128; i++ {
+        for j := 0; j < 128; j++ {
+            pixel := PaletteData[rawData[(i*128)+j]]
+            img.SetRGBA(j, i, color.RGBA{pixel.R, pixel.G, pixel.B, 255})
+        }
+    }
+
+    if err := png.Encode(destFhnd, img); err != nil {
+		return 0, err
+	}
+
+	return destFhnd.Seek(0, io.SeekCurrent)
+}
+
 // convert translucent patch data to PNG before writing
 func dumpTransPatchDataToFile(destFhnd io.WriteSeeker, lumpInfo *wad.LumpHeader, lumpReader io.Reader) (int64, error) {
 	// https://doomwiki.org/wiki/Picture_format
@@ -231,6 +259,8 @@ func dumpLumpDataToFile(wadFile *wad.IWAD, lumpInfo *wad.LumpHeader, destFname s
 		_, err = dumpPatchDataToFile(destfhnd, lumpInfo, lumpReader)
 	case "tpatch":
 		_, err = dumpTransPatchDataToFile(destfhnd, lumpInfo, lumpReader)
+    case "lpic":
+        _, err = dumpLpicDataToFile(destfhnd, lumpInfo, lumpReader)
 	default:
 		_, err = dumpRawLumpDataToFile(destfhnd, lumpReader)
 	}
@@ -378,13 +408,13 @@ func main() {
 			case "ELEVSTRT":
 				dataType = "raw"
 			case "DOORSTRT":
-				dataType = "tpatch"
+				dataType = "patch"
 			case "SIDESTRT":
-				dataType = "raw"
+				dataType = "patch"
 			case "MASKSTRT":
 				dataType = "raw"
 			case "UPDNSTRT":
-				dataType = "raw"
+				dataType = "lpic"
 			case "SKYSTART":
 				dataType = "raw"
 			case "ORDRSTRT":
@@ -432,6 +462,8 @@ func main() {
 				case "patch":
 					destFname = fmt.Sprintf("%s.png", destFname)
 				case "tpatch":
+					destFname = fmt.Sprintf("%s.png", destFname)
+				case "lpic":
 					destFname = fmt.Sprintf("%s.png", destFname)
 				case "wall":
 					destFname = fmt.Sprintf("%s.png", destFname)
