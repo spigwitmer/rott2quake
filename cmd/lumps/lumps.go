@@ -414,8 +414,8 @@ func main() {
 				dataType = "patch"
 				subdir = "guns"
 			case "ELEVSTRT":
-				dataType = "raw"
-				subdir = ""
+				dataType = "wall"
+				subdir = "elev"
 			case "DOORSTRT":
 				dataType = "patch"
 				subdir = "doors"
