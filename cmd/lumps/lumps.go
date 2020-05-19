@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/binary"
 	"flag"
 	"fmt"
 	"io"
@@ -122,7 +123,12 @@ func main() {
 			if md.Header.Used == 0 {
 				continue
 			}
+
 			rtlMapFile := fmt.Sprintf("%s/map%03d.txt", rtlMapOutdir, idx+1)
+			rtlRawWallFile := fmt.Sprintf("%s/map%03d-walls.bin", rtlMapOutdir, idx+1)
+			rtlRawSpriteFile := fmt.Sprintf("%s/map%03d-sprites.bin", rtlMapOutdir, idx+1)
+			rtlRawInfoFile := fmt.Sprintf("%s/map%03d-info.bin", rtlMapOutdir, idx+1)
+
 			wallFhnd, err := os.Create(rtlMapFile)
 			if err != nil {
 				log.Fatalf("Could not open %s for writing: %v\n", rtlMapFile, err)
@@ -131,6 +137,33 @@ func main() {
 			err = md.DumpWallToFile(wallFhnd)
 			if err != nil {
 				log.Fatalf("Could not write map to %s: %v\n", rtlMapFile, err)
+			}
+
+			rawWallFhnd, err := os.Create(rtlRawWallFile)
+			if err != nil {
+				log.Fatalf("Could not open %s for writing: %v\n", rtlRawWallFile, err)
+			}
+			defer rawWallFhnd.Close()
+			if err = binary.Write(rawWallFhnd, binary.LittleEndian, md.WallPlane); err != nil {
+				log.Fatalf("Could not write raw map to %s: %v\n", rtlRawWallFile, err)
+			}
+
+			rawSpriteFhnd, err := os.Create(rtlRawSpriteFile)
+			if err != nil {
+				log.Fatalf("Could not open %s for writing: %v\n", rtlRawSpriteFile, err)
+			}
+			defer rawSpriteFhnd.Close()
+			if err = binary.Write(rawSpriteFhnd, binary.LittleEndian, md.SpritePlane); err != nil {
+				log.Fatalf("Could not write raw map to %s: %v\n", rtlRawSpriteFile, err)
+			}
+
+			rawInfoFhnd, err := os.Create(rtlRawInfoFile)
+			if err != nil {
+				log.Fatalf("Could not open %s for writing: %v\n", rtlRawInfoFile, err)
+			}
+			defer rawInfoFhnd.Close()
+			if err = binary.Write(rawInfoFhnd, binary.LittleEndian, md.InfoPlane); err != nil {
+				log.Fatalf("Could not write raw map to %s: %v\n", rtlRawInfoFile, err)
 			}
 		}
 	}

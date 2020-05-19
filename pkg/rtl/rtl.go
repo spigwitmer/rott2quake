@@ -35,7 +35,19 @@ type RTLMapData struct {
 	WallPlane   [128][128]uint16
 	SpritePlane [128][128]uint16
 	InfoPlane   [128][128]uint16
-	rtl         *RTL
+
+	// derived from wall plane
+	FloorNumber   int // 0xb4 - 0xc3
+	CeilingNumber int
+	Brightness    int
+	LightFadeRate int
+
+	// derived from sprite plane
+	Height     int
+	SkyHeight  int
+	Fog        int
+	IllumWalls int
+	rtl        *RTL
 }
 
 type RTL struct {
