@@ -51,6 +51,10 @@ type RottLpicHeader struct {
 	OrgY   uint16
 }
 
+type Palette struct {
+	R, G, B uint8
+}
+
 func (l *LumpHeader) NameString() string {
 	return string(bytes.Trim(l.Name[:], "\x00"))
 }
