@@ -60,9 +60,28 @@ func (l *LumpHeader) NameString() string {
 }
 
 type IWAD struct {
-	fhnd          io.ReadSeeker
-	Header        WADHeader
-	LumpDirectory []*LumpHeader
+	fhnd            io.ReadSeeker
+	Header          WADHeader
+	BasePaletteData []Palette
+	LumpDirectory   []*LumpHeader
+}
+
+func getBasePaletteData(iwad *IWAD) ([]Palette, error) {
+	paletteData := make([]Palette, 256)
+
+	paletteLump, err := iwad.GetLump("PAL")
+	if err != nil {
+		return nil, err
+	}
+	paletteLumpData, err := iwad.LumpData(paletteLump)
+	if err != nil {
+		return nil, err
+	}
+	if err = binary.Read(paletteLumpData, binary.LittleEndian, &paletteData); err != nil {
+		return nil, err
+	}
+
+	return paletteData, nil
 }
 
 func readLumpHeadersFromIWAD(r io.ReadSeeker, wad *IWAD) error {
@@ -93,6 +112,12 @@ func NewIWAD(r io.ReadSeeker) (*IWAD, error) {
 	}
 
 	if err := readLumpHeadersFromIWAD(r, &i); err != nil {
+		return nil, err
+	}
+
+	var err error
+	i.BasePaletteData, err = getBasePaletteData(&i)
+	if err != nil {
 		return nil, err
 	}
 

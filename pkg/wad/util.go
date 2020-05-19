@@ -12,11 +12,6 @@ import (
 
 // convert palette image data to PNG before writing
 func DumpFlatDataToFile(destFhnd io.WriteSeeker, lumpReader io.Reader, iwad *IWAD, width int, height int) (int64, error) {
-	paletteData, err := GetPaletteData(iwad)
-	if err != nil {
-		return 0, err
-	}
-
 	rawImgData := make([]byte, width*height)
 	numRead, err := lumpReader.Read(rawImgData[:])
 	if err != nil {
@@ -29,7 +24,7 @@ func DumpFlatDataToFile(destFhnd io.WriteSeeker, lumpReader io.Reader, iwad *IWA
 	img := image.NewRGBA(image.Rect(0, 0, width, height))
 	for i := 0; i < height; i++ {
 		for j := 0; j < width; j++ {
-			palette := paletteData[rawImgData[(i*width)+j]]
+			palette := iwad.BasePaletteData[rawImgData[(i*width)+j]]
 			img.SetRGBA(i, j, color.RGBA{palette.R, palette.G, palette.B, 255})
 		}
 	}

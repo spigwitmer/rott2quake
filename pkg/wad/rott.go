@@ -12,37 +12,13 @@ import (
 	"log"
 )
 
-// returns lump containing palette data
-func GetPaletteData(iwad *IWAD) ([]Palette, error) {
-	paletteData := make([]Palette, 256)
-
-	paletteLump, err := iwad.GetLump("PAL")
-	if err != nil {
-		return nil, err
-	}
-	paletteLumpData, err := iwad.LumpData(paletteLump)
-	if err != nil {
-		return nil, err
-	}
-	if err = binary.Read(paletteLumpData, binary.LittleEndian, &paletteData); err != nil {
-		return nil, err
-	}
-
-	return paletteData, nil
-}
-
 // convert patch data to PNG before writing
 func DumpPatchDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lumpReader io.Reader, iwad *IWAD) (int64, error) {
 	// https://doomwiki.org/wiki/Picture_format
 
-	paletteData, err := GetPaletteData(iwad)
-	if err != nil {
-		return 0, err
-	}
-
 	// read entire lump to perform random access
 	patchBytes := make([]byte, lumpInfo.Size)
-	_, err = lumpReader.Read(patchBytes)
+	_, err := lumpReader.Read(patchBytes)
 	if err != nil {
 		return 0, err
 	}
@@ -86,7 +62,7 @@ func DumpPatchDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lumpRead
 					return 0, err
 				}
 
-				pixel := paletteData[paletteCode]
+				pixel := iwad.BasePaletteData[paletteCode]
 				img.SetRGBA(idx, int(i+rowstart), color.RGBA{pixel.R, pixel.G, pixel.B, 255})
 			}
 
@@ -109,11 +85,6 @@ func DumpPatchDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lumpRead
 func DumpLpicDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lumpReader io.Reader, iwad *IWAD) (int64, error) {
 	var header RottLpicHeader
 
-	paletteData, err := GetPaletteData(iwad)
-	if err != nil {
-		return 0, err
-	}
-
 	if err := binary.Read(lumpReader, binary.LittleEndian, &header); err != nil {
 		return 0, err
 	}
@@ -127,7 +98,7 @@ func DumpLpicDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lumpReade
 	img := image.NewRGBA(image.Rect(0, 0, 128, 128))
 	for i := 0; i < 128; i++ {
 		for j := 0; j < 128; j++ {
-			pixel := paletteData[rawData[(i*128)+j]]
+			pixel := iwad.BasePaletteData[rawData[(i*128)+j]]
 			img.SetRGBA(j, i, color.RGBA{pixel.R, pixel.G, pixel.B, 255})
 		}
 	}
@@ -143,14 +114,9 @@ func DumpLpicDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lumpReade
 func DumpTransPatchDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lumpReader io.Reader, iwad *IWAD) (int64, error) {
 	// https://doomwiki.org/wiki/Picture_format
 
-	paletteData, err := GetPaletteData(iwad)
-	if err != nil {
-		return 0, err
-	}
-
 	// read entire lump to perform random access
 	patchBytes := make([]byte, lumpInfo.Size)
-	_, err = lumpReader.Read(patchBytes)
+	_, err := lumpReader.Read(patchBytes)
 	if err != nil {
 		return 0, err
 	}
@@ -200,7 +166,7 @@ func DumpTransPatchDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lum
 					return 0, err
 				}
 
-				pixel := paletteData[paletteCode]
+				pixel := iwad.BasePaletteData[paletteCode]
 				img.SetRGBA(idx, int(i+rowstart), color.RGBA{pixel.R, pixel.G, pixel.B, 255})
 			}
 
