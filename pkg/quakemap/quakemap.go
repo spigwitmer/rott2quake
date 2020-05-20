@@ -2,8 +2,8 @@ package quakemap
 
 import (
 	"fmt"
-	"regexp"
-	"strings"
+	//"regexp"
+	//"strings"
 )
 
 type Brush struct {
@@ -16,7 +16,7 @@ type Brush struct {
 	Xscale, Yscale   float64
 }
 
-func (b Brush) Render() {
+func (b Brush) Render() string {
 	texture := b.Texture
 	if texture == "" {
 		texture = "__TB_empty"
@@ -43,25 +43,25 @@ type Entity struct {
 	OriginZ float64
 }
 
-func (e Entity) Render() {
-	output := `{
+func (e Entity) Render() string {
+	output := fmt.Sprintf(`{
     "spawnflags" "%d"
-	"classname" "%s"`
+    "classname" "%s"`, e.SpawnFlags, e.ClassName)
 
 	if e.ClassName == "info_player_start" {
-		output += "\n" + fmt.Sprintf("    \"origin\" \"%.02f %.02f %.02f\"",
+		output += fmt.Sprintf("\n    \"origin\" \"%.02f %.02f %.02f\"",
 			e.OriginX, e.OriginY, e.OriginZ)
 	}
 
 	if len(e.Brushes) > 0 {
-		output += "    {"
+		output += "\n    {"
 		for _, brush := range e.Brushes {
-			output += "        " + e.Render()
+			output += "\n        " + brush.Render()
 		}
-		output += "    }"
+		output += "\n    }"
 	}
 
-	output += "}"
+	output += "\n}"
 	return output
 }
 
@@ -69,11 +69,16 @@ type QuakeMap struct {
 	Wad             string
 	WorldSpawn      Entity
 	InfoPlayerStart Entity
-	Entities        Entity
+	Entities        []Entity
 }
 
 func NewQuakeMap(startx, starty, startz float64) *QuakeMap {
 	var qmap QuakeMap
+
+	qmap.WorldSpawn.SpawnFlags = 0
+	qmap.WorldSpawn.ClassName = "worldspawn"
+	qmap.InfoPlayerStart.SpawnFlags = 0
+	qmap.InfoPlayerStart.ClassName = "info_player_start"
 	qmap.InfoPlayerStart.OriginX = startx
 	qmap.InfoPlayerStart.OriginY = starty
 	qmap.InfoPlayerStart.OriginZ = startz
@@ -81,16 +86,17 @@ func NewQuakeMap(startx, starty, startz float64) *QuakeMap {
 	return &qmap
 }
 
-func indent(what string, byhowmuch int) {
+/*
+func indent(what string, byhowmuch int) string {
 	re := regexp.MustCompile(`^`)
 	return re.ReplaceAllLiteralString(what, strings.Repeat(" ", byhowmuch))
 }
+*/
 
 func (q QuakeMap) Render() string {
 	output := q.WorldSpawn.Render() + "\n" + q.InfoPlayerStart.Render()
-
 	for _, entity := range q.Entities {
-
+		output += "\n" + entity.Render()
 	}
 	return output
 }
