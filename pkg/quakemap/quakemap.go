@@ -2,8 +2,6 @@ package quakemap
 
 import (
 	"fmt"
-	//"regexp"
-	//"strings"
 )
 
 type Brush struct {
