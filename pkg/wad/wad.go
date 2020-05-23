@@ -115,11 +115,7 @@ func NewIWAD(r io.ReadSeeker) (*IWAD, error) {
 		return nil, err
 	}
 
-	var err error
-	i.BasePaletteData, err = getBasePaletteData(&i)
-	if err != nil {
-		return nil, err
-	}
+	i.BasePaletteData, _ = getBasePaletteData(&i)
 
 	return &i, nil
 }
@@ -128,7 +124,7 @@ func (i *IWAD) PrintLumps() {
 	var nl uint32
 	for nl = 0; nl < i.Header.NumLumps; nl += 1 {
 		lumpHeader := i.LumpDirectory[nl]
-		fmt.Printf("%s (%d bytes at 0x%x)\n", lumpHeader.NameString(), lumpHeader.Size, lumpHeader.FilePos)
+		fmt.Printf("%d: %s (%d bytes at 0x%x)\n", nl, lumpHeader.NameString(), lumpHeader.Size, lumpHeader.FilePos)
 	}
 }
 

@@ -187,6 +187,10 @@ func main() {
 			flag.Usage()
 			os.Exit(2)
 		}
+
+		if wadFile.BasePaletteData == nil {
+			log.Fatalf("Cannot dump IWAD: no pallete data\n")
+		}
 		destDir := flag.Arg(1)
 
 		if err := os.MkdirAll(destDir, 0755); err != nil {

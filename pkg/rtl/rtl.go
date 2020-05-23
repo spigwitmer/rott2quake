@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"log"
 )
 
 var (
@@ -30,11 +31,33 @@ type RTLMapHeader struct {
 	Name              [24]byte
 }
 
+type WallType int
+
+const (
+	WALL_Regular WallType = iota
+	WALL_Elevator
+	WALL_AnimatedWall
+)
+
+const (
+	WALLFLAGS_Static   uint32 = 0x1000
+	WALLFLAGS_Animated uint32 = 0x2000
+)
+
+type WallInfo struct {
+	Tile       uint16 // matches up to lump name (WALL1, WALL2, etc.)
+	Type       WallType
+	MapFlags   uint32
+	Damage     bool
+	AnimWallID int // see anim.go
+}
+
 type RTLMapData struct {
-	Header      RTLMapHeader
-	WallPlane   [128][128]uint16
-	SpritePlane [128][128]uint16
-	InfoPlane   [128][128]uint16
+	Header         RTLMapHeader
+	WallPlane      [128][128]uint16
+	CookedWallGrid [128][128]WallInfo
+	SpritePlane    [128][128]uint16
+	InfoPlane      [128][128]uint16
 
 	// derived from wall plane
 	FloorNumber   int // 0xb4 - 0xc3
@@ -86,9 +109,70 @@ func NewRTL(rfile io.ReadSeeker) (*RTL, error) {
 		if err := r.MapData[i].decompressInfoPlane(); err != nil {
 			return nil, err
 		}
+		r.MapData[i].renderWallGrid()
 	}
 
 	return &r, nil
+}
+
+func (r *RTLMapData) renderWallGrid() {
+	for i := 0; i < 128; i++ {
+		for j := 0; j < 128; j++ {
+			plane := r.WallPlane[i][j]
+
+			if plane <= 32 {
+				// static wall
+				r.CookedWallGrid[i][j].Tile = plane
+				r.CookedWallGrid[i][j].MapFlags |= WALLFLAGS_Static
+				r.CookedWallGrid[i][j].Type = WALL_Regular
+			} else if plane == 44 || plane == 45 {
+				// animated wall
+				r.CookedWallGrid[i][j].Tile = plane - 3
+				r.CookedWallGrid[i][j].MapFlags |= WALLFLAGS_Static
+				r.CookedWallGrid[i][j].Type = WALL_AnimatedWall
+				if plane == 44 {
+					r.CookedWallGrid[i][j].Damage = true
+					r.CookedWallGrid[i][j].AnimWallID = 0
+				} else {
+					r.CookedWallGrid[i][j].AnimWallID = 3
+				}
+			} else if plane == 106 || plane == 107 {
+				// animated wall
+				r.CookedWallGrid[i][j].Tile = plane - 105
+				r.CookedWallGrid[i][j].MapFlags |= WALLFLAGS_Animated
+				r.CookedWallGrid[i][j].Type = WALL_AnimatedWall
+				r.CookedWallGrid[i][j].AnimWallID = int(plane) - 105
+			} else if plane >= 224 && plane <= 233 {
+				// animated wall
+				r.CookedWallGrid[i][j].Tile = plane - 224 + 94
+				r.CookedWallGrid[i][j].MapFlags |= WALLFLAGS_Animated
+				r.CookedWallGrid[i][j].Type = WALL_AnimatedWall
+				r.CookedWallGrid[i][j].AnimWallID = int(plane) - 224 + 4
+				if plane == 233 {
+					r.CookedWallGrid[i][j].Damage = true
+				}
+			} else if plane >= 242 && plane <= 244 {
+				r.CookedWallGrid[i][j].Tile = plane - 242 + 102
+				r.CookedWallGrid[i][j].MapFlags |= WALLFLAGS_Animated
+				r.CookedWallGrid[i][j].Type = WALL_AnimatedWall
+				r.CookedWallGrid[i][j].AnimWallID = int(plane) - 242 + 14
+			} else if plane > 89 || (plane > 32 && plane < 36) {
+				r.CookedWallGrid[i][j].Tile = 0
+			} else { // (>= 36 && <= 43) || (>= 47 && <= 88)
+				// static wall
+				r.CookedWallGrid[i][j].Tile = plane - 3
+				r.CookedWallGrid[i][j].MapFlags |= WALLFLAGS_Static
+				r.CookedWallGrid[i][j].Type = WALL_Regular
+			}
+
+			if r.CookedWallGrid[i][j].Tile > 1024 {
+				log.Fatalf("dun goof at %d, %d (plane: %d)", i, j, plane)
+			}
+			if plane > 75 && plane <= 79 {
+				r.CookedWallGrid[i][j].Type = WALL_Elevator
+			}
+		}
+	}
 }
 
 func (r *RTLMapData) decompressPlane(plane *[128][128]uint16, rlewtag uint32) error {
@@ -155,9 +239,9 @@ func (r *RTLMapData) DumpWallToFile(w io.Writer) error {
 	var err error
 	for i := 0; i < 128; i++ {
 		for j := 0; j < 128; j++ {
-			dispValue := r.WallPlane[i][j] & 255
-			if dispValue > 0 {
-				_, err = fmt.Fprintf(w, " %02x ", dispValue)
+			dispValue := r.CookedWallGrid[i][j]
+			if dispValue.Tile > 0 {
+				_, err = fmt.Fprintf(w, " %02x ", dispValue.Tile)
 			} else {
 				_, err = fmt.Fprintf(w, "    ")
 			}
@@ -165,7 +249,7 @@ func (r *RTLMapData) DumpWallToFile(w io.Writer) error {
 				return err
 			}
 		}
-		_, err = w.Write([]byte{'\r', '\n'})
+		_, err = w.Write([]byte{'\r', '\n', '\r', '\n'})
 		if err != nil {
 			return err
 		}
