@@ -37,6 +37,8 @@ const (
 	WALL_Regular WallType = iota
 	WALL_Elevator
 	WALL_AnimatedWall
+	WALL_MaskedWall
+	WALL_PushWall
 )
 
 const (
@@ -45,11 +47,12 @@ const (
 )
 
 type WallInfo struct {
-	Tile       uint16 // matches up to lump name (WALL1, WALL2, etc.)
-	Type       WallType
-	MapFlags   uint32
-	Damage     bool
-	AnimWallID int // see anim.go
+	Tile         uint16 // matches up to lump name (WALL1, WALL2, etc.)
+	Type         WallType
+	MapFlags     uint32
+	Damage       bool
+	AnimWallID   int // see anim.go
+	MaskedWallID int // see maskedwall.go
 }
 
 type RTLMapData struct {
@@ -152,10 +155,17 @@ func (r *RTLMapData) renderWallGrid() {
 					r.CookedWallGrid[i][j].Damage = true
 				}
 			} else if plane >= 242 && plane <= 244 {
+				// animated wall
 				r.CookedWallGrid[i][j].Tile = plane - 242 + 102
 				r.CookedWallGrid[i][j].MapFlags |= WALLFLAGS_Animated
 				r.CookedWallGrid[i][j].Type = WALL_AnimatedWall
 				r.CookedWallGrid[i][j].AnimWallID = int(plane) - 242 + 14
+			} else if plane >= 158 && plane <= 160 {
+				// multi-glassed wall
+				r.CookedWallGrid[i][j].Tile = plane - 158
+				r.CookedWallGrid[i][j].MapFlags |= WALLFLAGS_Animated
+				r.CookedWallGrid[i][j].Type = WALL_AnimatedWall
+				r.CookedWallGrid[i][j].MaskedWallID = int(plane)
 			} else if plane > 89 || (plane > 32 && plane < 36) {
 				r.CookedWallGrid[i][j].Tile = 0
 			} else { // (>= 36 && <= 43) || (>= 47 && <= 88)
