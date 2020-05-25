@@ -12,6 +12,13 @@ import (
 	"gitlab.com/camtap/lumps/pkg/wad"
 )
 
+var TypeOneOffs = map[string][2]string{
+	"SND_ON":  [2]string{"patch", "widgets"},
+	"SND_OFF": [2]string{"patch", "widgets"},
+	"LICENSE": [2]string{"raw", "misc"},
+	"IMFREE":  [2]string{"patch", "misc"},
+}
+
 func init() {
 	flag.Usage = func() {
 		fmt.Fprintf(flag.CommandLine.Output(), "Usage: %s <.WAD file> [dest dir]\n", os.Args[0])
@@ -84,7 +91,7 @@ func dumpLumpDataToFile(wadFile *wad.IWAD, lumpInfo *wad.LumpHeader, destFname s
 }
 
 func main() {
-	var dumpLumpData, printLumps bool
+	var dumpLumpData, printLumps, dumpRaw bool
 	var rtlFile, rtlMapOutdir, lumpName, lumpType string
 	var rtl *rtlfile.RTL
 	var printRTLInfo bool
@@ -95,6 +102,7 @@ func main() {
 	flag.BoolVar(&printRTLInfo, "print-rtl-info", false, "Print RTL metadata")
 	flag.StringVar(&rtlMapOutdir, "rtl-map-outdir", "", "Write RTL ASCII map out to this folder")
 	flag.BoolVar(&dumpLumpData, "dump-data", false, "Dump Lump Data out to dest dir")
+	flag.BoolVar(&dumpRaw, "dump-raw", false, "Dump raw lump data alongside rendered")
 	flag.BoolVar(&printLumps, "print-lumps", false, "Print Lump Directory")
 	flag.Parse()
 	if flag.NArg() < 1 {
@@ -259,16 +267,16 @@ func main() {
 				subdir = "shapes"
 			case "DIGISTRT":
 				dataType = "raw"
-				subdir = "sounds"
+				subdir = "sounds-digital"
 			case "G_START":
 				dataType = "raw"
 				subdir = "sounds"
 			case "PCSTART":
 				dataType = "raw"
-				subdir = ""
+				subdir = "sounds-pcspkr"
 			case "ADSTART":
 				dataType = "raw"
-				subdir = ""
+				subdir = "sounds-adlib"
 			case "WALLSTOP", "EXITSTOP", "ELEVSTOP", "DOORSTOP", "SIDESTOP", "MASKSTOP",
 				"UPDNSTOP", "SKYSTOP", "ORDRSTOP", "SHAPSTOP", "DIGISTOP", "PCSTOP", "ADSTOP":
 				dataType = "raw"
@@ -276,6 +284,13 @@ func main() {
 			case "PAL":
 				dataType = "raw"
 				subdir = "misc"
+			}
+
+			lastDataType, lastSubdir := dataType, subdir
+			oneOffInfo, isOneOff := TypeOneOffs[lumpInfo.NameString()]
+			if isOneOff {
+				dataType = oneOffInfo[0]
+				subdir = oneOffInfo[1]
 			}
 			if lumpInfo.Size > 0 {
 				var destFname string
@@ -309,7 +324,13 @@ func main() {
 					destFname = fmt.Sprintf("%s.dat", destFname)
 				}
 				dumpLumpDataToFile(wadFile, lumpInfo, destFname, dataType)
-				dumpLumpDataToFile(wadFile, lumpInfo, destFname+".raw", "raw")
+				if dumpRaw {
+					dumpLumpDataToFile(wadFile, lumpInfo, destFname+".raw", "raw")
+				}
+			}
+			if isOneOff {
+				dataType = lastDataType
+				subdir = lastSubdir
 			}
 		}
 	}
