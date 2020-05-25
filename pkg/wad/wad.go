@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"image/color"
 	"io"
 )
 
@@ -51,6 +52,11 @@ type RottLpicHeader struct {
 	OrgY   uint16
 }
 
+type RottPicHeader struct {
+	Width  uint8
+	Height uint8
+}
+
 type Palette struct {
 	R, G, B uint8
 }
@@ -62,26 +68,30 @@ func (l *LumpHeader) NameString() string {
 type IWAD struct {
 	fhnd            io.ReadSeeker
 	Header          WADHeader
-	BasePaletteData []Palette
+	BasePaletteData color.Palette
 	LumpDirectory   []*LumpHeader
 }
 
-func getBasePaletteData(iwad *IWAD) ([]Palette, error) {
+func getBasePaletteData(iwad *IWAD) error {
 	paletteData := make([]Palette, 256)
 
 	paletteLump, err := iwad.GetLump("PAL")
 	if err != nil {
-		return nil, err
+		return err
 	}
 	paletteLumpData, err := iwad.LumpData(paletteLump)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if err = binary.Read(paletteLumpData, binary.LittleEndian, &paletteData); err != nil {
-		return nil, err
+		return err
 	}
 
-	return paletteData, nil
+	for _, wp := range paletteData {
+		iwad.BasePaletteData = append(iwad.BasePaletteData, color.RGBA{wp.R, wp.G, wp.B, 255})
+	}
+
+	return nil
 }
 
 func readLumpHeadersFromIWAD(r io.ReadSeeker, wad *IWAD) error {
@@ -115,7 +125,9 @@ func NewIWAD(r io.ReadSeeker) (*IWAD, error) {
 		return nil, err
 	}
 
-	i.BasePaletteData, _ = getBasePaletteData(&i)
+	if err := getBasePaletteData(&i); err != nil {
+		return nil, err
+	}
 
 	return &i, nil
 }

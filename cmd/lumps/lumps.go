@@ -51,6 +51,8 @@ func dumpLumpDataToFile(wadFile *wad.IWAD, lumpInfo *wad.LumpHeader, destFname s
 		_, err = wad.DumpTransPatchDataToFile(destfhnd, lumpInfo, lumpReader, wadFile)
 	case "lpic":
 		_, err = wad.DumpLpicDataToFile(destfhnd, lumpInfo, lumpReader, wadFile)
+	case "pic":
+		_, err = wad.DumpPicDataToFile(destfhnd, lumpInfo, lumpReader, wadFile)
 	default:
 		_, err = dumpRawLumpDataToFile(destfhnd, lumpReader)
 	}
@@ -83,11 +85,13 @@ func dumpLumpDataToFile(wadFile *wad.IWAD, lumpInfo *wad.LumpHeader, destFname s
 
 func main() {
 	var dumpLumpData, printLumps bool
-	var rtlFile, rtlMapOutdir string
+	var rtlFile, rtlMapOutdir, lumpName, lumpType string
 	var rtl *rtlfile.RTL
 	var printRTLInfo bool
 
 	flag.StringVar(&rtlFile, "rtl", "", "RTL file")
+	flag.StringVar(&lumpName, "lname", "", "Dump data only for this lump")
+	flag.StringVar(&lumpType, "ltype", "", "force specific lump type (only relevant when -lname is specified)")
 	flag.BoolVar(&printRTLInfo, "print-rtl-info", false, "Print RTL metadata")
 	flag.StringVar(&rtlMapOutdir, "rtl-map-outdir", "", "Write RTL ASCII map out to this folder")
 	flag.BoolVar(&dumpLumpData, "dump-data", false, "Dump Lump Data out to dest dir")
@@ -201,6 +205,9 @@ func main() {
 		dataType := "raw"
 		for i := uint32(0); i < wadFile.Header.NumLumps; i += 1 {
 			lumpInfo := wadFile.LumpDirectory[i]
+			if lumpName != "" && lumpInfo.NameString() != lumpName {
+				continue
+			}
 			switch lumpInfo.NameString() {
 			case "WALLSTRT":
 				dataType = "wall"
@@ -280,10 +287,15 @@ func main() {
 					}
 					destFname = fmt.Sprintf("%s/%s/%s", destDir, subdir, lumpInfo.NameString())
 				}
+				if lumpName != "" && lumpType != "" {
+					dataType = lumpType
+				}
 				switch dataType {
 				case "patch":
 					destFname = fmt.Sprintf("%s.png", destFname)
 				case "tpatch":
+					destFname = fmt.Sprintf("%s.png", destFname)
+				case "pic":
 					destFname = fmt.Sprintf("%s.png", destFname)
 				case "lpic":
 					destFname = fmt.Sprintf("%s.png", destFname)
@@ -297,6 +309,7 @@ func main() {
 					destFname = fmt.Sprintf("%s.dat", destFname)
 				}
 				dumpLumpDataToFile(wadFile, lumpInfo, destFname, dataType)
+				dumpLumpDataToFile(wadFile, lumpInfo, destFname+".raw", "raw")
 			}
 		}
 	}

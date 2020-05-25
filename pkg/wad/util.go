@@ -5,7 +5,6 @@ package wad
 import (
 	"errors"
 	"image"
-	"image/color"
 	"image/png"
 	"io"
 )
@@ -21,11 +20,10 @@ func DumpFlatDataToFile(destFhnd io.WriteSeeker, lumpReader io.Reader, iwad *IWA
 		return 0, errors.New("numRead != width*height???")
 	}
 
-	img := image.NewRGBA(image.Rect(0, 0, width, height))
+	img := image.NewPaletted(image.Rect(0, 0, width, height), iwad.BasePaletteData)
 	for i := 0; i < height; i++ {
 		for j := 0; j < width; j++ {
-			palette := iwad.BasePaletteData[rawImgData[(i*width)+j]]
-			img.SetRGBA(i, j, color.RGBA{palette.R, palette.G, palette.B, 255})
+			img.SetColorIndex(i, j, rawImgData[(i*width)+j])
 		}
 	}
 

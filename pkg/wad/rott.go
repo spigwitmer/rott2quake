@@ -6,7 +6,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"image"
-	"image/color"
 	"image/png"
 	"io"
 	"log"
@@ -34,7 +33,7 @@ func DumpPatchDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lumpRead
 		return 0, err
 	}
 
-	img := image.NewRGBA(image.Rect(0, 0, int(patchHeader.Width), int(patchHeader.Height)))
+	img := image.NewPaletted(image.Rect(0, 0, int(patchHeader.Width), int(patchHeader.Height)), iwad.BasePaletteData)
 	for idx, cOffset := range columnOffsets {
 		_, err := lumpBuffer.Seek(int64(cOffset), io.SeekStart)
 		if err != nil {
@@ -62,8 +61,7 @@ func DumpPatchDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lumpRead
 					return 0, err
 				}
 
-				pixel := iwad.BasePaletteData[paletteCode]
-				img.SetRGBA(idx, int(i+rowstart), color.RGBA{pixel.R, pixel.G, pixel.B, 255})
+				img.SetColorIndex(idx, int(i+rowstart), paletteCode)
 			}
 
 			// read dummy byte
@@ -75,6 +73,38 @@ func DumpPatchDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lumpRead
 	}
 
 	if err = png.Encode(destFhnd, img); err != nil {
+		return 0, err
+	}
+
+	return destFhnd.Seek(0, io.SeekCurrent)
+}
+
+// convert VGA planar data to PNG
+func DumpPicDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lumpReader io.Reader, iwad *IWAD) (int64, error) {
+	var header RottPicHeader
+
+	if err := binary.Read(lumpReader, binary.LittleEndian, &header); err != nil {
+		return 0, err
+	}
+
+	rawData := make([]uint8, int(header.Width)*int(header.Height)*4)
+
+	if err := binary.Read(lumpReader, binary.LittleEndian, rawData); err != nil {
+		return 0, err
+	}
+
+	img := image.NewPaletted(image.Rect(0, 0, int(header.Width)*4, int(header.Height)), iwad.BasePaletteData)
+	for planenum := 0; planenum < 4; planenum++ {
+		for i := 0; i < int(header.Height); i++ {
+			for j := 0; j < int(header.Width); j++ {
+				rawPos := (i * int(header.Width)) + j
+				val := rawData[rawPos+(int(header.Width)*int(header.Height)*planenum)]
+				img.SetColorIndex((j*4)+planenum, i, val)
+			}
+		}
+	}
+
+	if err := png.Encode(destFhnd, img); err != nil {
 		return 0, err
 	}
 
@@ -95,11 +125,10 @@ func DumpLpicDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lumpReade
 		return 0, err
 	}
 
-	img := image.NewRGBA(image.Rect(0, 0, 128, 128))
+	img := image.NewPaletted(image.Rect(0, 0, 128, 128), iwad.BasePaletteData)
 	for i := 0; i < 128; i++ {
 		for j := 0; j < 128; j++ {
-			pixel := iwad.BasePaletteData[rawData[(i*128)+j]]
-			img.SetRGBA(j, i, color.RGBA{pixel.R, pixel.G, pixel.B, 255})
+			img.SetColorIndex(j, i, rawData[(i*128)+j])
 		}
 	}
 
@@ -132,7 +161,7 @@ func DumpTransPatchDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lum
 		return 0, err
 	}
 
-	img := image.NewRGBA(image.Rect(0, 0, int(patchHeader.Width), int(patchHeader.Height)))
+	img := image.NewPaletted(image.Rect(0, 0, int(patchHeader.Width), int(patchHeader.Height)), iwad.BasePaletteData)
 	for idx, cOffset := range columnOffsets {
 		_, err := lumpBuffer.Seek(int64(cOffset), io.SeekStart)
 		if err != nil {
@@ -166,8 +195,7 @@ func DumpTransPatchDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lum
 					return 0, err
 				}
 
-				pixel := iwad.BasePaletteData[paletteCode]
-				img.SetRGBA(idx, int(i+rowstart), color.RGBA{pixel.R, pixel.G, pixel.B, 255})
+				img.SetColorIndex(idx, int(i+rowstart), paletteCode)
 			}
 
 			// read another dummy byte

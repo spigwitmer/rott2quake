@@ -23,31 +23,31 @@ const (
 )
 
 const (
-	MW_HiSwitchOff         = 157
-	MW_MultiGlass1         = 158
-	MW_MultiGlass2         = 159
-	MW_MultiGlass3         = 160
-	MW_Normal1Shootable    = 162
-	MW_Normal1             = 163
-	MW_Normal2Shootable    = 164
-	MW_Normal2             = 165
-	MW_Normal3Shootable    = 166
-	MW_Normal3             = 167
-	MW_SinglePaneShootable = 168
-	MW_SinglePane          = 169
-	MW_DogWall             = 170
-	MW_PeepHole            = 171
-	MW_ExitArch            = 172
-	MW_SecretExitArch      = 173
-	MW_EntryGate           = 174
-	MW_HiSwitchOn          = 175
-	MW_ShotOutGlass1       = 176
-	MW_ShotOutGlass2       = 177
-	MW_ShotOutGlass3       = 178
-	MW_Railing             = 179
+	MW_HiSwitchOff         = uint16(157)
+	MW_MultiGlass1         = uint16(158)
+	MW_MultiGlass2         = uint16(159)
+	MW_MultiGlass3         = uint16(160)
+	MW_Normal1Shootable    = uint16(162)
+	MW_Normal1             = uint16(163)
+	MW_Normal2Shootable    = uint16(164)
+	MW_Normal2             = uint16(165)
+	MW_Normal3Shootable    = uint16(166)
+	MW_Normal3             = uint16(167)
+	MW_SinglePaneShootable = uint16(168)
+	MW_SinglePane          = uint16(169)
+	MW_DogWall             = uint16(170)
+	MW_PeepHole            = uint16(171)
+	MW_ExitArch            = uint16(172)
+	MW_SecretExitArch      = uint16(173)
+	MW_EntryGate           = uint16(174)
+	MW_HiSwitchOn          = uint16(175)
+	MW_ShotOutGlass1       = uint16(176)
+	MW_ShotOutGlass2       = uint16(177)
+	MW_ShotOutGlass3       = uint16(178)
+	MW_Railing             = uint16(179)
 )
 
-var MaskedWalls = map[int]MaskedWallInfo{
+var MaskedWalls = map[uint16]MaskedWallInfo{
 	MW_HiSwitchOff:         MaskedWallInfo{MWF_Blocking},
 	MW_MultiGlass1:         MaskedWallInfo{MWF_Multi | MWF_Blocking | MWF_BlockingChanges | MWF_Shootable},
 	MW_MultiGlass2:         MaskedWallInfo{MWF_Multi | MWF_Blocking | MWF_BlockingChanges | MWF_Shootable},
