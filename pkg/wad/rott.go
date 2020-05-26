@@ -5,7 +5,9 @@ package wad
 import (
 	"bytes"
 	"encoding/binary"
+	"errors"
 	"image"
+	"image/color"
 	"image/png"
 	"io"
 	"log"
@@ -207,6 +209,78 @@ func DumpTransPatchDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lum
 	}
 
 	if err = png.Encode(destFhnd, img); err != nil {
+		return 0, err
+	}
+
+	return destFhnd.Seek(0, io.SeekCurrent)
+}
+
+type RGB struct {
+	R, G, B uint8
+}
+type LBMHeader struct {
+	Width   uint16
+	Height  uint16
+	Palette [256]RGB
+}
+
+// convert expression of freedom from euclidian oppression to PNG
+func DumpLBMDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lumpReader io.Reader, iwad *IWAD) (int64, error) {
+	var header LBMHeader
+	var palette color.Palette
+
+	if err := binary.Read(lumpReader, binary.LittleEndian, &header); err != nil {
+		return 0, nil
+	}
+
+	getByte := func() (uint8, error) {
+		var mybyte [1]byte
+		numread, err := lumpReader.Read(mybyte[:])
+		if numread != 1 && err == nil {
+			return 0, errors.New("Could not read byte")
+		}
+		return mybyte[0], err
+	}
+
+	for _, pd := range header.Palette {
+		palette = append(palette, color.RGBA{pd.R, pd.G, pd.B, 255})
+	}
+
+	img := image.NewPaletted(image.Rect(0, 0, int(header.Width), int(header.Height)), palette)
+	for i := uint16(0); i < header.Height; i++ {
+		for j := uint16(0); j < header.Width; {
+			rep, err := getByte()
+			if err != nil {
+				return 0, err
+			}
+			if rep > 0x80 {
+				rep = (rep ^ 0xff) + 2
+				val, err := getByte()
+				if err != nil {
+					return 0, err
+				}
+				k := uint16(0)
+				for ; k < uint16(rep); k++ {
+					img.SetColorIndex(int(j)+int(k), int(i), val)
+				}
+				j += uint16(rep)
+			} else if rep < 0x80 {
+				rep++
+				for k := uint16(0); k < uint16(rep); k++ {
+					val, err := getByte()
+					if err != nil {
+						return 0, err
+					}
+					img.SetColorIndex(int(j)+int(k), int(i), val)
+				}
+				j += uint16(rep)
+			} else { // == 0x80
+				j--
+			}
+		}
+	}
+
+	if err := png.Encode(destFhnd, img); err != nil {
 		return 0, err
 	}
 

@@ -13,10 +13,19 @@ import (
 )
 
 var TypeOneOffs = map[string][2]string{
-	"SND_ON":  [2]string{"patch", "widgets"},
-	"SND_OFF": [2]string{"patch", "widgets"},
-	"LICENSE": [2]string{"raw", "misc"},
-	"IMFREE":  [2]string{"patch", "misc"},
+	"SND_ON":   [2]string{"patch", "widgets"},
+	"SND_OFF":  [2]string{"patch", "widgets"},
+	"LICENSE":  [2]string{"raw", "misc"},
+	"IMFREE":   [2]string{"lbm", "misc"},
+	"BOOTBLOD": [2]string{"lbm", "misc"},
+	"BOOTNORM": [2]string{"lbm", "misc"},
+	"SVENDOR":  [2]string{"lbm", "misc"},
+	"DEADBOSS": [2]string{"lbm", "misc"},
+	"MMBK":     [2]string{"pic", "misc"},
+	"PAUSED":   [2]string{"pic", "misc"},
+	"WAIT":     [2]string{"pic", "misc"},
+	"TNUMB":    [2]string{"pic", "misc"},
+	"BATTP":    [2]string{"pic", "misc"},
 }
 
 func init() {
@@ -60,6 +69,8 @@ func dumpLumpDataToFile(wadFile *wad.IWAD, lumpInfo *wad.LumpHeader, destFname s
 		_, err = wad.DumpLpicDataToFile(destfhnd, lumpInfo, lumpReader, wadFile)
 	case "pic":
 		_, err = wad.DumpPicDataToFile(destfhnd, lumpInfo, lumpReader, wadFile)
+	case "lbm":
+		_, err = wad.DumpLBMDataToFile(destfhnd, lumpInfo, lumpReader, wadFile)
 	default:
 		_, err = dumpRawLumpDataToFile(destfhnd, lumpReader)
 	}
@@ -317,6 +328,8 @@ func main() {
 				case "wall":
 					destFname = fmt.Sprintf("%s.png", destFname)
 				case "sky":
+					destFname = fmt.Sprintf("%s.png", destFname)
+				case "lbm":
 					destFname = fmt.Sprintf("%s.png", destFname)
 				case "midi":
 					destFname = fmt.Sprintf("%s.mid", destFname)
