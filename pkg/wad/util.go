@@ -10,7 +10,7 @@ import (
 )
 
 // convert palette image data to PNG before writing
-func DumpFlatDataToFile(destFhnd io.WriteSeeker, lumpReader io.Reader, iwad *IWAD, width int, height int) (int64, error) {
+func DumpFlatDataToFile(destFhnd io.WriteSeeker, lumpReader io.Reader, iwad *WADReader, width int, height int) (int64, error) {
 	rawImgData := make([]byte, width*height)
 	numRead, err := lumpReader.Read(rawImgData[:])
 	if err != nil {

@@ -63,7 +63,7 @@ func dumpRawLumpDataToFile(destFhnd io.WriteSeeker, lumpReader io.Reader) (int64
 	return io.Copy(destFhnd, lumpReader)
 }
 
-func dumpLumpDataToFile(wadFile *wad.IWAD, lumpInfo *wad.LumpHeader, destFname string,
+func dumpLumpDataToFile(wadFile *wad.WADReader, lumpInfo *wad.LumpHeader, destFname string,
 	dataType string) {
 	lumpReader, err := wadFile.LumpData(lumpInfo)
 	if err != nil {

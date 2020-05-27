@@ -15,7 +15,7 @@ import (
 )
 
 // convert patch data to PNG before writing
-func DumpPatchDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lumpReader io.Reader, iwad *IWAD) (int64, error) {
+func DumpPatchDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lumpReader io.Reader, iwad *WADReader) (int64, error) {
 	// https://doomwiki.org/wiki/Picture_format
 
 	// read entire lump to perform random access
@@ -83,7 +83,7 @@ func DumpPatchDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lumpRead
 }
 
 // convert VGA planar data to PNG
-func DumpPicDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lumpReader io.Reader, iwad *IWAD) (int64, error) {
+func DumpPicDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lumpReader io.Reader, iwad *WADReader) (int64, error) {
 	var header RottPicHeader
 
 	if err := binary.Read(lumpReader, binary.LittleEndian, &header); err != nil {
@@ -115,7 +115,7 @@ func DumpPicDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lumpReader
 }
 
 // convert floor and ceiling data to PNG
-func DumpLpicDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lumpReader io.Reader, iwad *IWAD) (int64, error) {
+func DumpLpicDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lumpReader io.Reader, iwad *WADReader) (int64, error) {
 	var header RottLpicHeader
 
 	if err := binary.Read(lumpReader, binary.LittleEndian, &header); err != nil {
@@ -143,7 +143,7 @@ func DumpLpicDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lumpReade
 }
 
 // convert translucent patch data to PNG before writing
-func DumpTransPatchDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lumpReader io.Reader, iwad *IWAD) (int64, error) {
+func DumpTransPatchDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lumpReader io.Reader, iwad *WADReader) (int64, error) {
 	// https://doomwiki.org/wiki/Picture_format
 
 	// read entire lump to perform random access
@@ -227,7 +227,7 @@ type LBMHeader struct {
 }
 
 // convert expression of freedom from euclidian oppression to PNG
-func DumpLBMDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lumpReader io.Reader, iwad *IWAD) (int64, error) {
+func DumpLBMDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lumpReader io.Reader, iwad *WADReader) (int64, error) {
 	var header LBMHeader
 	var palette color.Palette
 
