@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"image"
 	"image/color"
 	"image/png"
@@ -163,48 +164,49 @@ func DumpTransPatchDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lum
 		return 0, err
 	}
 
+	fmt.Printf("transpatch_t header: %+v\n", patchHeader)
+
 	img := image.NewPaletted(image.Rect(0, 0, int(patchHeader.Width), int(patchHeader.Height)), iwad.BasePaletteData)
 	for idx, cOffset := range columnOffsets {
+		fmt.Printf("columnOffset: %d\n", cOffset)
 		_, err := lumpBuffer.Seek(int64(cOffset), io.SeekStart)
 		if err != nil {
 			return 0, err
 		}
-		rowstart := byte(0)
+		rowstart, err := lumpBuffer.ReadByte()
+		if err != nil {
+			return 0, err
+		}
+		fmt.Printf("\t\trowstart = %d\n", rowstart) // XXX
 		for rowstart != 255 {
-			rowstart, err := lumpBuffer.ReadByte()
-			if err != nil {
-				return 0, err
-			}
-			if rowstart == 255 {
-				break
-			}
-
-			var pixelCount uint8
-			err = binary.Read(lumpBuffer, binary.LittleEndian, &pixelCount)
+			pixelCount, err := lumpBuffer.ReadByte()
 			if err != nil {
 				return 0, err
 			}
 
-			// read dummy byte
-			_, err = lumpBuffer.ReadByte()
+			fmt.Printf("\t\tpixelcount = %d\n", rowstart) // XXX
+			src, err := lumpBuffer.ReadByte()
 			if err != nil {
 				return 0, err
 			}
+			fmt.Printf("\t\tsrc = %d\n", rowstart) // XXX
 
-			for i := uint8(0); i < pixelCount-1; i++ {
-				paletteCode, err := lumpBuffer.ReadByte()
-				if err != nil {
-					return 0, err
+			if src == 254 {
+				// TODO: translucency shiz?
+			} else {
+				for i := uint8(0); i < pixelCount-1; i++ {
+					paletteCode, err := lumpBuffer.ReadByte()
+					if err != nil {
+						return 0, err
+					}
+					img.SetColorIndex(idx, int(i+rowstart), paletteCode)
 				}
-
-				img.SetColorIndex(idx, int(i+rowstart), paletteCode)
 			}
-
-			// read another dummy byte
-			_, err = lumpBuffer.ReadByte()
+			rowstart, err = lumpBuffer.ReadByte()
 			if err != nil {
 				return 0, err
 			}
+			fmt.Printf("\t\trowstart = %d\n", rowstart) // XXX
 		}
 	}
 

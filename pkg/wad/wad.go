@@ -27,21 +27,21 @@ type LumpHeader struct {
 
 // sprites (guns, actors, etc.)
 type PatchHeader struct {
-	OrigSize   uint16
-	Width      uint16
-	Height     uint16
-	LeftOffset uint16
-	TopOffset  uint16
+	OrigSize   int16
+	Width      int16
+	Height     int16
+	LeftOffset int16
+	TopOffset  int16
 }
 
 // wall and sky textures
 type RottPatchHeader struct {
-	OrigSize     uint16
-	Width        uint16
-	Height       uint16
-	LeftOffset   uint16
-	TopOffset    uint16
-	Transparency uint16
+	OrigSize     int16
+	Width        int16
+	Height       int16
+	LeftOffset   int16
+	TopOffset    int16
+	Transparency int16
 }
 
 // floors and ceilings

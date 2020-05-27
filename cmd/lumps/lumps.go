@@ -128,6 +128,7 @@ func dumpLumpDataToFile(wadFile *wad.IWAD, lumpInfo *wad.LumpHeader, destFname s
 func main() {
 	var dumpLumpData, printLumps, dumpRaw bool
 	var rtlFile, rtlMapOutdir, lumpName, lumpType string
+	var convertToDusk bool
 	var rtl *rtlfile.RTL
 	var printRTLInfo bool
 
@@ -135,11 +136,13 @@ func main() {
 	flag.StringVar(&lumpName, "lname", "", "Dump data only for this lump")
 	flag.StringVar(&lumpType, "ltype", "", "force specific lump type (only relevant when -lname is specified)")
 	flag.BoolVar(&printRTLInfo, "print-rtl-info", false, "Print RTL metadata")
+	flag.BoolVar(&convertToDusk, "dusk", false, "convert assets to Dusk rather than Quake")
 	flag.StringVar(&rtlMapOutdir, "rtl-map-outdir", "", "Write RTL ASCII map out to this folder")
 	flag.BoolVar(&dumpLumpData, "dump-data", false, "Dump Lump Data out to dest dir")
 	flag.BoolVar(&dumpRaw, "dump-raw", false, "Dump raw lump data alongside rendered")
 	flag.BoolVar(&printLumps, "print-lumps", false, "Print Lump Directory")
 	flag.Parse()
+
 	if flag.NArg() < 1 {
 		flag.Usage()
 		os.Exit(2)
@@ -163,6 +166,9 @@ func main() {
 	}
 
 	if rtlMapOutdir != "" {
+		if rtl == nil {
+			log.Fatalf("Must provide RTL file when dumping map data")
+		}
 		if err := os.MkdirAll(rtlMapOutdir, 0755); err != nil {
 			log.Fatalf("Could not create outdir: %v\n", err)
 		}
@@ -229,6 +235,7 @@ func main() {
 	if printLumps {
 		wadFile.PrintLumps()
 	}
+
 	if dumpLumpData {
 		if flag.NArg() < 2 {
 			flag.Usage()

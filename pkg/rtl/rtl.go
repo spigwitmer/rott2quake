@@ -73,7 +73,11 @@ type RTLMapData struct {
 	SkyHeight  int
 	Fog        int
 	IllumWalls int
-	rtl        *RTL
+
+	// derived from info plane
+	SongNumber int
+
+	rtl *RTL
 }
 
 type RTL struct {
@@ -113,6 +117,23 @@ func NewRTL(rfile io.ReadSeeker) (*RTL, error) {
 			return nil, err
 		}
 		r.MapData[i].renderWallGrid()
+
+		r.MapData[i].FloorNumber = int(r.MapData[i].WallPlane[0][0])
+		r.MapData[i].CeilingNumber = int(r.MapData[i].WallPlane[0][1])
+		r.MapData[i].Brightness = int(r.MapData[i].WallPlane[0][2])
+		r.MapData[i].LightFadeRate = int(r.MapData[i].WallPlane[0][3])
+
+		r.MapData[i].Height = int(r.MapData[i].SpritePlane[0][0])
+		r.MapData[i].SkyHeight = int(r.MapData[i].SpritePlane[0][1])
+		r.MapData[i].Fog = int(r.MapData[i].SpritePlane[0][2])
+		r.MapData[i].IllumWalls = int(r.MapData[i].SpritePlane[0][3])
+
+		for j := 0; j < 128; j++ {
+			if r.MapData[i].InfoPlane[0][j]&0xFF00 == 0xBA00 {
+				r.MapData[i].SongNumber = int(r.MapData[i].InfoPlane[0][j]) & 0xFF
+				break
+			}
+		}
 	}
 
 	return &r, nil
