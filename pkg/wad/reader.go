@@ -8,63 +8,6 @@ import (
 	"io"
 )
 
-var (
-	iwadMagic = [4]byte{'I', 'W', 'A', 'D'}
-	pwadMagic = [4]byte{'P', 'W', 'A', 'D'}
-)
-
-type WADHeader struct {
-	Magic           [4]byte
-	NumLumps        uint32 // NOTE: vanilla doom reads these as signed ints
-	DirectoryOffset uint32
-}
-
-type LumpHeader struct {
-	FilePos uint32
-	Size    uint32
-	Name    [8]byte
-}
-
-// sprites (guns, actors, etc.)
-type PatchHeader struct {
-	OrigSize   int16
-	Width      int16
-	Height     int16
-	LeftOffset int16
-	TopOffset  int16
-}
-
-// wall and sky textures
-type RottPatchHeader struct {
-	OrigSize     int16
-	Width        int16
-	Height       int16
-	LeftOffset   int16
-	TopOffset    int16
-	Transparency int16
-}
-
-// floors and ceilings
-type RottLpicHeader struct {
-	Width  uint16
-	Height uint16
-	OrgX   uint16
-	OrgY   uint16
-}
-
-type RottPicHeader struct {
-	Width  uint8
-	Height uint8
-}
-
-type Palette struct {
-	R, G, B uint8
-}
-
-func (l *LumpHeader) NameString() string {
-	return string(bytes.Trim(l.Name[:], "\x00"))
-}
-
 type WADReader struct {
 	fhnd            io.ReadSeeker
 	Header          WADHeader

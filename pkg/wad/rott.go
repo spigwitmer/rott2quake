@@ -1,6 +1,6 @@
 package wad
 
-// Rise of the Triad specific utility functions
+// Rise of the Triad specific stuff
 
 import (
 	"bytes"
@@ -13,6 +13,33 @@ import (
 	"io"
 	"log"
 )
+
+// wall and sky textures
+type RottPatchHeader struct {
+	OrigSize     int16
+	Width        int16
+	Height       int16
+	LeftOffset   int16
+	TopOffset    int16
+	Transparency int16
+}
+
+// floors and ceilings
+type RottLpicHeader struct {
+	Width  uint16
+	Height uint16
+	OrgX   uint16
+	OrgY   uint16
+}
+
+type RottPicHeader struct {
+	Width  uint8
+	Height uint8
+}
+
+type Palette struct {
+	R, G, B uint8
+}
 
 // convert patch data to PNG before writing
 func DumpPatchDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lumpReader io.Reader, iwad *WADReader) (int64, error) {
