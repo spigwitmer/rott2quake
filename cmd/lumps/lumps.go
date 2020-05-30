@@ -7,9 +7,11 @@ import (
 	"io"
 	"log"
 	"os"
+	//"path"
 
 	rtlfile "gitlab.com/camtap/lumps/pkg/rtl"
 	"gitlab.com/camtap/lumps/pkg/wad"
+	"gitlab.com/camtap/lumps/pkg/wad2"
 )
 
 var TypeOneOffs = map[string][2]string{
@@ -125,17 +127,26 @@ func dumpLumpDataToFile(wadFile *wad.WADReader, lumpInfo *wad.LumpHeader, destFn
 	}
 }
 
+type LumpExtractor interface {
+	PrintLumps()
+}
+
 func main() {
 	var dumpLumpData, printLumps, dumpRaw bool
 	var rtlFile, rtlMapOutdir, lumpName, lumpType string
+	var wadOut string
+	var isQuakeWad bool
 	var convertToDusk bool
 	var rtl *rtlfile.RTL
 	var printRTLInfo bool
+	var wadExtractor LumpExtractor
 
 	flag.StringVar(&rtlFile, "rtl", "", "RTL file")
 	flag.StringVar(&lumpName, "lname", "", "Dump data only for this lump")
 	flag.StringVar(&lumpType, "ltype", "", "force specific lump type (only relevant when -lname is specified)")
 	flag.BoolVar(&printRTLInfo, "print-rtl-info", false, "Print RTL metadata")
+	flag.StringVar(&wadOut, "wad-out", "", "output ripped image assets to Quake wad (must specify -dump-lump-data)")
+	flag.BoolVar(&isQuakeWad, "quake", false, "wad specified is from Quake, not ROTT")
 	flag.BoolVar(&convertToDusk, "dusk", false, "convert assets to Dusk rather than Quake")
 	flag.StringVar(&rtlMapOutdir, "rtl-map-outdir", "", "Write RTL ASCII map out to this folder")
 	flag.BoolVar(&dumpLumpData, "dump-data", false, "Dump Lump Data out to dest dir")
@@ -225,15 +236,26 @@ func main() {
 	if err != nil {
 		log.Fatalf("Could not open file: %v\n", err)
 	}
-	wadFile, err := wad.NewIWAD(fhnd)
-	if err != nil {
-		log.Fatalf("Could not open IWAD: %v\n", err)
+	if isQuakeWad {
+		wadExtractor, err = wad2.NewWAD2Reader(fhnd)
+		if err != nil {
+			log.Fatalf("Could not open Quake wad for reading: %v\n", err)
+		}
+
+		quakeWad := wadExtractor.(*wad2.WAD2Reader)
+		fmt.Printf("WAD2 file has %d lumps\n", len(quakeWad.Directory))
+	} else {
+		wadExtractor, err = wad.NewIWAD(fhnd)
+		if err != nil {
+			log.Fatalf("Could not open IWAD: %v\n", err)
+		}
+
+		rottWad := wadExtractor.(*wad.WADReader)
+		fmt.Printf("WAD file has %d lumps\n", len(rottWad.LumpDirectory))
 	}
 
-	fmt.Printf("WAD file has %d lumps\n", wadFile.Header.NumLumps)
-
 	if printLumps {
-		wadFile.PrintLumps()
+		wadExtractor.PrintLumps()
 	}
 
 	if dumpLumpData {
@@ -241,6 +263,7 @@ func main() {
 			flag.Usage()
 			os.Exit(2)
 		}
+		wadFile := wadExtractor.(*wad.WADReader)
 
 		if wadFile.BasePaletteData == nil {
 			log.Fatalf("Cannot dump IWAD: no pallete data\n")
@@ -250,6 +273,23 @@ func main() {
 		if err := os.MkdirAll(destDir, 0755); err != nil {
 			log.Fatalf("Could not create dest dir: %v\n", err)
 		}
+
+		/*
+			var wadOutFile *os.File
+			var wad2Out *wad2.WADWriter
+			if wadOut != "" {
+				if err := os.MkdirAll(path.Dir(wadOut), 0755); err != nil {
+					log.Fatalf("Could not create wad out dir: %v\n", err)
+				}
+				if wadOutFile, err = os.Create(wadOut); err != nil {
+					log.Fatalf("Could not open wad file %s: %v\n", wadOut, err)
+				}
+
+				if wad2Out, err = wad2.NewWADWriter(); err != nil {
+					log.Fatalf("Could not create WAD2 writer: %v\n", err)
+				}
+			}
+		*/
 
 		subdir := ""
 		dataType := "raw"
