@@ -165,7 +165,21 @@ func dumpLumpDataToFile(wadFile *wad.WADReader, lumpInfo *wad.LumpHeader, destFn
 			}
 			img, err := wad.GetImageFromLpicData(lumpInfo, rawLumpReader, wadFile)
 			if err != nil {
-				log.Fatalf("Could not get flat data image: %v\n", err)
+				log.Fatalf("Could not get lpic data image: %v\n", err)
+			}
+			mipdata, err := wad2.PalettedImageToMIPTexture(img)
+			if err != nil {
+				log.Fatalf("Could not get MIP texture from flat: %v\n", err)
+			}
+			wad2Writer.AddLump(lumpInfo.NameString(), mipdata, wad2.LT_MIPTEX)
+		} else if dataType == "pic" {
+			rawLumpReader, err := wadFile.LumpData(lumpInfo)
+			if err != nil {
+				log.Fatalf("Could not get %s lump data: %v\n", lumpInfo.NameString(), err)
+			}
+			img, err := wad.GetImageFromPicData(lumpInfo, rawLumpReader, wadFile)
+			if err != nil {
+				log.Fatalf("Could not get pic data image: %v\n", err)
 			}
 			mipdata, err := wad2.PalettedImageToMIPTexture(img)
 			if err != nil {

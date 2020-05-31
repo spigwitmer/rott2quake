@@ -117,18 +117,17 @@ func DumpPatchDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lumpRead
 	return destFhnd.Seek(0, io.SeekCurrent)
 }
 
-// convert VGA planar data to PNG
-func DumpPicDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lumpReader io.Reader, iwad *WADReader) (int64, error) {
+func GetImageFromPicData(lumpInfo *LumpHeader, lumpReader io.Reader, iwad *WADReader) (*image.Paletted, error) {
 	var header RottPicHeader
 
 	if err := binary.Read(lumpReader, binary.LittleEndian, &header); err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	rawData := make([]uint8, int(header.Width)*int(header.Height)*4)
 
 	if err := binary.Read(lumpReader, binary.LittleEndian, rawData); err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	img := image.NewPaletted(image.Rect(0, 0, int(header.Width)*4, int(header.Height)), iwad.BasePaletteData)
@@ -140,6 +139,16 @@ func DumpPicDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lumpReader
 				img.SetColorIndex((j*4)+planenum, i, val)
 			}
 		}
+	}
+
+	return img, nil
+}
+
+// convert VGA planar data to PNG
+func DumpPicDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lumpReader io.Reader, iwad *WADReader) (int64, error) {
+	img, err := GetImageFromPicData(lumpInfo, lumpReader, iwad)
+	if err != nil {
+		return 0, err
 	}
 
 	if err := png.Encode(destFhnd, img); err != nil {
