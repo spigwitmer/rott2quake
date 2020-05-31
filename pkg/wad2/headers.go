@@ -8,6 +8,12 @@ var (
 	wad2Magic = [4]byte{'W', 'A', 'D', '2'}
 )
 
+var (
+	LT_RAW     int8 = 0x40
+	LT_PICTURE      = 0x42
+	LT_MIPTEX       = 0x44
+)
+
 type LumpHeader struct {
 	FilePos     int32
 	Size        int32
@@ -19,11 +25,16 @@ type LumpHeader struct {
 }
 
 func (l *LumpHeader) NameString() string {
-	return string(bytes.Trim(l.Name[:], "\x00"))
+	// Lumps names are supposed to be null-padded, though
+	// garbage data was found in the padding for the names
+	// in QUAKE101.wad
+	nullpos := bytes.Index(l.Name[:], []byte{'\x00'})
+	return string(l.Name[0:nullpos])
 }
 
 type Lump struct {
 	Name string
+	Type int8
 	Data []byte
 }
 

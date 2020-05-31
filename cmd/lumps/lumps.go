@@ -7,7 +7,7 @@ import (
 	"io"
 	"log"
 	"os"
-	//"path"
+	"path"
 
 	rtlfile "gitlab.com/camtap/lumps/pkg/rtl"
 	"gitlab.com/camtap/lumps/pkg/wad"
@@ -66,7 +66,7 @@ func dumpRawLumpDataToFile(destFhnd io.WriteSeeker, lumpReader io.Reader) (int64
 }
 
 func dumpLumpDataToFile(wadFile *wad.WADReader, lumpInfo *wad.LumpHeader, destFname string,
-	dataType string) {
+	dataType string, wad2Writer *wad2.WADWriter) {
 	lumpReader, err := wadFile.LumpData(lumpInfo)
 	if err != nil {
 		log.Fatalf("Could not get lump data reader for %s: %v\n", destFname, err)
@@ -124,6 +124,28 @@ func dumpLumpDataToFile(wadFile *wad.WADReader, lumpInfo *wad.LumpHeader, destFn
 		} else {
 			log.Fatalf("Could not copy to %s: %v\n", destFname, err)
 		}
+	}
+
+	if wad2Writer != nil {
+		// dump select lumps into outgoing quake wad
+		// specifically, we want:
+		// * palette
+		// * sky/floor textures
+		// just dump the palette data as is, convert sky/floor data
+		// into MIP textures
+		if lumpInfo.NameString() == "PAL" {
+			var paletteData [768]byte
+			rawLumpReader, err := wadFile.LumpData(lumpInfo)
+			if err != nil {
+				log.Fatalf("Could not get %s lump data: %v\n", lumpInfo.NameString(), err)
+			}
+			_, err = rawLumpReader.Read(paletteData[:])
+			if err != nil {
+				log.Fatalf("Could not read palette data: %v\n", err)
+			}
+			wad2Writer.AddLump("PALETTE", paletteData[:], wad2.LT_RAW)
+		}
+		// TODO: floor data
 	}
 }
 
@@ -274,22 +296,22 @@ func main() {
 			log.Fatalf("Could not create dest dir: %v\n", err)
 		}
 
-		/*
-			var wadOutFile *os.File
-			var wad2Out *wad2.WADWriter
-			if wadOut != "" {
-				if err := os.MkdirAll(path.Dir(wadOut), 0755); err != nil {
-					log.Fatalf("Could not create wad out dir: %v\n", err)
-				}
-				if wadOutFile, err = os.Create(wadOut); err != nil {
-					log.Fatalf("Could not open wad file %s: %v\n", wadOut, err)
-				}
-
-				if wad2Out, err = wad2.NewWADWriter(); err != nil {
-					log.Fatalf("Could not create WAD2 writer: %v\n", err)
-				}
+		var wadOutFile *os.File
+		var wad2Out *wad2.WADWriter
+		if wadOut != "" {
+			if err := os.MkdirAll(path.Dir(wadOut), 0755); err != nil {
+				log.Fatalf("Could not create wad out dir: %v\n", err)
 			}
-		*/
+			if wadOutFile, err = os.Create(wadOut); err != nil {
+				log.Fatalf("Could not open wad file %s: %v\n", wadOut, err)
+			}
+
+			if wad2Out, err = wad2.NewWADWriter(); err != nil {
+				log.Fatalf("Could not create WAD2 writer: %v\n", err)
+			}
+
+			defer wadOutFile.Close()
+		}
 
 		subdir := ""
 		dataType := "raw"
@@ -407,14 +429,23 @@ func main() {
 				default:
 					destFname = fmt.Sprintf("%s.dat", destFname)
 				}
-				dumpLumpDataToFile(wadFile, lumpInfo, destFname, dataType)
+				dumpLumpDataToFile(wadFile, lumpInfo, destFname, dataType, wad2Out)
 				if dumpRaw {
-					dumpLumpDataToFile(wadFile, lumpInfo, destFname+".raw", "raw")
+					dumpLumpDataToFile(wadFile, lumpInfo, destFname+".raw", "raw", nil)
 				}
 			}
 			if isOneOff {
 				dataType = lastDataType
 				subdir = lastSubdir
+			}
+		}
+
+		if wadOutFile != nil {
+			wad2written, err := wad2Out.Write(wadOutFile)
+			if err != nil {
+				log.Fatalf("Could not write out wad file: %v\n", err)
+			} else {
+				fmt.Printf("Wad file %s written (%d bytes)\n", wadOut, wad2written)
 			}
 		}
 	}
