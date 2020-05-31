@@ -41,39 +41,37 @@ type Palette struct {
 	R, G, B uint8
 }
 
-// convert patch data to PNG before writing
-func DumpPatchDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lumpReader io.Reader, iwad *WADReader) (int64, error) {
-	// https://doomwiki.org/wiki/Picture_format
-
+// https://doomwiki.org/wiki/Picture_format
+func GetImageFromPatchData(lumpInfo *LumpHeader, lumpReader io.Reader, iwad *WADReader) (*image.Paletted, error) {
 	// read entire lump to perform random access
 	patchBytes := make([]byte, lumpInfo.Size)
 	_, err := lumpReader.Read(patchBytes)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 	lumpBuffer := bytes.NewReader(patchBytes)
 
 	var patchHeader PatchHeader
 	if err := binary.Read(lumpBuffer, binary.LittleEndian, &patchHeader); err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	columnOffsets := make([]uint16, patchHeader.Width)
 	if err := binary.Read(lumpBuffer, binary.LittleEndian, &columnOffsets); err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	img := image.NewPaletted(image.Rect(0, 0, int(patchHeader.Width), int(patchHeader.Height)), iwad.BasePaletteData)
 	for idx, cOffset := range columnOffsets {
 		_, err := lumpBuffer.Seek(int64(cOffset), io.SeekStart)
 		if err != nil {
-			return 0, err
+			return nil, err
 		}
 		rowstart := byte(0)
 		for rowstart != 255 {
 			rowstart, err := lumpBuffer.ReadByte()
 			if err != nil {
-				return 0, err
+				return nil, err
 			}
 			if rowstart == 255 {
 				break
@@ -82,13 +80,13 @@ func DumpPatchDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lumpRead
 			var pixelCount uint8
 			err = binary.Read(lumpBuffer, binary.LittleEndian, &pixelCount)
 			if err != nil {
-				return 0, err
+				return nil, err
 			}
 
 			for i := uint8(0); i < pixelCount-1; i++ {
 				paletteCode, err := lumpBuffer.ReadByte()
 				if err != nil {
-					return 0, err
+					return nil, err
 				}
 
 				img.SetColorIndex(idx, int(i+rowstart), paletteCode)
@@ -97,9 +95,19 @@ func DumpPatchDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lumpRead
 			// read dummy byte
 			_, err = lumpBuffer.ReadByte()
 			if err != nil {
-				return 0, err
+				return nil, err
 			}
 		}
+	}
+
+	return img, nil
+}
+
+// convert patch data to PNG before writing
+func DumpPatchDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lumpReader io.Reader, iwad *WADReader) (int64, error) {
+	img, err := GetImageFromPatchData(lumpInfo, lumpReader, iwad)
+	if err != nil {
+		return 0, err
 	}
 
 	if err = png.Encode(destFhnd, img); err != nil {
@@ -141,18 +149,17 @@ func DumpPicDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lumpReader
 	return destFhnd.Seek(0, io.SeekCurrent)
 }
 
-// convert floor and ceiling data to PNG
-func DumpLpicDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lumpReader io.Reader, iwad *WADReader) (int64, error) {
+func GetImageFromLpicData(lumpInfo *LumpHeader, lumpReader io.Reader, iwad *WADReader) (*image.Paletted, error) {
 	var header RottLpicHeader
 
 	if err := binary.Read(lumpReader, binary.LittleEndian, &header); err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	rawData := make([]uint8, 128*128)
 
 	if err := binary.Read(lumpReader, binary.LittleEndian, rawData); err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	img := image.NewPaletted(image.Rect(0, 0, 128, 128), iwad.BasePaletteData)
@@ -160,6 +167,17 @@ func DumpLpicDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lumpReade
 		for j := 0; j < 128; j++ {
 			img.SetColorIndex(j, i, rawData[(i*128)+j])
 		}
+	}
+
+	return img, nil
+}
+
+// convert floor and ceiling data to PNG
+func DumpLpicDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lumpReader io.Reader, iwad *WADReader) (int64, error) {
+	img, err := GetImageFromLpicData(lumpInfo, lumpReader, iwad)
+
+	if err != nil {
+		return 0, err
 	}
 
 	if err := png.Encode(destFhnd, img); err != nil {

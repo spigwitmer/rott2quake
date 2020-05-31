@@ -144,8 +144,35 @@ func dumpLumpDataToFile(wadFile *wad.WADReader, lumpInfo *wad.LumpHeader, destFn
 				log.Fatalf("Could not read palette data: %v\n", err)
 			}
 			wad2Writer.AddLump("PALETTE", paletteData[:], wad2.LT_RAW)
+		} else if dataType == "sky" {
+			rawLumpReader, err := wadFile.LumpData(lumpInfo)
+			if err != nil {
+				log.Fatalf("Could not get %s lump data: %v\n", lumpInfo.NameString(), err)
+			}
+			img, err := wad.GetImageFromFlatData(rawLumpReader, wadFile, 256, 200)
+			if err != nil {
+				log.Fatalf("Could not get flat data image: %v\n", err)
+			}
+			mipdata, err := wad2.PalettedImageToMIPTexture(img)
+			if err != nil {
+				log.Fatalf("Could not get MIP texture from flat: %v\n", err)
+			}
+			wad2Writer.AddLump(lumpInfo.NameString(), mipdata, wad2.LT_MIPTEX)
+		} else if dataType == "lpic" {
+			rawLumpReader, err := wadFile.LumpData(lumpInfo)
+			if err != nil {
+				log.Fatalf("Could not get %s lump data: %v\n", lumpInfo.NameString(), err)
+			}
+			img, err := wad.GetImageFromLpicData(lumpInfo, rawLumpReader, wadFile)
+			if err != nil {
+				log.Fatalf("Could not get flat data image: %v\n", err)
+			}
+			mipdata, err := wad2.PalettedImageToMIPTexture(img)
+			if err != nil {
+				log.Fatalf("Could not get MIP texture from flat: %v\n", err)
+			}
+			wad2Writer.AddLump(lumpInfo.NameString(), mipdata, wad2.LT_MIPTEX)
 		}
-		// TODO: floor data
 	}
 }
 

@@ -73,10 +73,10 @@ func (w *WADWriter) Write(dest io.WriteSeeker) (int64, error) {
 	}
 	for _, lump := range w.Directory {
 		if err := binary.Write(dest, binary.LittleEndian, lump.Data); err != nil {
-			return int64(total), err
+			return total, err
 		}
 		total += int64(len(lump.Data))
 	}
 
-	return int64(total), nil
+	return total, nil
 }

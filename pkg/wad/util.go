@@ -9,15 +9,14 @@ import (
 	"io"
 )
 
-// convert palette image data to PNG before writing
-func DumpFlatDataToFile(destFhnd io.WriteSeeker, lumpReader io.Reader, iwad *WADReader, width int, height int) (int64, error) {
+func GetImageFromFlatData(lumpReader io.Reader, iwad *WADReader, width int, height int) (*image.Paletted, error) {
 	rawImgData := make([]byte, width*height)
 	numRead, err := lumpReader.Read(rawImgData[:])
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 	if numRead != width*height {
-		return 0, errors.New("numRead != width*height???")
+		return nil, errors.New("numRead != width*height???")
 	}
 
 	img := image.NewPaletted(image.Rect(0, 0, width, height), iwad.BasePaletteData)
@@ -27,6 +26,16 @@ func DumpFlatDataToFile(destFhnd io.WriteSeeker, lumpReader io.Reader, iwad *WAD
 		}
 	}
 
+	return img, nil
+}
+
+// convert palette image data to PNG before writing
+func DumpFlatDataToFile(destFhnd io.WriteSeeker, lumpReader io.Reader, iwad *WADReader, width int, height int) (int64, error) {
+
+	img, err := GetImageFromFlatData(lumpReader, iwad, width, height)
+	if err != nil {
+		return 0, err
+	}
 	if err := png.Encode(destFhnd, img); err != nil {
 		return 0, err
 	}

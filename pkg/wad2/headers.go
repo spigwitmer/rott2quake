@@ -10,8 +10,8 @@ var (
 
 var (
 	LT_RAW     int8 = 0x40
-	LT_PICTURE      = 0x42
-	LT_MIPTEX       = 0x44
+	LT_PICTURE int8 = 0x42
+	LT_MIPTEX  int8 = 0x44
 )
 
 type LumpHeader struct {
