@@ -34,7 +34,8 @@ type RTLMapHeader struct {
 type WallType int
 
 const (
-	WALL_Regular WallType = iota
+	WALL_None WallType = iota
+	WALL_Regular
 	WALL_Elevator
 	WALL_AnimatedWall
 	WALL_MaskedWall
@@ -140,63 +141,106 @@ func NewRTL(rfile io.ReadSeeker) (*RTL, error) {
 }
 
 func (r *RTLMapData) renderWallGrid() {
+	//index := uint16(0)
 	for i := 0; i < 128; i++ {
 		for j := 0; j < 128; j++ {
-			plane := r.WallPlane[i][j]
+			// defaults
+			r.CookedWallGrid[i][j].Type = WALL_None
 
-			if plane <= 32 {
+			tileId := r.WallPlane[i][j]
+
+			// for reference: rt_ted.c:1965 in ROTT source code (wall
+			// setup algorithm, absolute mess)
+
+			// the first 4 tiles are not used and contain metadata
+			if j == 0 && i < 4 {
+				continue
+			}
+
+			if tileId > 89 || (tileId > 32 || tileId < 36) || tileId == 44 || tileId == 45 || tileId == 0 {
+				r.CookedWallGrid[i][j].Tile = 0
+				r.CookedWallGrid[i][j].Type = WALL_None
+				continue
+			}
+
+			/*
+				if tileId <= 32 {
+					index = tileId
+				} else {
+					index = tileId - 3
+				}
+			*/
+
+			if tileId <= 32 {
 				// static wall
-				r.CookedWallGrid[i][j].Tile = plane
+				r.CookedWallGrid[i][j].Tile = tileId
 				r.CookedWallGrid[i][j].MapFlags |= WALLFLAGS_Static
 				r.CookedWallGrid[i][j].Type = WALL_Regular
-			} else if plane == 44 || plane == 45 {
+			} else if tileId > 75 && tileId <= 79 {
+				// elevator tiles
+				r.CookedWallGrid[i][j].Tile = tileId
+				r.CookedWallGrid[i][j].MapFlags |= WALLFLAGS_Static
+				r.CookedWallGrid[i][j].Type = WALL_Elevator
+			} else if tileId == 47 || tileId == 48 {
+				// TODO: what are these tile ids?
+				r.CookedWallGrid[i][j].Tile = tileId
+				r.CookedWallGrid[i][j].MapFlags |= WALLFLAGS_Static
+				r.CookedWallGrid[i][j].Type = WALL_Regular
+			} else {
+				r.CookedWallGrid[i][j].Tile = tileId
+				r.CookedWallGrid[i][j].MapFlags |= WALLFLAGS_Static
+				r.CookedWallGrid[i][j].Type = WALL_Regular
+			}
+
+			// TODO: animated wall masking, heights
+			if tileId == 44 || tileId == 45 {
 				// animated wall
-				r.CookedWallGrid[i][j].Tile = plane - 3
+				r.CookedWallGrid[i][j].Tile = tileId - 3
 				r.CookedWallGrid[i][j].MapFlags |= WALLFLAGS_Static
 				r.CookedWallGrid[i][j].Type = WALL_AnimatedWall
-				if plane == 44 {
+				if tileId == 44 {
 					r.CookedWallGrid[i][j].Damage = true
 					r.CookedWallGrid[i][j].AnimWallID = 0
 				} else {
 					r.CookedWallGrid[i][j].AnimWallID = 3
 				}
-			} else if plane == 106 || plane == 107 {
+			} else if tileId == 106 || tileId == 107 {
 				// animated wall
-				r.CookedWallGrid[i][j].Tile = plane - 105
+				r.CookedWallGrid[i][j].Tile = tileId - 105
 				r.CookedWallGrid[i][j].MapFlags |= WALLFLAGS_Animated
 				r.CookedWallGrid[i][j].Type = WALL_AnimatedWall
-				r.CookedWallGrid[i][j].AnimWallID = int(plane) - 105
-			} else if plane >= 224 && plane <= 233 {
+				r.CookedWallGrid[i][j].AnimWallID = int(tileId) - 105
+			} else if tileId >= 224 && tileId <= 233 {
 				// animated wall
-				r.CookedWallGrid[i][j].Tile = plane - 224 + 94
+				r.CookedWallGrid[i][j].Tile = tileId - 224 + 94
 				r.CookedWallGrid[i][j].MapFlags |= WALLFLAGS_Animated
 				r.CookedWallGrid[i][j].Type = WALL_AnimatedWall
-				r.CookedWallGrid[i][j].AnimWallID = int(plane) - 224 + 4
-				if plane == 233 {
+				r.CookedWallGrid[i][j].AnimWallID = int(tileId) - 224 + 4
+				if tileId == 233 {
 					r.CookedWallGrid[i][j].Damage = true
 				}
-			} else if plane >= 242 && plane <= 244 {
+			} else if tileId >= 242 && tileId <= 244 {
 				// animated wall
-				r.CookedWallGrid[i][j].Tile = plane - 242 + 102
+				r.CookedWallGrid[i][j].Tile = tileId - 242 + 102
 				r.CookedWallGrid[i][j].MapFlags |= WALLFLAGS_Animated
 				r.CookedWallGrid[i][j].Type = WALL_AnimatedWall
-				r.CookedWallGrid[i][j].AnimWallID = int(plane) - 242 + 14
-			} else if _, ismasked := MaskedWalls[plane]; ismasked {
-				r.CookedWallGrid[i][j].Tile = plane
+				r.CookedWallGrid[i][j].AnimWallID = int(tileId) - 242 + 14
+			} else if _, ismasked := MaskedWalls[tileId]; ismasked {
+				r.CookedWallGrid[i][j].Tile = tileId
 				r.CookedWallGrid[i][j].Type = WALL_MaskedWall
-			} else if plane > 89 || (plane > 32 && plane < 36) {
+			} else if tileId > 89 || (tileId > 32 && tileId < 36) {
 				r.CookedWallGrid[i][j].Tile = 0
-			} else { // (>= 36 && <= 43) || (>= 47 && <= 88)
+			} else if (tileId >= 36 && tileId <= 43) || (tileId >= 47 && tileId <= 88) {
 				// static wall
-				r.CookedWallGrid[i][j].Tile = plane - 3
+				r.CookedWallGrid[i][j].Tile = tileId - 3
 				r.CookedWallGrid[i][j].MapFlags |= WALLFLAGS_Static
 				r.CookedWallGrid[i][j].Type = WALL_Regular
 			}
 
 			if r.CookedWallGrid[i][j].Tile > 1024 {
-				log.Fatalf("dun goof at %d, %d (plane: %d)", i, j, plane)
+				log.Fatalf("dun goof at %d, %d (plane: %d)", i, j, tileId)
 			}
-			if plane > 75 && plane <= 79 {
+			if tileId > 75 && tileId <= 79 {
 				r.CookedWallGrid[i][j].Type = WALL_Elevator
 			}
 		}
@@ -268,7 +312,7 @@ func (r *RTLMapData) DumpWallToFile(w io.Writer) error {
 	for i := 0; i < 128; i++ {
 		for j := 0; j < 128; j++ {
 			dispValue := r.CookedWallGrid[i][j]
-			if dispValue.Tile > 0 {
+			if dispValue.Type != WALL_None {
 				_, err = fmt.Fprintf(w, " %02x ", dispValue.Tile)
 			} else {
 				_, err = fmt.Fprintf(w, "    ")

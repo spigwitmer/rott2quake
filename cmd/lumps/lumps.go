@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"strings"
 
 	rtlfile "gitlab.com/camtap/lumps/pkg/rtl"
 	"gitlab.com/camtap/lumps/pkg/wad"
@@ -186,6 +187,25 @@ func dumpLumpDataToFile(wadFile *wad.WADReader, lumpInfo *wad.LumpHeader, destFn
 				log.Fatalf("Could not get MIP texture from flat: %v\n", err)
 			}
 			wad2Writer.AddLump(lumpInfo.NameString(), mipdata, wad2.LT_MIPTEX)
+		} else if dataType == "wall" {
+			if animWall, frameNum := rtlfile.GetAnimatedWallInfo(lumpInfo.NameString()); animWall != nil {
+				// dump animated wall
+				wad2LumpName := fmt.Sprintf("+%d%s", frameNum-1, animWall.StartingLump)
+				rawLumpReader, err := wadFile.LumpData(lumpInfo)
+				if err != nil {
+					log.Fatalf("Could not get %s lump data: %v\n", lumpInfo.NameString(), err)
+				}
+				img, err := wad.GetImageFromFlatData(rawLumpReader, wadFile, 64, 64)
+				if err != nil {
+					log.Fatalf("Could not get wall data image: %v\n", err)
+				}
+				mipdata, err := wad2.PalettedImageToMIPTexture(img)
+				if err != nil {
+					log.Fatalf("Could not get MIP texture from flat: %v\n", err)
+				}
+				wad2Writer.AddLump(strings.ToLower(wad2LumpName), mipdata, wad2.LT_MIPTEX)
+
+			}
 		}
 	}
 }
@@ -198,23 +218,24 @@ func main() {
 	var dumpLumpData, printLumps, dumpRaw bool
 	var rtlFile, rtlMapOutdir, lumpName, lumpType string
 	var wadOut string
-	var isQuakeWad bool
+	var isQuakeWad, isPak bool
 	var convertToDusk bool
 	var rtl *rtlfile.RTL
 	var printRTLInfo bool
 	var wadExtractor LumpExtractor
 
 	flag.StringVar(&rtlFile, "rtl", "", "RTL file")
+	flag.BoolVar(&isPak, "pak", false, "Input file is Quake .pak file")
 	flag.StringVar(&lumpName, "lname", "", "Dump data only for this lump")
 	flag.StringVar(&lumpType, "ltype", "", "force specific lump type (only relevant when -lname is specified)")
-	flag.BoolVar(&printRTLInfo, "print-rtl-info", false, "Print RTL metadata")
-	flag.StringVar(&wadOut, "wad-out", "", "output ripped image assets to Quake wad (must specify -dump-lump-data)")
+	flag.BoolVar(&printRTLInfo, "print-rtl-info", false, "Print RTL metadata (requires -rtl)")
+	flag.StringVar(&wadOut, "wad-out", "", "output ripped image assets to Quake wad2 file (requires -dump-lump-data)")
 	flag.BoolVar(&isQuakeWad, "quake", false, "wad specified is from Quake, not ROTT")
 	flag.BoolVar(&convertToDusk, "dusk", false, "convert assets to Dusk rather than Quake")
 	flag.StringVar(&rtlMapOutdir, "rtl-map-outdir", "", "Write RTL ASCII map out to this folder")
-	flag.BoolVar(&dumpLumpData, "dump-data", false, "Dump Lump Data out to dest dir")
+	flag.BoolVar(&dumpLumpData, "dump", false, "Dump Lump Data out to dest dir")
 	flag.BoolVar(&dumpRaw, "dump-raw", false, "Dump raw lump data alongside rendered")
-	flag.BoolVar(&printLumps, "print-lumps", false, "Print Lump Directory")
+	flag.BoolVar(&printLumps, "list", false, "Print Lump Directory")
 	flag.Parse()
 
 	if flag.NArg() < 1 {
