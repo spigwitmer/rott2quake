@@ -10,6 +10,7 @@ import (
 	"path"
 	"strings"
 
+	"gitlab.com/camtap/lumps/pkg/lumps"
 	rtlfile "gitlab.com/camtap/lumps/pkg/rtl"
 	"gitlab.com/camtap/lumps/pkg/wad"
 	"gitlab.com/camtap/lumps/pkg/wad2"
@@ -66,9 +67,9 @@ func dumpRawLumpDataToFile(destFhnd io.WriteSeeker, lumpReader io.Reader) (int64
 	return io.Copy(destFhnd, lumpReader)
 }
 
-func dumpLumpDataToFile(wadFile *wad.WADReader, lumpInfo *wad.LumpHeader, destFname string,
+func dumpLumpDataToFile(archive lumps.ArchiveReader, entry lumps.ArchiveEntry, destFname string,
 	dataType string, wad2Writer *wad2.WADWriter) {
-	lumpReader, err := wadFile.LumpData(lumpInfo)
+	lumpReader, err := entry.Open()
 	if err != nil {
 		log.Fatalf("Could not get lump data reader for %s: %v\n", destFname, err)
 	}
@@ -82,22 +83,22 @@ func dumpLumpDataToFile(wadFile *wad.WADReader, lumpInfo *wad.LumpHeader, destFn
 	switch dataType {
 	case "wall":
 		// assumes 64x64 (standard mandated by ROTT)
-		_, err = wad.DumpFlatDataToFile(destfhnd, lumpReader, wadFile, 64, 64)
+		_, err = wad.DumpFlatDataToFile(destfhnd, lumpReader, archive, 64, 64)
 	case "sky":
 		// assumes 256x200 (standard mandated by ROTT)
-		_, err = wad.DumpFlatDataToFile(destfhnd, lumpReader, wadFile, 256, 200)
+		_, err = wad.DumpFlatDataToFile(destfhnd, lumpReader, archive, 256, 200)
 	case "midi":
 		_, err = dumpRawLumpDataToFile(destfhnd, lumpReader)
 	case "patch":
-		_, err = wad.DumpPatchDataToFile(destfhnd, lumpInfo, lumpReader, wadFile)
+		_, err = wad.DumpPatchDataToFile(destfhnd, entry, lumpReader, archive)
 	case "tpatch":
-		_, err = wad.DumpTransPatchDataToFile(destfhnd, lumpInfo, lumpReader, wadFile)
+		_, err = wad.DumpTransPatchDataToFile(destfhnd, entry, lumpReader, archive)
 	case "lpic":
-		_, err = wad.DumpLpicDataToFile(destfhnd, lumpInfo, lumpReader, wadFile)
+		_, err = wad.DumpLpicDataToFile(destfhnd, entry, lumpReader, archive)
 	case "pic":
-		_, err = wad.DumpPicDataToFile(destfhnd, lumpInfo, lumpReader, wadFile)
+		_, err = wad.DumpPicDataToFile(destfhnd, entry, lumpReader, archive)
 	case "lbm":
-		_, err = wad.DumpLBMDataToFile(destfhnd, lumpInfo, lumpReader, wadFile)
+		_, err = wad.DumpLBMDataToFile(destfhnd, entry, lumpReader, archive)
 	default:
 		_, err = dumpRawLumpDataToFile(destfhnd, lumpReader)
 	}
@@ -109,7 +110,7 @@ func dumpLumpDataToFile(wadFile *wad.WADReader, lumpInfo *wad.LumpHeader, destFn
 			_ = os.Remove(destFname)
 			newFname := fmt.Sprintf("%s.dat", destFname)
 			log.Printf("Could not copy to %s (%v), writing raw to %s instead", destFname, err, newFname)
-			lumpReader, err = wadFile.LumpData(lumpInfo)
+			lumpReader, err := entry.Open()
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -134,11 +135,11 @@ func dumpLumpDataToFile(wadFile *wad.WADReader, lumpInfo *wad.LumpHeader, destFn
 		// * sky/floor textures
 		// just dump the palette data as is, convert sky/floor data
 		// into MIP textures
-		if lumpInfo.NameString() == "PAL" {
+		if entry.Name() == "PAL" {
 			var paletteData [768]byte
-			rawLumpReader, err := wadFile.LumpData(lumpInfo)
+			rawLumpReader, err := entry.Open()
 			if err != nil {
-				log.Fatalf("Could not get %s lump data: %v\n", lumpInfo.NameString(), err)
+				log.Fatalf("Could not get %s lump data: %v\n", entry.Name(), err)
 			}
 			_, err = rawLumpReader.Read(paletteData[:])
 			if err != nil {
@@ -146,11 +147,11 @@ func dumpLumpDataToFile(wadFile *wad.WADReader, lumpInfo *wad.LumpHeader, destFn
 			}
 			wad2Writer.AddLump("PALETTE", paletteData[:], wad2.LT_RAW)
 		} else if dataType == "sky" {
-			rawLumpReader, err := wadFile.LumpData(lumpInfo)
+			rawLumpReader, err := entry.Open()
 			if err != nil {
-				log.Fatalf("Could not get %s lump data: %v\n", lumpInfo.NameString(), err)
+				log.Fatalf("Could not get %s lump data: %v\n", entry.Name(), err)
 			}
-			img, err := wad.GetImageFromFlatData(rawLumpReader, wadFile, 256, 200)
+			img, err := wad.GetImageFromFlatData(rawLumpReader, archive, 256, 200)
 			if err != nil {
 				log.Fatalf("Could not get flat data image: %v\n", err)
 			}
@@ -158,13 +159,13 @@ func dumpLumpDataToFile(wadFile *wad.WADReader, lumpInfo *wad.LumpHeader, destFn
 			if err != nil {
 				log.Fatalf("Could not get MIP texture from flat: %v\n", err)
 			}
-			wad2Writer.AddLump(lumpInfo.NameString(), mipdata, wad2.LT_MIPTEX)
+			wad2Writer.AddLump(entry.Name(), mipdata, wad2.LT_MIPTEX)
 		} else if dataType == "lpic" {
-			rawLumpReader, err := wadFile.LumpData(lumpInfo)
+			rawLumpReader, err := entry.Open()
 			if err != nil {
-				log.Fatalf("Could not get %s lump data: %v\n", lumpInfo.NameString(), err)
+				log.Fatalf("Could not get %s lump data: %v\n", entry.Name(), err)
 			}
-			img, err := wad.GetImageFromLpicData(lumpInfo, rawLumpReader, wadFile)
+			img, err := wad.GetImageFromLpicData(entry, rawLumpReader, archive)
 			if err != nil {
 				log.Fatalf("Could not get lpic data image: %v\n", err)
 			}
@@ -172,13 +173,13 @@ func dumpLumpDataToFile(wadFile *wad.WADReader, lumpInfo *wad.LumpHeader, destFn
 			if err != nil {
 				log.Fatalf("Could not get MIP texture from flat: %v\n", err)
 			}
-			wad2Writer.AddLump(lumpInfo.NameString(), mipdata, wad2.LT_MIPTEX)
+			wad2Writer.AddLump(entry.Name(), mipdata, wad2.LT_MIPTEX)
 		} else if dataType == "pic" {
-			rawLumpReader, err := wadFile.LumpData(lumpInfo)
+			rawLumpReader, err := entry.Open()
 			if err != nil {
-				log.Fatalf("Could not get %s lump data: %v\n", lumpInfo.NameString(), err)
+				log.Fatalf("Could not get %s lump data: %v\n", entry.Name(), err)
 			}
-			img, err := wad.GetImageFromPicData(lumpInfo, rawLumpReader, wadFile)
+			img, err := wad.GetImageFromPicData(entry, rawLumpReader, archive)
 			if err != nil {
 				log.Fatalf("Could not get pic data image: %v\n", err)
 			}
@@ -186,16 +187,16 @@ func dumpLumpDataToFile(wadFile *wad.WADReader, lumpInfo *wad.LumpHeader, destFn
 			if err != nil {
 				log.Fatalf("Could not get MIP texture from flat: %v\n", err)
 			}
-			wad2Writer.AddLump(lumpInfo.NameString(), mipdata, wad2.LT_MIPTEX)
+			wad2Writer.AddLump(entry.Name(), mipdata, wad2.LT_MIPTEX)
 		} else if dataType == "wall" {
-			if animWall, frameNum := rtlfile.GetAnimatedWallInfo(lumpInfo.NameString()); animWall != nil {
+			if animWall, frameNum := rtlfile.GetAnimatedWallInfo(entry.Name()); animWall != nil {
 				// dump animated wall
 				wad2LumpName := fmt.Sprintf("+%d%s", frameNum-1, animWall.StartingLump)
-				rawLumpReader, err := wadFile.LumpData(lumpInfo)
+				rawLumpReader, err := entry.Open()
 				if err != nil {
-					log.Fatalf("Could not get %s lump data: %v\n", lumpInfo.NameString(), err)
+					log.Fatalf("Could not get %s lump data: %v\n", entry.Name(), err)
 				}
-				img, err := wad.GetImageFromFlatData(rawLumpReader, wadFile, 64, 64)
+				img, err := wad.GetImageFromFlatData(rawLumpReader, archive, 64, 64)
 				if err != nil {
 					log.Fatalf("Could not get wall data image: %v\n", err)
 				}
@@ -210,10 +211,6 @@ func dumpLumpDataToFile(wadFile *wad.WADReader, lumpInfo *wad.LumpHeader, destFn
 	}
 }
 
-type LumpExtractor interface {
-	PrintLumps()
-}
-
 func main() {
 	var dumpLumpData, printLumps, dumpRaw bool
 	var rtlFile, rtlMapOutdir, lumpName, lumpType string
@@ -222,7 +219,7 @@ func main() {
 	var convertToDusk bool
 	var rtl *rtlfile.RTL
 	var printRTLInfo bool
-	var wadExtractor LumpExtractor
+	var wadExtractor lumps.ArchiveReader
 
 	flag.StringVar(&rtlFile, "rtl", "", "RTL file")
 	flag.BoolVar(&isPak, "pak", false, "Input file is Quake .pak file")
@@ -339,18 +336,16 @@ func main() {
 	}
 
 	if printLumps {
-		wadExtractor.PrintLumps()
+		iter := wadExtractor.List()
+		for entry := iter.Next(); entry != nil; entry = iter.Next() {
+			entry.Print()
+		}
 	}
 
 	if dumpLumpData {
 		if flag.NArg() < 2 {
 			flag.Usage()
 			os.Exit(2)
-		}
-		wadFile := wadExtractor.(*wad.WADReader)
-
-		if wadFile.BasePaletteData == nil {
-			log.Fatalf("Cannot dump IWAD: no pallete data\n")
 		}
 		destDir := flag.Arg(1)
 
@@ -377,12 +372,12 @@ func main() {
 
 		subdir := ""
 		dataType := "raw"
-		for i := uint32(0); i < wadFile.Header.NumLumps; i += 1 {
-			lumpInfo := wadFile.LumpDirectory[i]
-			if lumpName != "" && lumpInfo.NameString() != lumpName {
+		wadIterator := wadExtractor.List()
+		for lumpInfo := wadIterator.Next(); lumpInfo != nil; lumpInfo = wadIterator.Next() {
+			if lumpName != "" && lumpInfo.Name() != lumpName {
 				continue
 			}
-			switch lumpInfo.NameString() {
+			switch lumpInfo.Name() {
 			case "WALLSTRT":
 				dataType = "wall"
 				subdir = "wall"
@@ -453,20 +448,20 @@ func main() {
 			}
 
 			lastDataType, lastSubdir := dataType, subdir
-			oneOffInfo, isOneOff := TypeOneOffs[lumpInfo.NameString()]
+			oneOffInfo, isOneOff := TypeOneOffs[lumpInfo.Name()]
 			if isOneOff {
 				dataType = oneOffInfo[0]
 				subdir = oneOffInfo[1]
 			}
-			if lumpInfo.Size > 0 {
+			if lumpInfo.Size() > 0 {
 				var destFname string
 				if subdir == "" {
-					destFname = fmt.Sprintf("%s/%s", destDir, lumpInfo.NameString())
+					destFname = fmt.Sprintf("%s/%s", destDir, lumpInfo.Name())
 				} else {
 					if err := os.MkdirAll(destDir+"/"+subdir, 0755); err != nil {
 						log.Fatal(err)
 					}
-					destFname = fmt.Sprintf("%s/%s/%s", destDir, subdir, lumpInfo.NameString())
+					destFname = fmt.Sprintf("%s/%s/%s", destDir, subdir, lumpInfo.Name())
 				}
 				if lumpName != "" && lumpType != "" {
 					dataType = lumpType
@@ -491,9 +486,9 @@ func main() {
 				default:
 					destFname = fmt.Sprintf("%s.dat", destFname)
 				}
-				dumpLumpDataToFile(wadFile, lumpInfo, destFname, dataType, wad2Out)
+				dumpLumpDataToFile(wadExtractor, lumpInfo, destFname, dataType, wad2Out)
 				if dumpRaw {
-					dumpLumpDataToFile(wadFile, lumpInfo, destFname+".raw", "raw", nil)
+					dumpLumpDataToFile(wadExtractor, lumpInfo, destFname+".raw", "raw", nil)
 				}
 			}
 			if isOneOff {

@@ -76,3 +76,15 @@ func BuildPalette(data []byte) color.Palette {
 
 	return pal
 }
+
+func GetPalette(gameName string) *color.Palette {
+	var name2pal = map[string]color.Palette{
+		"rott":  RottPalette,
+		"quake": QuakePalette,
+	}
+
+	if pal, ok := name2pal[gameName]; ok {
+		return &pal
+	}
+	return nil
+}

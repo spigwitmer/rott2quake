@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"gitlab.com/camtap/lumps/pkg/lumps"
 	"image/color"
 	"io"
 )
@@ -75,12 +76,63 @@ func NewIWAD(r io.ReadSeeker) (*WADReader, error) {
 	return &i, nil
 }
 
-func (i *WADReader) PrintLumps() {
-	var nl uint32
-	for nl = 0; nl < i.Header.NumLumps; nl += 1 {
-		lumpHeader := i.LumpDirectory[nl]
-		fmt.Printf("%d: %s (%d bytes at 0x%x)\n", nl, lumpHeader.NameString(), lumpHeader.Size, lumpHeader.FilePos)
+type WADEntry struct {
+	LumpName   string
+	Reader     *WADReader
+	LumpHeader *LumpHeader
+}
+
+func NewWADEntry(name string, header *LumpHeader, reader *WADReader) *WADEntry {
+	var w WADEntry
+	w.LumpName = name
+	w.Reader = reader
+	w.LumpHeader = header
+	return &w
+}
+
+func (w *WADEntry) Name() string {
+	return w.LumpName
+}
+
+func (w *WADEntry) Size() int {
+	return int(w.LumpHeader.Size)
+}
+
+func (w *WADEntry) Open() (io.Reader, error) {
+	header, err := w.Reader.GetLump(w.LumpName)
+	if err != nil {
+		return nil, err
 	}
+	reader, err := w.Reader.LumpData(header)
+	if err != nil {
+		return nil, err
+	}
+	return reader, err
+}
+
+func (w *WADEntry) Print() {
+	fmt.Printf("%s (%d bytes)\n", w.Name(), w.LumpHeader.Size)
+}
+
+type WADIterator struct {
+	Reader *WADReader
+	idx    uint32
+}
+
+func (w *WADIterator) Next() lumps.ArchiveEntry {
+	if int(w.idx) >= len(w.Reader.LumpDirectory) {
+		return nil
+	}
+	lheader := w.Reader.LumpDirectory[int(w.idx)]
+	w.idx++
+	return NewWADEntry(lheader.NameString(), lheader, w.Reader)
+}
+
+func (i *WADReader) List() lumps.ArchiveIterator {
+	var iter WADIterator
+	iter.Reader = i
+	iter.idx = 0
+	return &iter
 }
 
 func (i *WADReader) GetLump(name string) (*LumpHeader, error) {
@@ -91,6 +143,17 @@ func (i *WADReader) GetLump(name string) (*LumpHeader, error) {
 	}
 	return nil, fmt.Errorf("lump %s not found", name)
 }
+
+func (i *WADReader) GetEntry(name string) (lumps.ArchiveEntry, error) {
+	lheader, err := i.GetLump(name)
+	if err != nil {
+		return nil, err
+	}
+
+	return NewWADEntry(name, lheader, i), nil
+}
+
+func (i *WADReader) Type() string { return "rott" }
 
 func (i *WADReader) LumpData(l *LumpHeader) (io.Reader, error) {
 	if _, err := i.fhnd.Seek(int64(l.FilePos), io.SeekStart); err != nil {

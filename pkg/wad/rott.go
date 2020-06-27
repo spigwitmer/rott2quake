@@ -7,6 +7,8 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"gitlab.com/camtap/lumps/pkg/imgutil"
+	"gitlab.com/camtap/lumps/pkg/lumps"
 	"image"
 	"image/color"
 	"image/png"
@@ -42,9 +44,9 @@ type Palette struct {
 }
 
 // https://doomwiki.org/wiki/Picture_format
-func GetImageFromPatchData(lumpInfo *LumpHeader, lumpReader io.Reader, iwad *WADReader) (*image.Paletted, error) {
+func GetImageFromPatchData(lumpInfo lumps.ArchiveEntry, lumpReader io.Reader, iwad lumps.ArchiveReader) (*image.Paletted, error) {
 	// read entire lump to perform random access
-	patchBytes := make([]byte, lumpInfo.Size)
+	patchBytes := make([]byte, lumpInfo.Size())
 	_, err := lumpReader.Read(patchBytes)
 	if err != nil {
 		return nil, err
@@ -61,7 +63,11 @@ func GetImageFromPatchData(lumpInfo *LumpHeader, lumpReader io.Reader, iwad *WAD
 		return nil, err
 	}
 
-	img := image.NewPaletted(image.Rect(0, 0, int(patchHeader.Width), int(patchHeader.Height)), iwad.BasePaletteData)
+	pal := imgutil.GetPalette(iwad.Type())
+	if pal == nil {
+		return nil, fmt.Errorf("Game %s does not have a palette", iwad.Type())
+	}
+	img := image.NewPaletted(image.Rect(0, 0, int(patchHeader.Width), int(patchHeader.Height)), *pal)
 	for idx, cOffset := range columnOffsets {
 		_, err := lumpBuffer.Seek(int64(cOffset), io.SeekStart)
 		if err != nil {
@@ -104,7 +110,7 @@ func GetImageFromPatchData(lumpInfo *LumpHeader, lumpReader io.Reader, iwad *WAD
 }
 
 // convert patch data to PNG before writing
-func DumpPatchDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lumpReader io.Reader, iwad *WADReader) (int64, error) {
+func DumpPatchDataToFile(destFhnd io.WriteSeeker, lumpInfo lumps.ArchiveEntry, lumpReader io.Reader, iwad lumps.ArchiveReader) (int64, error) {
 	img, err := GetImageFromPatchData(lumpInfo, lumpReader, iwad)
 	if err != nil {
 		return 0, err
@@ -117,7 +123,7 @@ func DumpPatchDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lumpRead
 	return destFhnd.Seek(0, io.SeekCurrent)
 }
 
-func GetImageFromPicData(lumpInfo *LumpHeader, lumpReader io.Reader, iwad *WADReader) (*image.Paletted, error) {
+func GetImageFromPicData(lumpInfo lumps.ArchiveEntry, lumpReader io.Reader, iwad lumps.ArchiveReader) (*image.Paletted, error) {
 	var header RottPicHeader
 
 	if err := binary.Read(lumpReader, binary.LittleEndian, &header); err != nil {
@@ -130,7 +136,11 @@ func GetImageFromPicData(lumpInfo *LumpHeader, lumpReader io.Reader, iwad *WADRe
 		return nil, err
 	}
 
-	img := image.NewPaletted(image.Rect(0, 0, int(header.Width)*4, int(header.Height)), iwad.BasePaletteData)
+	pal := imgutil.GetPalette(iwad.Type())
+	if pal == nil {
+		return nil, fmt.Errorf("Game %s does not have a palette", iwad.Type())
+	}
+	img := image.NewPaletted(image.Rect(0, 0, int(header.Width)*4, int(header.Height)), *pal)
 	for planenum := 0; planenum < 4; planenum++ {
 		for i := 0; i < int(header.Height); i++ {
 			for j := 0; j < int(header.Width); j++ {
@@ -145,7 +155,7 @@ func GetImageFromPicData(lumpInfo *LumpHeader, lumpReader io.Reader, iwad *WADRe
 }
 
 // convert VGA planar data to PNG
-func DumpPicDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lumpReader io.Reader, iwad *WADReader) (int64, error) {
+func DumpPicDataToFile(destFhnd io.WriteSeeker, lumpInfo lumps.ArchiveEntry, lumpReader io.Reader, iwad lumps.ArchiveReader) (int64, error) {
 	img, err := GetImageFromPicData(lumpInfo, lumpReader, iwad)
 	if err != nil {
 		return 0, err
@@ -158,7 +168,7 @@ func DumpPicDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lumpReader
 	return destFhnd.Seek(0, io.SeekCurrent)
 }
 
-func GetImageFromLpicData(lumpInfo *LumpHeader, lumpReader io.Reader, iwad *WADReader) (*image.Paletted, error) {
+func GetImageFromLpicData(lumpInfo lumps.ArchiveEntry, lumpReader io.Reader, iwad lumps.ArchiveReader) (*image.Paletted, error) {
 	var header RottLpicHeader
 
 	if err := binary.Read(lumpReader, binary.LittleEndian, &header); err != nil {
@@ -171,7 +181,11 @@ func GetImageFromLpicData(lumpInfo *LumpHeader, lumpReader io.Reader, iwad *WADR
 		return nil, err
 	}
 
-	img := image.NewPaletted(image.Rect(0, 0, 128, 128), iwad.BasePaletteData)
+	pal := imgutil.GetPalette(iwad.Type())
+	if pal == nil {
+		return nil, fmt.Errorf("Game %s does not have a palette", iwad.Type())
+	}
+	img := image.NewPaletted(image.Rect(0, 0, 128, 128), *pal)
 	for i := 0; i < 128; i++ {
 		for j := 0; j < 128; j++ {
 			img.SetColorIndex(j, i, rawData[(i*128)+j])
@@ -182,7 +196,7 @@ func GetImageFromLpicData(lumpInfo *LumpHeader, lumpReader io.Reader, iwad *WADR
 }
 
 // convert floor and ceiling data to PNG
-func DumpLpicDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lumpReader io.Reader, iwad *WADReader) (int64, error) {
+func DumpLpicDataToFile(destFhnd io.WriteSeeker, lumpInfo lumps.ArchiveEntry, lumpReader io.Reader, iwad lumps.ArchiveReader) (int64, error) {
 	img, err := GetImageFromLpicData(lumpInfo, lumpReader, iwad)
 
 	if err != nil {
@@ -197,11 +211,11 @@ func DumpLpicDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lumpReade
 }
 
 // convert translucent patch data to PNG before writing
-func DumpTransPatchDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lumpReader io.Reader, iwad *WADReader) (int64, error) {
+func DumpTransPatchDataToFile(destFhnd io.WriteSeeker, lumpInfo lumps.ArchiveEntry, lumpReader io.Reader, iwad lumps.ArchiveReader) (int64, error) {
 	// https://doomwiki.org/wiki/Picture_format
 
 	// read entire lump to perform random access
-	patchBytes := make([]byte, lumpInfo.Size)
+	patchBytes := make([]byte, lumpInfo.Size())
 	_, err := lumpReader.Read(patchBytes)
 	if err != nil {
 		return 0, err
@@ -218,9 +232,11 @@ func DumpTransPatchDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lum
 		return 0, err
 	}
 
-	fmt.Printf("transpatch_t header: %+v\n", patchHeader)
-
-	img := image.NewPaletted(image.Rect(0, 0, int(patchHeader.Width), int(patchHeader.Height)), iwad.BasePaletteData)
+	pal := imgutil.GetPalette(iwad.Type())
+	if pal == nil {
+		return 0, fmt.Errorf("Game %s does not have a palette", iwad.Type())
+	}
+	img := image.NewPaletted(image.Rect(0, 0, int(patchHeader.Width), int(patchHeader.Height)), *pal)
 	for idx, cOffset := range columnOffsets {
 		fmt.Printf("columnOffset: %d\n", cOffset)
 		_, err := lumpBuffer.Seek(int64(cOffset), io.SeekStart)
@@ -281,7 +297,7 @@ type LBMHeader struct {
 }
 
 // convert expression of freedom from euclidian oppression to PNG
-func DumpLBMDataToFile(destFhnd io.WriteSeeker, lumpInfo *LumpHeader, lumpReader io.Reader, iwad *WADReader) (int64, error) {
+func DumpLBMDataToFile(destFhnd io.WriteSeeker, lumpInfo lumps.ArchiveEntry, lumpReader io.Reader, iwad lumps.ArchiveReader) (int64, error) {
 	var header LBMHeader
 	var palette color.Palette
 
