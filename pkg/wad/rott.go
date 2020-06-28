@@ -358,3 +358,132 @@ func DumpLBMDataToFile(destFhnd io.WriteSeeker, lumpInfo lumps.ArchiveEntry, lum
 
 	return destFhnd.Seek(0, io.SeekCurrent)
 }
+
+var TypeOneOffs = map[string][2]string{
+	"SND_ON":   [2]string{"patch", "widgets"},
+	"SND_OFF":  [2]string{"patch", "widgets"},
+	"DEADJOE":  [2]string{"patch", "boss-deaths"},
+	"DEADROBO": [2]string{"patch", "boss-deaths"},
+	"DEADSTEV": [2]string{"patch", "boss-deaths"},
+	"DEADTOM":  [2]string{"patch", "boss-deaths"},
+	"PAL":      [2]string{"raw", "misc"},
+	"LICENSE":  [2]string{"raw", "misc"},
+	"IMFREE":   [2]string{"lbm", "misc"},
+	"BOOTBLOD": [2]string{"lbm", "misc"},
+	"BOOTNORM": [2]string{"lbm", "misc"},
+	"SVENDOR":  [2]string{"lbm", "misc"},
+	"DEADBOSS": [2]string{"lbm", "misc"},
+	"MMBK":     [2]string{"pic", "misc"},
+	"PAUSED":   [2]string{"pic", "misc"},
+	"WAIT":     [2]string{"pic", "misc"},
+	"TNUMB":    [2]string{"pic", "misc"},
+	"BATTP":    [2]string{"pic", "misc"},
+	"DOOR2":    [2]string{"wall", "doors"},
+	"EDOOR":    [2]string{"wall", "doors"},
+	"RAMDOOR1": [2]string{"wall", "doors"},
+	"SDOOR4":   [2]string{"wall", "doors"},
+	"SNADOOR":  [2]string{"wall", "doors"},
+	"SNDOOR":   [2]string{"wall", "doors"},
+	"SNKDOOR":  [2]string{"wall", "doors"},
+	"TNADOOR":  [2]string{"wall", "doors"},
+	"TNDOOR":   [2]string{"wall", "doors"},
+	"TNKDOOR":  [2]string{"wall", "doors"},
+	"TRIDOOR1": [2]string{"wall", "doors"},
+	"SIDE8":    [2]string{"wall", "side"},
+	"SIDE21":   [2]string{"wall", "side"},
+	"LOCK1":    [2]string{"wall", "side"},
+	"LOCK2":    [2]string{"wall", "side"},
+	"LOCK3":    [2]string{"wall", "side"},
+	"LOCK4":    [2]string{"wall", "side"},
+	"SIDE13":   [2]string{"wall", "side"},
+	"SIDE16":   [2]string{"wall", "side"},
+	"SIDE17":   [2]string{"wall", "side"},
+}
+
+func ROTTGuessFileTypeAndSubdir(entry *WADEntry) (string, string) {
+	if oneOff, found := TypeOneOffs[entry.Name()]; found {
+		return oneOff[0], oneOff[1]
+	}
+
+	entryName := entry.Name()
+	var dataType, subdir string
+	// TODO: fix this. this is terribly written.
+	// map things. skiplist things. do anything besides
+	// traversing through the entire directory
+	for _, direntry := range entry.Reader.LumpDirectory {
+		if direntry.NameString() == entryName {
+			return dataType, subdir
+		}
+		switch direntry.NameString() {
+		case "WALLSTRT":
+			dataType = "wall"
+			subdir = "wall"
+		case "SONGSTRT":
+			dataType = "midi"
+			subdir = "music"
+		case "ANIMSTRT":
+			dataType = "wall"
+			subdir = "anim"
+		case "EXITSTRT":
+			dataType = "raw"
+			subdir = ""
+		case "ABVWSTRT":
+			dataType = "raw"
+			subdir = ""
+		case "ABVMSTRT":
+			dataType = "raw"
+			subdir = ""
+		case "HMSKSTRT":
+			dataType = "raw"
+			subdir = ""
+		case "GUNSTART":
+			dataType = "patch"
+			subdir = "guns"
+		case "ELEVSTRT":
+			dataType = "wall"
+			subdir = "elev"
+		case "DOORSTRT":
+			dataType = "patch"
+			subdir = "doors"
+		case "SIDESTRT":
+			dataType = "patch"
+			subdir = "side"
+		case "MASKSTRT":
+			dataType = "raw"
+			subdir = ""
+		case "UPDNSTRT":
+			dataType = "lpic"
+			subdir = "floors-ceilings"
+		case "SKYSTART":
+			dataType = "sky"
+			subdir = "skies"
+		case "ORDRSTRT":
+			dataType = "raw"
+			subdir = ""
+		case "SHAPSTRT":
+			dataType = "patch"
+			subdir = "shapes"
+		case "DIGISTRT":
+			dataType = "raw"
+			subdir = "sounds-digital"
+		case "G_START":
+			dataType = "raw"
+			subdir = "sounds"
+		case "PCSTART":
+			dataType = "raw"
+			subdir = "sounds-pcspkr"
+		case "ADSTART":
+			dataType = "raw"
+			subdir = "sounds-adlib"
+		case "WALLSTOP", "EXITSTOP", "ELEVSTOP", "DOORSTOP", "SIDESTOP", "MASKSTOP",
+			"UPDNSTOP", "SKYSTOP", "ORDRSTOP", "SHAPSTOP", "DIGISTOP", "PCSTOP", "ADSTOP":
+			dataType = "raw"
+			subdir = ""
+		case "PAL":
+			dataType = "raw"
+			subdir = "misc"
+		}
+	}
+
+	return dataType, subdir
+}

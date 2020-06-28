@@ -43,6 +43,11 @@ func (p *PAKEntry) Open() (io.Reader, error) {
 	return io.LimitReader(p.reader.fhnd, int64(p.Size())), nil
 }
 
+func (p *PAKEntry) GuessFileTypeAndSubdir() (string, string) {
+	// path is already part of the name
+	return "raw", ""
+}
+
 type PAKHeader struct {
 	TableOffset uint32
 	TableSize   uint32

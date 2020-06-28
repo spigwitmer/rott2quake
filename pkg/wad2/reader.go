@@ -38,6 +38,10 @@ func (w *WAD2Entry) Size() int { return int(w.Header.MemSize) }
 func (w *WAD2Entry) Print() {
 	fmt.Printf("%s\t\ttype %x\t\t%d bytes\n", w.Name(), w.Header.Type, int(w.Header.Size))
 }
+func (w *WAD2Entry) GuessFileTypeAndSubdir() (string, string) {
+	// throw everything in the root folder as is
+	return "raw", ""
+}
 
 type WAD2Reader struct {
 	fhnd            io.ReadSeeker
@@ -64,6 +68,8 @@ func NewWAD2Reader(fhnd io.ReadSeeker) (*WAD2Reader, error) {
 	if _, err := fhnd.Seek(int64(w.Header.DirOffset), io.SeekStart); err != nil {
 		return nil, fmt.Errorf("Could not seek to directory: %v\n", err)
 	}
+
+	w.DirectoryByName = make(map[string]int)
 
 	for i := int32(0); i < w.Header.NumEntries; i++ {
 		var lh LumpHeader

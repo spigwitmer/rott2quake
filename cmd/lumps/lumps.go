@@ -18,46 +18,6 @@ import (
 	"gitlab.com/camtap/lumps/pkg/wad2"
 )
 
-var TypeOneOffs = map[string][2]string{
-	"SND_ON":   [2]string{"patch", "widgets"},
-	"SND_OFF":  [2]string{"patch", "widgets"},
-	"DEADJOE":  [2]string{"patch", "boss-deaths"},
-	"DEADROBO": [2]string{"patch", "boss-deaths"},
-	"DEADSTEV": [2]string{"patch", "boss-deaths"},
-	"DEADTOM":  [2]string{"patch", "boss-deaths"},
-	"LICENSE":  [2]string{"raw", "misc"},
-	"IMFREE":   [2]string{"lbm", "misc"},
-	"BOOTBLOD": [2]string{"lbm", "misc"},
-	"BOOTNORM": [2]string{"lbm", "misc"},
-	"SVENDOR":  [2]string{"lbm", "misc"},
-	"DEADBOSS": [2]string{"lbm", "misc"},
-	"MMBK":     [2]string{"pic", "misc"},
-	"PAUSED":   [2]string{"pic", "misc"},
-	"WAIT":     [2]string{"pic", "misc"},
-	"TNUMB":    [2]string{"pic", "misc"},
-	"BATTP":    [2]string{"pic", "misc"},
-	"DOOR2":    [2]string{"wall", "doors"},
-	"EDOOR":    [2]string{"wall", "doors"},
-	"RAMDOOR1": [2]string{"wall", "doors"},
-	"SDOOR4":   [2]string{"wall", "doors"},
-	"SNADOOR":  [2]string{"wall", "doors"},
-	"SNDOOR":   [2]string{"wall", "doors"},
-	"SNKDOOR":  [2]string{"wall", "doors"},
-	"TNADOOR":  [2]string{"wall", "doors"},
-	"TNDOOR":   [2]string{"wall", "doors"},
-	"TNKDOOR":  [2]string{"wall", "doors"},
-	"TRIDOOR1": [2]string{"wall", "doors"},
-	"SIDE8":    [2]string{"wall", "side"},
-	"SIDE21":   [2]string{"wall", "side"},
-	"LOCK1":    [2]string{"wall", "side"},
-	"LOCK2":    [2]string{"wall", "side"},
-	"LOCK3":    [2]string{"wall", "side"},
-	"LOCK4":    [2]string{"wall", "side"},
-	"SIDE13":   [2]string{"wall", "side"},
-	"SIDE16":   [2]string{"wall", "side"},
-	"SIDE17":   [2]string{"wall", "side"},
-}
-
 func init() {
 	flag.Usage = func() {
 		fmt.Fprintf(flag.CommandLine.Output(), "Usage: %s <.WAD file> [dest dir]\n", os.Args[0])
@@ -392,83 +352,9 @@ func main() {
 			if lumpName != "" && lumpInfo.Name() != lumpName {
 				continue
 			}
-			switch lumpInfo.Name() {
-			case "WALLSTRT":
-				dataType = "wall"
-				subdir = "wall"
-			case "SONGSTRT":
-				dataType = "midi"
-				subdir = "music"
-			case "ANIMSTRT":
-				dataType = "wall"
-				subdir = "anim"
-			case "EXITSTRT":
-				dataType = "raw"
-				subdir = ""
-			case "ABVWSTRT":
-				dataType = "raw"
-				subdir = ""
-			case "ABVMSTRT":
-				dataType = "raw"
-				subdir = ""
-			case "HMSKSTRT":
-				dataType = "raw"
-				subdir = ""
-			case "GUNSTART":
-				dataType = "patch"
-				subdir = "guns"
-			case "ELEVSTRT":
-				dataType = "wall"
-				subdir = "elev"
-			case "DOORSTRT":
-				dataType = "patch"
-				subdir = "doors"
-			case "SIDESTRT":
-				dataType = "patch"
-				subdir = "side"
-			case "MASKSTRT":
-				dataType = "raw"
-				subdir = ""
-			case "UPDNSTRT":
-				dataType = "lpic"
-				subdir = "floors-ceilings"
-			case "SKYSTART":
-				dataType = "sky"
-				subdir = "skies"
-			case "ORDRSTRT":
-				dataType = "raw"
-				subdir = ""
-			case "SHAPSTRT":
-				dataType = "patch"
-				subdir = "shapes"
-			case "DIGISTRT":
-				dataType = "raw"
-				subdir = "sounds-digital"
-			case "G_START":
-				dataType = "raw"
-				subdir = "sounds"
-			case "PCSTART":
-				dataType = "raw"
-				subdir = "sounds-pcspkr"
-			case "ADSTART":
-				dataType = "raw"
-				subdir = "sounds-adlib"
-			case "WALLSTOP", "EXITSTOP", "ELEVSTOP", "DOORSTOP", "SIDESTOP", "MASKSTOP",
-				"UPDNSTOP", "SKYSTOP", "ORDRSTOP", "SHAPSTOP", "DIGISTOP", "PCSTOP", "ADSTOP":
-				dataType = "raw"
-				subdir = ""
-			case "PAL":
-				dataType = "raw"
-				subdir = "misc"
-			}
 
-			lastDataType, lastSubdir := dataType, subdir
-			oneOffInfo, isOneOff := TypeOneOffs[lumpInfo.Name()]
-			if isOneOff {
-				dataType = oneOffInfo[0]
-				subdir = oneOffInfo[1]
-			}
 			if lumpInfo.Size() > 0 {
+				dataType, subdir = lumpInfo.GuessFileTypeAndSubdir()
 				var destFname string
 				if subdir == "" {
 					destFname = fmt.Sprintf("%s/%s", destDir, lumpInfo.Name())
@@ -505,10 +391,6 @@ func main() {
 				if dumpRaw {
 					dumpLumpDataToFile(wadExtractor, lumpInfo, destFname+".raw", "raw", nil)
 				}
-			}
-			if isOneOff {
-				dataType = lastDataType
-				subdir = lastSubdir
 			}
 		}
 

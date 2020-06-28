@@ -110,6 +110,13 @@ func (w *WADEntry) Open() (io.Reader, error) {
 	return reader, err
 }
 
+func (w *WADEntry) GuessFileTypeAndSubdir() (string, string) {
+	if w.Reader.Type() == "rott" {
+		return ROTTGuessFileTypeAndSubdir(w)
+	}
+	panic("unsupported game type")
+}
+
 func (w *WADEntry) Print() {
 	fmt.Printf("%s (%d bytes)\n", w.Name(), w.LumpHeader.Size)
 }
