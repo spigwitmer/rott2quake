@@ -8,9 +8,11 @@ import (
 	"log"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"gitlab.com/camtap/lumps/pkg/lumps"
+	"gitlab.com/camtap/lumps/pkg/pak"
 	rtlfile "gitlab.com/camtap/lumps/pkg/rtl"
 	"gitlab.com/camtap/lumps/pkg/wad"
 	"gitlab.com/camtap/lumps/pkg/wad2"
@@ -74,6 +76,10 @@ func dumpLumpDataToFile(archive lumps.ArchiveReader, entry lumps.ArchiveEntry, d
 		log.Fatalf("Could not get lump data reader for %s: %v\n", destFname, err)
 	}
 	fmt.Printf("dumping %s as %s\n", destFname, dataType)
+	err = os.MkdirAll(filepath.Dir(destFname), 0755)
+	if err != nil {
+		log.Fatalf("Could not create folder for %s: %v\n", destFname, err)
+	}
 	destfhnd, err := os.Create(destFname)
 	if err != nil {
 		log.Fatalf("Could not write to %s: %v\n", destFname, err)
@@ -325,7 +331,16 @@ func main() {
 
 		quakeWad := wadExtractor.(*wad2.WAD2Reader)
 		fmt.Printf("WAD2 file has %d lumps\n", len(quakeWad.Directory))
+	} else if isPak {
+		wadExtractor, err = pak.NewPAKReader(fhnd)
+		if err != nil {
+			log.Fatalf("Could not open Quake PAK for reading: %v\n", err)
+		}
+
+		quakePak := wadExtractor.(*pak.PAKReader)
+		fmt.Printf("PAK file has %d entries\n", len(quakePak.Directory))
 	} else {
+		// default to ROTT wad
 		wadExtractor, err = wad.NewIWAD(fhnd)
 		if err != nil {
 			log.Fatalf("Could not open IWAD: %v\n", err)
