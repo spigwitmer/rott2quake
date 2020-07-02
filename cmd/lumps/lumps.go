@@ -239,6 +239,7 @@ func main() {
 			rtlRawWallFile := fmt.Sprintf("%s/map%03d-walls.bin", rtlMapOutdir, idx+1)
 			rtlRawSpriteFile := fmt.Sprintf("%s/map%03d-sprites.bin", rtlMapOutdir, idx+1)
 			rtlRawInfoFile := fmt.Sprintf("%s/map%03d-info.bin", rtlMapOutdir, idx+1)
+			rtlQuakeMapFile := fmt.Sprintf("%s/map%03d.map", rtlMapOutdir, idx+1)
 
 			wallFhnd, err := os.Create(rtlMapFile)
 			if err != nil {
@@ -275,6 +276,16 @@ func main() {
 			defer rawInfoFhnd.Close()
 			if err = binary.Write(rawInfoFhnd, binary.LittleEndian, md.InfoPlane); err != nil {
 				log.Fatalf("Could not write raw map to %s: %v\n", rtlRawInfoFile, err)
+			}
+
+			quakeMapFhnd, err := os.Create(rtlQuakeMapFile)
+			if err != nil {
+				log.Fatalf("Could not open %s for writing: %v\n", rtlQuakeMapFile, err)
+			}
+			defer quakeMapFhnd.Close()
+			qm := rtlfile.ConvertRTLMapToQuakeMapFile(&rtl.MapData[idx], wadOut)
+			if _, err = quakeMapFhnd.Write([]byte(qm.Render())); err != nil {
+				log.Fatalf("Could not write quake map file to %s: %v\n", rtlQuakeMapFile, err)
 			}
 		}
 	}

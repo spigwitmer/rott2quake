@@ -11,7 +11,7 @@ func TestQuakeMap(t *testing.T) {
 
 func TestQuakeMapWithBrushes(t *testing.T) {
 	q := NewQuakeMap(7, 8, 9)
-	b := Brush{
+	p := Plane{
 		X1: 3.0, Y1: 4.0, Z1: 5.0,
 		X2: 13.0, Y2: 14.0, Z2: 15.0,
 		X3: 23.0, Y3: 24.0, Z3: 25.0,
@@ -22,6 +22,7 @@ func TestQuakeMapWithBrushes(t *testing.T) {
 		Xscale:   53.0,
 		Yscale:   64.0,
 	}
+	b := Brush{Planes: []Plane{p}}
 	e := Entity{
 		SpawnFlags: 0,
 		ClassName:  "foobar",
