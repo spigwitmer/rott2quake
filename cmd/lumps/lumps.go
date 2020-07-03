@@ -171,7 +171,21 @@ func dumpLumpDataToFile(archive lumps.ArchiveReader, entry lumps.ArchiveEntry, d
 					log.Fatalf("Could not get MIP texture from flat: %v\n", err)
 				}
 				wad2Writer.AddLump(strings.ToLower(wad2LumpName), mipdata, wad2.LT_MIPTEX)
-
+			} else {
+				// dump static wall
+				rawLumpReader, err := entry.Open()
+				if err != nil {
+					log.Fatalf("Could not get %s lump data: %v\n", entry.Name(), err)
+				}
+				img, err := wad.GetImageFromFlatData(rawLumpReader, archive, 64, 64)
+				if err != nil {
+					log.Fatalf("Could not get flat data image: %v\n", err)
+				}
+				mipdata, err := wad2.PalettedImageToMIPTexture(img)
+				if err != nil {
+					log.Fatalf("Could not get MIP texture from flat: %v\n", err)
+				}
+				wad2Writer.AddLump(entry.Name(), mipdata, wad2.LT_MIPTEX)
 			}
 		}
 	}
