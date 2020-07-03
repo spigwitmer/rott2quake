@@ -101,12 +101,12 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string) *quakema
 
 	// XXX test wall (single height)
 	testWall := quakemap.BasicCuboid(
-		float64(rtlmap.SpawnX+2)*gridSizeX, // x1
-		float64(rtlmap.SpawnY)*gridSizeY,   // y1
-		floorDepth,                         // z1
-		float64(rtlmap.SpawnX+3)*gridSizeX, // x2
-		float64(rtlmap.SpawnY+1)*gridSizeY, // y2
-		floorDepth+gridSizeZ,               // z2
+		float64(rtlmap.SpawnX+2)*gridSizeX,    // x1
+		float64(rtlmap.SpawnY)*gridSizeY,      // y1
+		floorDepth,                            // z1
+		float64(rtlmap.SpawnX+3)*gridSizeX,    // x2
+		float64(rtlmap.SpawnY+1)*gridSizeY,    // y2
+		floorDepth+(float64(rtlmap.Height*2)), // z2
 		"FLRCL1",
 		1)
 

@@ -388,5 +388,7 @@ func (r *RTL) PrintMetadata() {
 		fmt.Printf("\tSprite Plane Length: %d\n", md.Header.SpritePlaneLength)
 		fmt.Printf("\tInfo Plane Length: %d\n", md.Header.InfoPlaneLength)
 		fmt.Printf("\tMap Name: %s\n", md.MapName())
+		fmt.Printf("\tHeight: %d\n", md.Height)
+		fmt.Printf("\tSky Height: %d\n", md.SkyHeight)
 	}
 }
