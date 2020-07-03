@@ -18,8 +18,22 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string) *quakema
 	var floorDepth float64 = 64
 	var floorBrush quakemap.Brush
 
-	// XXX actual spawnpoint?
-	qm := quakemap.NewQuakeMap(64.0, 240.0, floorDepth+32)
+	var playerStartX float64 = float64(rtlmap.SpawnX)*gridSizeX + (gridSizeX / 2)
+	var playerStartY float64 = float64(rtlmap.SpawnY)*gridSizeY + (gridSizeY / 2)
+	var playerAngle float64
+	switch rtlmap.SpawnDirection {
+	case 0: // up
+		playerAngle = 180
+	case 1: // right
+		playerAngle = 90
+	case 2: // down
+		playerAngle = 0
+	case 3: // left
+		playerAngle = 270
+	}
+
+	qm := quakemap.NewQuakeMap(playerStartX, playerStartY, floorDepth+32)
+	qm.InfoPlayerStart.Angle = playerAngle
 	qm.Wad = textureWad
 
 	// south

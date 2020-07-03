@@ -80,6 +80,7 @@ type Entity struct {
 	OriginX float64
 	OriginY float64
 	OriginZ float64
+	Angle   float64
 }
 
 func NewEntity(spawnFlags int, className string, qm *QuakeMap) *Entity {
@@ -100,6 +101,7 @@ func (e *Entity) Render() string {
 	case "info_player_start":
 		output += fmt.Sprintf("\"origin\" \"%.02f %.02f %.02f\"\n",
 			e.OriginX, e.OriginY, e.OriginZ)
+		output += fmt.Sprintf("\"angle\" \"%.02f\"\n", e.Angle)
 	case "worldspawn":
 		output += fmt.Sprintf("\"wad\" \"%s\"\n", e.Map.Wad)
 	}
