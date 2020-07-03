@@ -56,18 +56,25 @@ type WallInfo struct {
 	MaskedWallID int // see maskedwall.go
 }
 
+type SpriteInfo struct {
+}
+
 type RTLMapData struct {
-	Header         RTLMapHeader
-	WallPlane      [128][128]uint16
-	CookedWallGrid [128][128]WallInfo
-	SpritePlane    [128][128]uint16
-	InfoPlane      [128][128]uint16
+	Header           RTLMapHeader
+	WallPlane        [128][128]uint16
+	CookedWallGrid   [128][128]WallInfo
+	CookedSpriteGrid [128][128]SpriteInfo
+	SpritePlane      [128][128]uint16
+	InfoPlane        [128][128]uint16
 
 	// derived from wall plane
-	FloorNumber   int // 0xb4 - 0xc3
-	CeilingNumber int
-	Brightness    int
-	LightFadeRate int
+	FloorNumber    int // 0xb4 - 0xc3
+	CeilingNumber  int
+	Brightness     int
+	LightFadeRate  int
+	SpawnX         int
+	SpawnY         int
+	SpawnDirection int
 
 	// derived from sprite plane
 	Height     int
@@ -118,6 +125,7 @@ func NewRTL(rfile io.ReadSeeker) (*RTL, error) {
 			return nil, err
 		}
 		r.MapData[i].renderWallGrid()
+		r.MapData[i].renderSpriteGrid()
 
 		r.MapData[i].FloorNumber = int(r.MapData[i].WallPlane[0][0])
 		r.MapData[i].CeilingNumber = int(r.MapData[i].WallPlane[0][1])
@@ -140,6 +148,21 @@ func NewRTL(rfile io.ReadSeeker) (*RTL, error) {
 	return &r, nil
 }
 
+func (r *RTLMapData) renderSpriteGrid() {
+	for i := 0; i < 128; i++ {
+		for j := 0; j < 128; j++ {
+			spriteValue := r.SpritePlane[i][j]
+
+			// spawn location
+			if spriteValue >= 19 && spriteValue <= 22 {
+				r.SpawnX = i
+				r.SpawnY = j
+				r.SpawnDirection = int(spriteValue) - 19
+			}
+		}
+	}
+}
+
 func (r *RTLMapData) renderWallGrid() {
 	//index := uint16(0)
 	for i := 0; i < 128; i++ {
@@ -157,7 +180,7 @@ func (r *RTLMapData) renderWallGrid() {
 				continue
 			}
 
-			if tileId > 89 || (tileId > 32 || tileId < 36) || tileId == 44 || tileId == 45 || tileId == 0 {
+			if tileId > 89 || (tileId > 32 && tileId < 36) || tileId == 44 || tileId == 45 || tileId == 0 {
 				r.CookedWallGrid[i][j].Tile = 0
 				r.CookedWallGrid[i][j].Type = WALL_None
 				continue
@@ -230,6 +253,7 @@ func (r *RTLMapData) renderWallGrid() {
 				r.CookedWallGrid[i][j].Type = WALL_MaskedWall
 			} else if tileId > 89 || (tileId > 32 && tileId < 36) {
 				r.CookedWallGrid[i][j].Tile = 0
+				//r.CookedWallGrid[i][j].Type = WALL_Regular
 			} else if (tileId >= 36 && tileId <= 43) || (tileId >= 47 && tileId <= 88) {
 				// static wall
 				r.CookedWallGrid[i][j].Tile = tileId - 3
@@ -312,7 +336,20 @@ func (r *RTLMapData) DumpWallToFile(w io.Writer) error {
 	for i := 0; i < 128; i++ {
 		for j := 0; j < 128; j++ {
 			dispValue := r.CookedWallGrid[i][j]
-			if dispValue.Type != WALL_None {
+			if i == r.SpawnX && j == r.SpawnY {
+				switch r.SpawnDirection {
+				case 0:
+					_, err = fmt.Fprintf(w, " P^ ")
+				case 1:
+					_, err = fmt.Fprintf(w, " P> ")
+				case 2:
+					_, err = fmt.Fprintf(w, " PV ")
+				case 3:
+					_, err = fmt.Fprintf(w, " <P ")
+				default:
+					panic("How did this happen?")
+				}
+			} else if dispValue.Type != WALL_None {
 				_, err = fmt.Fprintf(w, " %02x ", dispValue.Tile)
 			} else {
 				_, err = fmt.Fprintf(w, "    ")
