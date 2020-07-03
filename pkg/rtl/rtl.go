@@ -88,6 +88,10 @@ type RTLMapData struct {
 	rtl *RTL
 }
 
+func (r *RTLMapData) FloorTexture() string {
+	return fmt.Sprintf("FLRCL%d", r.FloorNumber-179)
+}
+
 type RTL struct {
 	fhnd    io.ReadSeeker
 	Header  RTLHeader
