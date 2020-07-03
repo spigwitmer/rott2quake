@@ -7,6 +7,7 @@ import (
 var (
 	gridSizeX float64 = 64
 	gridSizeY float64 = 64
+	gridSizeZ float64 = 64
 )
 
 func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string) *quakemap.QuakeMap {
@@ -97,6 +98,19 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string) *quakema
 		1, 1) // scale
 
 	qm.WorldSpawn.Brushes = []quakemap.Brush{floorBrush}
+
+	// XXX test wall (single height)
+	testWall := quakemap.BasicCuboid(
+		float64(rtlmap.SpawnX+2)*gridSizeX, // x1
+		float64(rtlmap.SpawnY)*gridSizeY,   // y1
+		floorDepth,                         // z1
+		float64(rtlmap.SpawnX+3)*gridSizeX, // x2
+		float64(rtlmap.SpawnY+1)*gridSizeY, // y2
+		floorDepth+gridSizeZ,               // z2
+		"FLRCL1",
+		1)
+
+	qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, testWall)
 
 	// 2. clip brushes around floor extending height
 	return qm
