@@ -191,6 +191,8 @@ func (r *RTLMapData) renderWallGrid() {
 
 			// the first 4 tiles are not used and contain metadata
 			if j == 0 && i < 4 {
+				r.CookedWallGrid[i][j].Tile = 0
+				r.CookedWallGrid[i][j].Type = WALL_None
 				continue
 			}
 
@@ -232,7 +234,7 @@ func (r *RTLMapData) renderWallGrid() {
 			// TODO: animated wall masking, heights
 			if tileId == 44 || tileId == 45 {
 				// animated wall
-				r.CookedWallGrid[i][j].Tile = tileId - 3
+				r.CookedWallGrid[i][j].Tile = tileId
 				r.CookedWallGrid[i][j].MapFlags |= WALLFLAGS_Static
 				r.CookedWallGrid[i][j].Type = WALL_AnimatedWall
 				if tileId == 44 {
@@ -243,13 +245,13 @@ func (r *RTLMapData) renderWallGrid() {
 				}
 			} else if tileId == 106 || tileId == 107 {
 				// animated wall
-				r.CookedWallGrid[i][j].Tile = tileId - 105
+				r.CookedWallGrid[i][j].Tile = tileId
 				r.CookedWallGrid[i][j].MapFlags |= WALLFLAGS_Animated
 				r.CookedWallGrid[i][j].Type = WALL_AnimatedWall
 				r.CookedWallGrid[i][j].AnimWallID = int(tileId) - 105
 			} else if tileId >= 224 && tileId <= 233 {
 				// animated wall
-				r.CookedWallGrid[i][j].Tile = tileId - 224 + 94
+				r.CookedWallGrid[i][j].Tile = tileId
 				r.CookedWallGrid[i][j].MapFlags |= WALLFLAGS_Animated
 				r.CookedWallGrid[i][j].Type = WALL_AnimatedWall
 				r.CookedWallGrid[i][j].AnimWallID = int(tileId) - 224 + 4
@@ -258,28 +260,22 @@ func (r *RTLMapData) renderWallGrid() {
 				}
 			} else if tileId >= 242 && tileId <= 244 {
 				// animated wall
-				r.CookedWallGrid[i][j].Tile = tileId - 242 + 102
+				r.CookedWallGrid[i][j].Tile = tileId
 				r.CookedWallGrid[i][j].MapFlags |= WALLFLAGS_Animated
 				r.CookedWallGrid[i][j].Type = WALL_AnimatedWall
 				r.CookedWallGrid[i][j].AnimWallID = int(tileId) - 242 + 14
 			} else if _, ismasked := MaskedWalls[tileId]; ismasked {
 				r.CookedWallGrid[i][j].Tile = tileId
 				r.CookedWallGrid[i][j].Type = WALL_MaskedWall
-			} else if tileId > 89 || (tileId > 32 && tileId < 36) {
-				r.CookedWallGrid[i][j].Tile = 0
-				//r.CookedWallGrid[i][j].Type = WALL_Regular
 			} else if (tileId >= 36 && tileId <= 43) || (tileId >= 47 && tileId <= 88) {
 				// static wall
-				r.CookedWallGrid[i][j].Tile = tileId - 3
+				r.CookedWallGrid[i][j].Tile = tileId
 				r.CookedWallGrid[i][j].MapFlags |= WALLFLAGS_Static
 				r.CookedWallGrid[i][j].Type = WALL_Regular
 			}
 
 			if r.CookedWallGrid[i][j].Tile > 1024 {
 				log.Fatalf("dun goof at %d, %d (plane: %d)", i, j, tileId)
-			}
-			if tileId > 75 && tileId <= 79 {
-				r.CookedWallGrid[i][j].Type = WALL_Elevator
 			}
 		}
 	}
