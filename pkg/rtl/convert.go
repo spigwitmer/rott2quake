@@ -22,7 +22,6 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string) *quakema
 	var floorLength float64 = gridSizeX * 128
 	var floorWidth float64 = gridSizeY * 128
 	var floorDepth float64 = 64
-	var floorBrush quakemap.Brush
 
 	var playerStartX float64 = float64(rtlmap.SpawnX)*gridSizeX + (gridSizeX / 2)
 	var playerStartY float64 = float64(rtlmap.SpawnY)*gridSizeY + (gridSizeY / 2)
@@ -42,66 +41,11 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string) *quakema
 	qm.InfoPlayerStart.Angle = playerAngle
 	qm.Wad = textureWad
 
-	// south
-	floorBrush.AddPlane(
-		0.0, 0.0, 0.0, // p1
-		0.0, 0.0, 1.0, // p2
-		1.0, 0.0, 0.0, // p3
-		rtlmap.FloorTexture(), // texture
-		0, 0,                  // offset
-		0,    // rotation
-		1, 1) // scale
-
-	// north
-	floorBrush.AddPlane(
-		0.0, floorLength, 0.0, // p1
-		1.0, floorLength, 0.0, // p2
-		0.0, floorLength, 1.0, // p3
-		rtlmap.FloorTexture(), // texture
-		0, 0,                  // offset
-		0,    // rotation
-		1, 1) // scale
-
-	// east
-	floorBrush.AddPlane(
-		floorWidth, 0.0, 0.0, // p1
-		floorWidth, 0.0, 1.0, // p2
-		floorWidth, 1.0, 0.0, // p3
-		rtlmap.FloorTexture(), // texture
-		0, 0,                  // offset
-		0,    // rotation
-		1, 1) // scale
-
-	// west
-	floorBrush.AddPlane(
-		0.0, 0.0, 0.0, // p1
-		0.0, 1.0, 0.0, // p2
-		0.0, 0.0, 1.0, // p3
-		rtlmap.FloorTexture(), // texture
-		0, 0,                  // offset
-		0,    // rotation
-		1, 1) // scale
-
-	// top
-	floorBrush.AddPlane(
-		0.0, 0.0, floorDepth, // p1
-		0.0, 1.0, floorDepth, // p2
-		1.0, 0.0, floorDepth, // p3
-		rtlmap.FloorTexture(), // texture
-		0, 0,                  // offset
-		0,    // rotation
-		1, 1) // scale
-
-	// bottom
-	floorBrush.AddPlane(
-		0.0, 0.0, 0.0, // p1
-		1.0, 0.0, 0.0, // p2
-		0.0, 1.0, 0.0, // p3
-		rtlmap.FloorTexture(), // texture
-		0, 0,                  // offset
-		0,    // rotation
-		1, 1) // scale
-
+	floorBrush := quakemap.BasicCuboid(
+		0, 0, 0,
+		floorWidth, floorLength, floorDepth,
+		rtlmap.FloorTexture(),
+		1)
 	qm.WorldSpawn.Brushes = []quakemap.Brush{floorBrush}
 
 	// place static walls
@@ -110,12 +54,12 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string) *quakema
 			wallInfo := rtlmap.CookedWallGrid[i][j]
 			if wallInfo.Type != WALL_None {
 				wallColumn := quakemap.BasicCuboid(
-					float64(i)*gridSizeX,                  // x1
-					float64(j)*gridSizeY,                  // y1
-					floorDepth,                            // z1
-					float64(i+1)*gridSizeX,                // x2
-					float64(j+1)*gridSizeY,                // y2
-					floorDepth+(float64(rtlmap.Height*2)), // z2
+					float64(i)*gridSizeX,   // x1
+					float64(j)*gridSizeY,   // y1
+					floorDepth,             // z1
+					float64(i+1)*gridSizeX, // x2
+					float64(j+1)*gridSizeY, // y2
+					floorDepth+float64(rtlmap.FloorHeight())*gridSizeZ, // z2
 					wallTileToTextureName(wallInfo.Tile),
 					1) // scale
 
