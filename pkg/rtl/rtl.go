@@ -39,6 +39,7 @@ const (
 	WALL_Elevator
 	WALL_AnimatedWall
 	WALL_MaskedWall
+	WALL_Window
 	WALL_PushWall
 )
 
@@ -54,6 +55,7 @@ type WallInfo struct {
 	Damage       bool
 	AnimWallID   int // see anim.go
 	MaskedWallID int // see maskedwall.go
+	AreaID       int // see area.go
 }
 
 type SpriteInfo struct {
@@ -157,6 +159,7 @@ func NewRTL(rfile io.ReadSeeker) (*RTL, error) {
 				break
 			}
 		}
+		CalculateAreas(&r.MapData[i])
 	}
 
 	return &r, nil
