@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"html/template"
 	"io"
 	"log"
+	"strings"
 )
 
 var (
@@ -44,8 +46,8 @@ const (
 )
 
 const (
-	WALLFLAGS_Static   uint32 = 0x1000
-	WALLFLAGS_Animated uint32 = 0x2000
+	WALLFLAGS_Animated uint32 = 0x1000
+	WALLFLAGS_Static   uint32 = 0x2000
 )
 
 type WallInfo struct {
@@ -56,6 +58,44 @@ type WallInfo struct {
 	AnimWallID   int // see anim.go
 	MaskedWallID int // see maskedwall.go
 	AreaID       int // see area.go
+}
+
+// html -- true for HTML map gen (return static image equivalent texture name)
+//         false for Quake map gen (return Quake animated texture name)
+func (wallInfo *WallInfo) WallTileToTextureName(html bool) string {
+	// TODO: correlate with WALLSTRT and EXITSTRT lumps in WAD
+	tileId := wallInfo.Tile
+	if wallInfo.Type == WALL_None {
+		return ""
+	} else if wallInfo.Type == WALL_Regular {
+		if tileId >= 1 && tileId <= 32 {
+			return fmt.Sprintf("WALL%d", tileId)
+		} else if tileId >= 36 && tileId <= 45 {
+			return fmt.Sprintf("WALL%d", tileId-3)
+		} else if tileId == 46 {
+			return "WALL73"
+		} else if tileId == 47 || tileId == 48 {
+			return exitLumps[tileId-47]
+		} else if tileId >= 49 && tileId <= 71 {
+			return fmt.Sprintf("WALL%d", tileId-8)
+		} else if tileId >= 72 && tileId <= 79 {
+			return fmt.Sprintf("ELEV%d", tileId-71)
+		} else if tileId >= 80 && tileId <= 89 {
+			return fmt.Sprintf("WALL%d", tileId-16)
+		} else {
+			return ""
+		}
+	} else if wallInfo.Type == WALL_AnimatedWall {
+		animWallInfo := AnimatedWalls[wallInfo.AnimWallID]
+		if html {
+			return animWallInfo.StartingLump + "1"
+		} else {
+			return "+0" + strings.ToLower(animWallInfo.StartingLump)
+		}
+	} else {
+		// TODO: masked walls, elevators
+		return ""
+	}
 }
 
 type SpriteInfo struct {
@@ -193,16 +233,15 @@ func (r *RTLMapData) renderWallGrid() {
 			// setup algorithm, absolute mess)
 
 			// the first 4 tiles are not used and contain metadata
-			if j == 0 && i < 4 {
+			// tile values of 0 have nothing
+			if (i == 0 && j < 4) || tileId == 0 {
 				r.CookedWallGrid[i][j].Tile = 0
 				r.CookedWallGrid[i][j].Type = WALL_None
 				continue
 			}
 
-			if tileId > 89 || (tileId > 32 && tileId < 36) || tileId == 44 || tileId == 45 || tileId == 0 {
-				r.CookedWallGrid[i][j].Tile = 0
-				r.CookedWallGrid[i][j].Type = WALL_None
-				continue
+			if tileId >= AreaTileMin {
+				r.CookedWallGrid[i][j].AreaID = int(tileId - AreaTileMin)
 			}
 
 			/*
@@ -213,11 +252,12 @@ func (r *RTLMapData) renderWallGrid() {
 				}
 			*/
 
-			if tileId <= 32 {
+			if tileId <= 32 || (tileId >= 36 && tileId <= 43) {
 				// static wall
 				r.CookedWallGrid[i][j].Tile = tileId
 				r.CookedWallGrid[i][j].MapFlags |= WALLFLAGS_Static
 				r.CookedWallGrid[i][j].Type = WALL_Regular
+				continue
 			} else if tileId > 75 && tileId <= 79 {
 				// elevator tiles
 				r.CookedWallGrid[i][j].Tile = tileId
@@ -228,13 +268,11 @@ func (r *RTLMapData) renderWallGrid() {
 				r.CookedWallGrid[i][j].Tile = tileId
 				r.CookedWallGrid[i][j].MapFlags |= WALLFLAGS_Static
 				r.CookedWallGrid[i][j].Type = WALL_Regular
-			} else {
-				r.CookedWallGrid[i][j].Tile = tileId
-				r.CookedWallGrid[i][j].MapFlags |= WALLFLAGS_Static
-				r.CookedWallGrid[i][j].Type = WALL_Regular
 			}
 
-			// TODO: animated wall masking, heights
+			// TODO: animated wall masking, tile-specific heights
+			//
+			// for reference: rt_ted.c:2218
 			if tileId == 44 || tileId == 45 {
 				// animated wall
 				r.CookedWallGrid[i][j].Tile = tileId
@@ -270,11 +308,16 @@ func (r *RTLMapData) renderWallGrid() {
 			} else if _, ismasked := MaskedWalls[tileId]; ismasked {
 				r.CookedWallGrid[i][j].Tile = tileId
 				r.CookedWallGrid[i][j].Type = WALL_MaskedWall
-			} else if (tileId >= 36 && tileId <= 43) || (tileId >= 47 && tileId <= 88) {
-				// static wall
-				r.CookedWallGrid[i][j].Tile = tileId
-				r.CookedWallGrid[i][j].MapFlags |= WALLFLAGS_Static
-				r.CookedWallGrid[i][j].Type = WALL_Regular
+				/*
+					} else if (tileId >= 36 && tileId <= 43) || (tileId >= 47 && tileId <= 88) {
+						// static wall
+						r.CookedWallGrid[i][j].Tile = tileId
+						r.CookedWallGrid[i][j].MapFlags |= WALLFLAGS_Static
+						r.CookedWallGrid[i][j].Type = WALL_Regular
+				*/
+			} else if tileId > 89 || (tileId > 32 && tileId < 36) || tileId == 0 {
+				r.CookedWallGrid[i][j].Tile = 0
+				r.CookedWallGrid[i][j].Type = WALL_None
 			}
 
 			if r.CookedWallGrid[i][j].Tile > 1024 {
@@ -360,7 +403,7 @@ func (r *RTLMapData) DumpWallToFile(w io.Writer) error {
 				case 3:
 					_, err = fmt.Fprintf(w, " <P ")
 				default:
-					panic("How did this happen?")
+					panic("Bad player direction")
 				}
 			} else if dispValue.Type != WALL_None {
 				_, err = fmt.Fprintf(w, " %02x ", dispValue.Tile)
@@ -377,6 +420,98 @@ func (r *RTLMapData) DumpWallToFile(w io.Writer) error {
 		}
 	}
 	return nil
+}
+
+type CellData struct {
+	Wall   uint16
+	Sprite uint16
+	Info   uint16
+	X      int
+	Y      int
+	Img    string
+}
+type RowData struct {
+	Cells []CellData
+}
+
+func (r *RTLMapData) DumpMapToHtmlFile(w io.Writer) error {
+	tmpl := `
+{{define "mapcell"}}<td class="mapcell" id="cell-{{ .X }}-{{ .Y }}" {{ if ne .Img "" }}style="background: url(imgs/{{ .Img }}.png)"{{end}}>
+<span>W: {{ printf "%04x" .Wall }}</span><br />
+<span>S: {{ printf "%04x" .Sprite }}</span><br />
+<span>I: {{ printf "%04x" .Info }}</span>
+</td>{{end}}
+{{define "maprow"}}<tr class="maprow">{{ range .Cells }}{{ template "mapcell" . }}{{ end }}</tr>{{end}}
+{{define "map"}}
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Map</title>
+    <style type="text/css">
+      .map {
+	    border: 0px;
+		margin: 0px;
+		padding: 0px;
+		width: 8452px;
+      }
+      .maprow {
+	  }
+	  .maprow > td:hover {
+        background: #be5454 !important;
+	  }
+      .mapcell {
+      	width: 64px;
+      	height: 64px;
+		display: inline-block;
+      	border: 1px solid #000;
+		padding: 0px;
+		margin: 0px
+      }
+      .mapcell > span {
+		font-size: 12px;
+		padding: 0px;
+		margin: 0px
+      }
+    </style>
+  </head>
+  <body>
+    <table class="map">
+    {{ range .Rows }}
+    {{ template "maprow" . }}
+    {{ end }}
+    </table>
+  </body>
+</html>
+{{end}}
+`
+
+	htmlMapData := struct {
+		Rows []RowData
+	}{}
+	mapTmpl := template.Must(template.New("map").Parse(tmpl))
+	for i := 0; i < 128; i++ {
+		var cellData []CellData
+		for j := 0; j < 128; j++ {
+			wallInfo := r.CookedWallGrid[i][j]
+			img := wallInfo.WallTileToTextureName(true)
+			if wallInfo.Type == WALL_Regular {
+				img = "wall/" + img
+			} else if wallInfo.Type == WALL_AnimatedWall {
+				img = "anim/" + img
+			}
+			cellData = append(cellData, CellData{
+				Wall:   r.WallPlane[i][j],
+				Sprite: r.SpritePlane[i][j],
+				Info:   r.InfoPlane[i][j],
+				X:      i,
+				Y:      j,
+				Img:    img,
+			})
+		}
+		htmlMapData.Rows = append(htmlMapData.Rows, RowData{Cells: cellData})
+	}
+
+	return mapTmpl.ExecuteTemplate(w, "map", htmlMapData)
 }
 
 func (r *RTL) PrintMetadata() {

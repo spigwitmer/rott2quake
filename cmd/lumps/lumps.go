@@ -255,6 +255,7 @@ func main() {
 			rtlRawSpriteFile := fmt.Sprintf("%s/map%03d-sprites.bin", rtlMapOutdir, idx+1)
 			rtlRawInfoFile := fmt.Sprintf("%s/map%03d-info.bin", rtlMapOutdir, idx+1)
 			rtlQuakeMapFile := fmt.Sprintf("%s/map%03d.map", rtlMapOutdir, idx+1)
+			rtlHtmlFile := fmt.Sprintf("%s/map%03d.html", rtlMapOutdir, idx+1)
 
 			wallFhnd, err := os.Create(rtlMapFile)
 			if err != nil {
@@ -301,6 +302,15 @@ func main() {
 			qm := rtlfile.ConvertRTLMapToQuakeMapFile(&rtl.MapData[idx], wadOut)
 			if _, err = quakeMapFhnd.Write([]byte(qm.Render())); err != nil {
 				log.Fatalf("Could not write quake map file to %s: %v\n", rtlQuakeMapFile, err)
+			}
+
+			htmlFhnd, err := os.Create(rtlHtmlFile)
+			if err != nil {
+				log.Fatalf("Could not open %s for writing: %v\n", rtlHtmlFile, err)
+			}
+			defer htmlFhnd.Close()
+			if err = md.DumpMapToHtmlFile(htmlFhnd); err != nil {
+				log.Fatalf("Could not write quake map file to %s: %v\n", rtlHtmlFile, err)
 			}
 		}
 	}
