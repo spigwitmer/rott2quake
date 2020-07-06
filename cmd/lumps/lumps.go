@@ -206,7 +206,7 @@ func main() {
 	flag.StringVar(&lumpName, "lname", "", "Dump data only for this lump")
 	flag.StringVar(&lumpType, "ltype", "", "force specific lump type (only relevant when -lname is specified)")
 	flag.BoolVar(&printRTLInfo, "print-rtl-info", false, "Print RTL metadata (requires -rtl)")
-	flag.StringVar(&wadOut, "wad-out", "", "output ripped image assets to Quake wad2 file (requires -dump-lump-data)")
+	flag.StringVar(&wadOut, "wad-out", "", "output ripped image assets to Quake wad2 file (requires -dump)")
 	flag.BoolVar(&isQuakeWad, "quake", false, "wad specified is from Quake, not ROTT")
 	flag.BoolVar(&convertToDusk, "dusk", false, "convert assets to Dusk rather than Quake")
 	flag.StringVar(&rtlMapOutdir, "rtl-map-outdir", "", "Write RTL ASCII map out to this folder")

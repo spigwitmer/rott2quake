@@ -12,6 +12,8 @@ import (
 
 var (
 	rtlMagic = [4]byte{'R', 'T', 'L', '\x00'}
+	// any tile value in the first plane above this number is part of an area
+	AreaTileMin uint16 = 107
 )
 
 type RTLHeader struct {
@@ -50,6 +52,14 @@ const (
 	WALLFLAGS_Static   uint32 = 0x2000
 )
 
+type WallDirection int
+
+const (
+	// thin wall directions (e.g. masked walls, entry gates)
+	WALLDIR_NorthSouth WallDirection = iota
+	WALLDIR_EastWest
+)
+
 type WallInfo struct {
 	Tile         uint16 // matches up to lump name (WALL1, WALL2, etc.)
 	Type         WallType
@@ -79,6 +89,7 @@ func (wallInfo *WallInfo) WallTileToTextureName(html bool) string {
 		} else if tileId >= 49 && tileId <= 71 {
 			return fmt.Sprintf("WALL%d", tileId-8)
 		} else if tileId >= 72 && tileId <= 79 {
+			// catch-all, but should never get here
 			return fmt.Sprintf("ELEV%d", tileId-71)
 		} else if tileId >= 80 && tileId <= 89 {
 			return fmt.Sprintf("WALL%d", tileId-16)
@@ -92,8 +103,10 @@ func (wallInfo *WallInfo) WallTileToTextureName(html bool) string {
 		} else {
 			return "+0" + strings.ToLower(animWallInfo.StartingLump)
 		}
+	} else if wallInfo.Type == WALL_Elevator {
+		return fmt.Sprintf("ELEV%d", tileId-71)
 	} else {
-		// TODO: masked walls, elevators
+		// TODO: masked walls
 		return ""
 	}
 }
@@ -141,6 +154,38 @@ func (r *RTLMapData) FloorHeight() int {
 		return r.Height - 441
 	} else {
 		panic("Map has invalid height")
+	}
+}
+
+// determine which direction thin walls should face
+func (r *RTLMapData) ThinWallDirection(x, y int) WallDirection {
+	var adjacentCountX, adjacentCountY int
+
+	if x > 0 {
+		if r.CookedWallGrid[x-1][y].Type != WALL_None {
+			adjacentCountX++
+		}
+	}
+	if x < 127 {
+		if r.CookedWallGrid[x+1][y].Type != WALL_None {
+			adjacentCountX++
+		}
+	}
+	if y > 0 {
+		if r.CookedWallGrid[x][y-1].Type != WALL_None {
+			adjacentCountY++
+		}
+	}
+	if y < 127 {
+		if r.CookedWallGrid[x][y+1].Type != WALL_None {
+			adjacentCountY++
+		}
+	}
+
+	if adjacentCountX > adjacentCountY {
+		return WALLDIR_EastWest
+	} else {
+		return WALLDIR_NorthSouth
 	}
 }
 
@@ -199,7 +244,6 @@ func NewRTL(rfile io.ReadSeeker) (*RTL, error) {
 				break
 			}
 		}
-		CalculateAreas(&r.MapData[i])
 	}
 
 	return &r, nil
@@ -258,7 +302,7 @@ func (r *RTLMapData) renderWallGrid() {
 				r.CookedWallGrid[i][j].MapFlags |= WALLFLAGS_Static
 				r.CookedWallGrid[i][j].Type = WALL_Regular
 				continue
-			} else if tileId > 75 && tileId <= 79 {
+			} else if tileId >= 72 && tileId <= 79 {
 				// elevator tiles
 				r.CookedWallGrid[i][j].Tile = tileId
 				r.CookedWallGrid[i][j].MapFlags |= WALLFLAGS_Static
@@ -498,6 +542,8 @@ func (r *RTLMapData) DumpMapToHtmlFile(w io.Writer) error {
 				img = "wall/" + img
 			} else if wallInfo.Type == WALL_AnimatedWall {
 				img = "anim/" + img
+			} else if wallInfo.Type == WALL_Elevator {
+				img = "elev/" + img
 			}
 			cellData = append(cellData, CellData{
 				Wall:   r.WallPlane[i][j],

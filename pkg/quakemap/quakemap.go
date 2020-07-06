@@ -71,10 +71,11 @@ func (b *Brush) Render() string {
 }
 
 type Entity struct {
-	SpawnFlags int
-	ClassName  string
-	Brushes    []Brush
-	Map        *QuakeMap
+	SpawnFlags     int
+	ClassName      string
+	Brushes        []Brush
+	Map            *QuakeMap
+	AdditionalKeys map[string]string
 
 	// for info_player_start
 	OriginX float64
@@ -87,6 +88,7 @@ func NewEntity(spawnFlags int, className string, qm *QuakeMap) *Entity {
 	var e Entity
 	e.SpawnFlags = spawnFlags
 	e.ClassName = className
+	e.AdditionalKeys = make(map[string]string)
 	e.Map = qm
 	return &e
 }
@@ -96,6 +98,10 @@ func (e *Entity) Render() string {
 "spawnflags" "%d"
 "classname" "%s"
 `, e.SpawnFlags, e.ClassName)
+
+	for k, v := range e.AdditionalKeys {
+		output += fmt.Sprintf("\"%s\" \"%s\"\n", k, v)
+	}
 
 	switch e.ClassName {
 	case "info_player_start":

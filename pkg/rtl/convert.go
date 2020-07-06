@@ -1,6 +1,7 @@
 package rtl
 
 import (
+	"fmt"
 	"gitlab.com/camtap/lumps/pkg/quakemap"
 )
 
@@ -50,11 +51,13 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string) *quakema
 		1)
 	qm.WorldSpawn.Brushes = []quakemap.Brush{floorBrush}
 
+	// TODO: ceiling
+
 	// place static walls
 	for i := 0; i < 128; i++ {
 		for j := 0; j < 128; j++ {
 			wallInfo := rtlmap.CookedWallGrid[i][j]
-			if wallInfo.Type != WALL_None {
+			if wallInfo.Type == WALL_Regular || wallInfo.Type == WALL_AnimatedWall || wallInfo.Type == WALL_Elevator {
 				wallColumn := quakemap.BasicCuboid(
 					float64(i)*gridSizeX,   // x1
 					float64(j)*gridSizeY,   // y1
@@ -66,6 +69,37 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string) *quakema
 					1) // scale
 
 				qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, wallColumn)
+			} else if wallInfo.Type == WALL_MaskedWall {
+				if maskedWallInfo, ok := MaskedWalls[wallInfo.Tile]; ok {
+					wallDirection := rtlmap.ThinWallDirection(i, j)
+					var x1, y1, x2, y2 float64
+					var z1 float64 = floorDepth
+					var z2 float64 = floorDepth + float64(rtlmap.FloorHeight())*gridSizeZ
+					if maskedWallInfo.Flags&MWF_AbovePassable > 0 {
+						z2 -= gridSizeZ
+					}
+					if maskedWallInfo.Flags&MWF_BottomPassable > 0 {
+						z1 += gridSizeZ
+					}
+					if wallDirection == WALLDIR_NorthSouth {
+						x1 = float64(i)*gridSizeX + (gridSizeX / 2) - 2
+						x2 = float64(i)*gridSizeX + (gridSizeX / 2) + 2
+						y1 = float64(j) * gridSizeY
+						y2 = float64(j+1) * gridSizeY
+					} else {
+						x1 = float64(i) * gridSizeX
+						x2 = float64(i+1) * gridSizeX
+						y1 = float64(j)*gridSizeY + (gridSizeY / 2) - 2
+						y2 = float64(j)*gridSizeY + (gridSizeY / 2) + 2
+					}
+
+					mwColumn := quakemap.BasicCuboid(x1, y1, z1, x2, y2, z2,
+						"FLRCL1", // XXX
+						1)
+					qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, mwColumn)
+				} else {
+					panic(fmt.Sprintf("Masked wall at %d,%d has non-existent ID (%d)", i, j, wallInfo.MaskedWallID))
+				}
 			}
 		}
 	}
