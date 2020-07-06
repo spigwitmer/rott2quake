@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"gitlab.com/camtap/lumps/pkg/imgutil"
 	"gitlab.com/camtap/lumps/pkg/lumps"
+	"gitlab.com/camtap/lumps/pkg/rtl"
 	"image"
 	"image/color"
 	"image/png"
@@ -210,15 +211,13 @@ func DumpLpicDataToFile(destFhnd io.WriteSeeker, lumpInfo lumps.ArchiveEntry, lu
 	return destFhnd.Seek(0, io.SeekCurrent)
 }
 
-// convert translucent patch data to PNG before writing
-func DumpTransPatchDataToFile(destFhnd io.WriteSeeker, lumpInfo lumps.ArchiveEntry, lumpReader io.Reader, iwad lumps.ArchiveReader) (int64, error) {
-	// https://doomwiki.org/wiki/Picture_format
-
+// https://doomwiki.org/wiki/Picture_format
+func GetImageFromTransPatchData(lumpInfo lumps.ArchiveEntry, lumpReader io.Reader, iwad lumps.ArchiveReader) (*image.Paletted, error) {
 	// read entire lump to perform random access
 	patchBytes := make([]byte, lumpInfo.Size())
 	_, err := lumpReader.Read(patchBytes)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 	lumpBuffer := bytes.NewReader(patchBytes)
 
@@ -229,55 +228,69 @@ func DumpTransPatchDataToFile(destFhnd io.WriteSeeker, lumpInfo lumps.ArchiveEnt
 
 	columnOffsets := make([]uint16, patchHeader.Width)
 	if err := binary.Read(lumpBuffer, binary.LittleEndian, &columnOffsets); err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	pal := imgutil.GetPalette(iwad.Type())
 	if pal == nil {
-		return 0, fmt.Errorf("Game %s does not have a palette", iwad.Type())
+		return nil, fmt.Errorf("Game %s does not have a palette", iwad.Type())
 	}
 	img := image.NewPaletted(image.Rect(0, 0, int(patchHeader.Width), int(patchHeader.Height)), *pal)
 	for idx, cOffset := range columnOffsets {
-		fmt.Printf("columnOffset: %d\n", cOffset)
+		//log.Printf("\tcOffset(%d): %04x", idx, cOffset)
 		_, err := lumpBuffer.Seek(int64(cOffset), io.SeekStart)
 		if err != nil {
-			return 0, err
+			return nil, err
 		}
-		rowstart, err := lumpBuffer.ReadByte()
-		if err != nil {
-			return 0, err
-		}
-		fmt.Printf("\t\trowstart = %d\n", rowstart) // XXX
+		rowstart := byte(0)
 		for rowstart != 255 {
+			rowstart, err := lumpBuffer.ReadByte()
+			if err != nil {
+				return nil, err
+			}
+			//log.Printf("\t\trowstart(%d): %02x", idx, rowstart)
+			if rowstart == 255 {
+				break
+			}
+
 			pixelCount, err := lumpBuffer.ReadByte()
 			if err != nil {
-				return 0, err
+				return nil, err
+			}
+			//log.Printf("\t\tpixelCount(%d): %d", idx, pixelCount)
+
+			if pixelCount == 0 {
+				continue
 			}
 
-			fmt.Printf("\t\tpixelcount = %d\n", rowstart) // XXX
 			src, err := lumpBuffer.ReadByte()
 			if err != nil {
-				return 0, err
+				return nil, err
 			}
-			fmt.Printf("\t\tsrc = %d\n", rowstart) // XXX
 
+			//log.Printf("\t\tsrc(%d): %02x", idx, src)
 			if src == 254 {
 				// TODO: translucency shiz?
 			} else {
-				for i := uint8(0); i < pixelCount-1; i++ {
+				img.SetColorIndex(idx, int(rowstart), src)
+				for i := uint8(1); i < pixelCount; i++ {
 					paletteCode, err := lumpBuffer.ReadByte()
 					if err != nil {
-						return 0, err
+						return nil, err
 					}
 					img.SetColorIndex(idx, int(i+rowstart), paletteCode)
 				}
 			}
-			rowstart, err = lumpBuffer.ReadByte()
-			if err != nil {
-				return 0, err
-			}
-			fmt.Printf("\t\trowstart = %d\n", rowstart) // XXX
 		}
+	}
+	return img, nil
+}
+
+// convert translucent patch data to PNG before writing
+func DumpTransPatchDataToFile(destFhnd io.WriteSeeker, lumpInfo lumps.ArchiveEntry, lumpReader io.Reader, iwad lumps.ArchiveReader) (int64, error) {
+	img, err := GetImageFromTransPatchData(lumpInfo, lumpReader, iwad)
+	if err != nil {
+		return 0, err
 	}
 
 	if err = png.Encode(destFhnd, img); err != nil {
@@ -401,12 +414,25 @@ var TypeOneOffs = map[string][2]string{
 }
 
 func ROTTGuessFileTypeAndSubdir(entry *WADEntry) (string, string) {
+	entryName := entry.Name()
+	var dataType, subdir string
+
+	// masked walls have more specific requirements on what type of
+	// format it is
+	for _, maskedentry := range rtl.MaskedWalls {
+		if entryName == maskedentry.Bottom {
+			return "tpatch", "masked"
+		} else if entryName == maskedentry.Above || entryName == maskedentry.Middle {
+			return "patch", "masked"
+		} else if entryName == maskedentry.Side {
+			return "wall", "masked"
+		}
+	}
+
 	if oneOff, found := TypeOneOffs[entry.Name()]; found {
 		return oneOff[0], oneOff[1]
 	}
 
-	entryName := entry.Name()
-	var dataType, subdir string
 	// TODO: fix this. this is terribly written.
 	// map things. skiplist things. do anything besides
 	// traversing through the entire directory
@@ -450,7 +476,7 @@ func ROTTGuessFileTypeAndSubdir(entry *WADEntry) (string, string) {
 			subdir = "side"
 		case "MASKSTRT":
 			dataType = "raw"
-			subdir = ""
+			subdir = "masked-unknown"
 		case "UPDNSTRT":
 			dataType = "lpic"
 			subdir = "floors-ceilings"
