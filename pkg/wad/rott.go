@@ -40,10 +40,6 @@ type RottPicHeader struct {
 	Height uint8
 }
 
-type Palette struct {
-	R, G, B uint8
-}
-
 // https://doomwiki.org/wiki/Picture_format
 func GetImageFromPatchData(lumpInfo lumps.ArchiveEntry, lumpReader io.Reader, iwad lumps.ArchiveReader) (*image.Paletted, error) {
 	// read entire lump to perform random access
@@ -69,6 +65,12 @@ func GetImageFromPatchData(lumpInfo lumps.ArchiveEntry, lumpReader io.Reader, iw
 		return nil, fmt.Errorf("Game %s does not have a palette", iwad.Type())
 	}
 	img := image.NewPaletted(image.Rect(0, 0, int(patchHeader.Width), int(patchHeader.Height)), *pal)
+	// default to transparent
+	for i := 0; i < 128; i++ {
+		for j := 0; j < 128; j++ {
+			img.SetColorIndex(i, j, 0)
+		}
+	}
 	for idx, cOffset := range columnOffsets {
 		_, err := lumpBuffer.Seek(int64(cOffset), io.SeekStart)
 		if err != nil {
@@ -90,13 +92,15 @@ func GetImageFromPatchData(lumpInfo lumps.ArchiveEntry, lumpReader io.Reader, iw
 				return nil, err
 			}
 
-			for i := uint8(0); i < pixelCount-1; i++ {
-				paletteCode, err := lumpBuffer.ReadByte()
-				if err != nil {
-					return nil, err
-				}
+			if pixelCount > 0 {
+				for i := uint8(0); i < pixelCount-1; i++ {
+					paletteCode, err := lumpBuffer.ReadByte()
+					if err != nil {
+						return nil, err
+					}
 
-				img.SetColorIndex(idx, int(i+rowstart), paletteCode)
+					img.SetColorIndex(idx, int(i+rowstart), paletteCode)
+				}
 			}
 
 			// read dummy byte
@@ -236,6 +240,12 @@ func GetImageFromTransPatchData(lumpInfo lumps.ArchiveEntry, lumpReader io.Reade
 		return nil, fmt.Errorf("Game %s does not have a palette", iwad.Type())
 	}
 	img := image.NewPaletted(image.Rect(0, 0, int(patchHeader.Width), int(patchHeader.Height)), *pal)
+	// default to transparent
+	for i := 0; i < 128; i++ {
+		for j := 0; j < 128; j++ {
+			img.SetColorIndex(i, j, 0)
+		}
+	}
 	for idx, cOffset := range columnOffsets {
 		//log.Printf("\tcOffset(%d): %04x", idx, cOffset)
 		_, err := lumpBuffer.Seek(int64(cOffset), io.SeekStart)
@@ -271,6 +281,9 @@ func GetImageFromTransPatchData(lumpInfo lumps.ArchiveEntry, lumpReader io.Reade
 			//log.Printf("\t\tsrc(%d): %02x", idx, src)
 			if src == 254 {
 				// TODO: translucency shiz?
+				for i := byte(0); i < pixelCount; i++ {
+					img.SetColorIndex(idx, int(i+rowstart), 0)
+				}
 			} else {
 				img.SetColorIndex(idx, int(rowstart), src)
 				for i := uint8(1); i < pixelCount; i++ {

@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"gitlab.com/camtap/lumps/pkg/imgutil"
 	"gitlab.com/camtap/lumps/pkg/lumps"
 	"gitlab.com/camtap/lumps/pkg/pak"
 	rtlfile "gitlab.com/camtap/lumps/pkg/rtl"
@@ -154,6 +155,50 @@ func dumpLumpDataToFile(archive lumps.ArchiveReader, entry lumps.ArchiveEntry, d
 				log.Fatalf("Could not get MIP texture from flat: %v\n", err)
 			}
 			wad2Writer.AddLump(entry.Name(), mipdata, wad2.LT_MIPTEX)
+		} else if dataType == "patch" {
+
+			// we only want sprites related to structures
+			entryName := entry.Name()
+			isForMaskedWall := false
+			for _, wallInfo := range rtlfile.MaskedWalls {
+				if wallInfo.Side == entryName || wallInfo.Above == entryName || wallInfo.Middle == entryName {
+					isForMaskedWall = true
+					break
+				}
+			}
+
+			if !isForMaskedWall {
+				return
+			}
+
+			rawLumpReader, err := entry.Open()
+			if err != nil {
+				log.Fatalf("Could not get %s lump data: %v\n", entryName, err)
+			}
+			img, err := wad.GetImageFromPatchData(entry, rawLumpReader, archive)
+			if err != nil {
+				log.Fatalf("Could not get patch data image: %v\n", err)
+			}
+			// quake texture dimensions must be a factor of 16
+			mipdata, err := wad2.PalettedImageToMIPTexture(imgutil.AlignImageDimensions(img, 16))
+			if err != nil {
+				log.Fatalf("Could not get MIP texture from flat: %v\n", err)
+			}
+			wad2Writer.AddLump("{"+entryName, mipdata, wad2.LT_MIPTEX)
+		} else if dataType == "tpatch" {
+			rawLumpReader, err := entry.Open()
+			if err != nil {
+				log.Fatalf("Could not get %s lump data: %v\n", entry.Name(), err)
+			}
+			img, err := wad.GetImageFromTransPatchData(entry, rawLumpReader, archive)
+			if err != nil {
+				log.Fatalf("Could not get tpatch data image: %v\n", err)
+			}
+			mipdata, err := wad2.PalettedImageToMIPTexture(imgutil.AlignImageDimensions(img, 16))
+			if err != nil {
+				log.Fatalf("Could not get MIP texture from flat: %v\n", err)
+			}
+			wad2Writer.AddLump("{"+entry.Name(), mipdata, wad2.LT_MIPTEX)
 		} else if dataType == "wall" {
 			if animWall, frameNum := rtlfile.GetAnimatedWallInfo(entry.Name()); animWall != nil {
 				// dump animated wall
@@ -199,6 +244,7 @@ func main() {
 	var convertToDusk bool
 	var rtl *rtlfile.RTL
 	var printRTLInfo bool
+	var rtlMapScale float64
 	var wadExtractor lumps.ArchiveReader
 
 	flag.StringVar(&rtlFile, "rtl", "", "RTL file")
@@ -208,8 +254,9 @@ func main() {
 	flag.BoolVar(&printRTLInfo, "print-rtl-info", false, "Print RTL metadata (requires -rtl)")
 	flag.StringVar(&wadOut, "wad-out", "", "output ripped image assets to Quake wad2 file (requires -dump)")
 	flag.BoolVar(&isQuakeWad, "quake", false, "wad specified is from Quake, not ROTT")
-	flag.BoolVar(&convertToDusk, "dusk", false, "convert assets to Dusk rather than Quake")
+	flag.BoolVar(&convertToDusk, "dusk", false, "generate maps for Dusk rather than Quake (requires -rtl-map-outdir)")
 	flag.StringVar(&rtlMapOutdir, "rtl-map-outdir", "", "Write RTL ASCII map out to this folder")
+	flag.Float64Var(&rtlMapScale, "rtl-map-scale", 1.0, "Scale generated maps by this factor")
 	flag.BoolVar(&dumpLumpData, "dump", false, "Dump Lump Data out to dest dir")
 	flag.BoolVar(&dumpRaw, "dump-raw", false, "Dump raw lump data alongside rendered")
 	flag.BoolVar(&printLumps, "list", false, "Print Lump Directory")
@@ -240,6 +287,11 @@ func main() {
 	if rtlMapOutdir != "" {
 		if rtl == nil {
 			log.Fatalf("Must provide RTL file when dumping map data")
+		}
+		if convertToDusk {
+			log.Printf("Converting maps for Dusk")
+		} else {
+			log.Printf("Converting maps for Quake")
 		}
 		if err := os.MkdirAll(rtlMapOutdir, 0755); err != nil {
 			log.Fatalf("Could not create outdir: %v\n", err)
@@ -299,7 +351,7 @@ func main() {
 				log.Fatalf("Could not open %s for writing: %v\n", rtlQuakeMapFile, err)
 			}
 			defer quakeMapFhnd.Close()
-			qm := rtlfile.ConvertRTLMapToQuakeMapFile(&rtl.MapData[idx], wadOut)
+			qm := rtlfile.ConvertRTLMapToQuakeMapFile(&rtl.MapData[idx], wadOut, rtlMapScale, convertToDusk)
 			if _, err = quakeMapFhnd.Write([]byte(qm.Render())); err != nil {
 				log.Fatalf("Could not write quake map file to %s: %v\n", rtlQuakeMapFile, err)
 			}

@@ -6,10 +6,7 @@ import (
 )
 
 var (
-	gridSizeX float64 = 64
-	gridSizeY float64 = 64
-	gridSizeZ float64 = 64
-	exitLumps         = []string{
+	exitLumps = []string{
 		"EXIT",
 		"ENTRANCE",
 		"EXITARCH",
@@ -18,13 +15,16 @@ var (
 	}
 )
 
-func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string) *quakemap.QuakeMap {
+func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale float64, dusk bool) *quakemap.QuakeMap {
 
 	// worldspawn:
 	// 1. build 128x128 floor
+	var gridSizeX float64 = 64.0 * scale
+	var gridSizeY float64 = 64.0 * scale
+	var gridSizeZ float64 = 64.0 * scale
 	var floorLength float64 = gridSizeX * 128
 	var floorWidth float64 = gridSizeY * 128
-	var floorDepth float64 = 64
+	var floorDepth float64 = 64 * scale
 
 	var playerStartX float64 = float64(rtlmap.SpawnX)*gridSizeX + (gridSizeX / 2)
 	var playerStartY float64 = float64(rtlmap.SpawnY)*gridSizeY + (gridSizeY / 2)
@@ -48,10 +48,21 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string) *quakema
 		0, 0, 0,
 		floorWidth, floorLength, floorDepth,
 		rtlmap.FloorTexture(),
-		1)
+		scale)
 	qm.WorldSpawn.Brushes = []quakemap.Brush{floorBrush}
 
-	// TODO: ceiling
+	// add ceiling if declared
+	ceilTexture := rtlmap.CeilingTexture()
+	if ceilTexture != "" {
+		ceilz1 := floorDepth + float64(rtlmap.FloorHeight())*gridSizeZ
+		ceilz2 := floorDepth + float64(rtlmap.FloorHeight()+1)*gridSizeZ
+		ceilBrush := quakemap.BasicCuboid(
+			0, 0, ceilz1,
+			floorWidth, floorLength, ceilz2,
+			ceilTexture,
+			scale)
+		qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, ceilBrush)
+	}
 
 	// place static walls
 	for i := 0; i < 128; i++ {
@@ -66,21 +77,16 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string) *quakema
 					float64(j+1)*gridSizeY, // y2
 					floorDepth+float64(rtlmap.FloorHeight())*gridSizeZ, // z2
 					wallInfo.WallTileToTextureName(false),
-					1) // scale
+					scale) // scale
 
 				qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, wallColumn)
 			} else if wallInfo.Type == WALL_MaskedWall {
+				// masked walls have adjacent sides, a thin wall in the
+				// middle, and the bottom may be passable
 				if maskedWallInfo, ok := MaskedWalls[wallInfo.Tile]; ok {
 					wallDirection := rtlmap.ThinWallDirection(i, j)
 					var x1, y1, x2, y2 float64
-					var z1 float64 = floorDepth
-					var z2 float64 = floorDepth + float64(rtlmap.FloorHeight())*gridSizeZ
-					if maskedWallInfo.Flags&MWF_AbovePassable > 0 {
-						z2 -= gridSizeZ
-					}
-					if maskedWallInfo.Flags&MWF_BottomPassable > 0 {
-						z1 += gridSizeZ
-					}
+
 					if wallDirection == WALLDIR_NorthSouth {
 						x1 = float64(i)*gridSizeX + (gridSizeX / 2) - 2
 						x2 = float64(i)*gridSizeX + (gridSizeX / 2) + 2
@@ -93,10 +99,53 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string) *quakema
 						y2 = float64(j)*gridSizeY + (gridSizeY / 2) + 2
 					}
 
-					mwColumn := quakemap.BasicCuboid(x1, y1, z1, x2, y2, z2,
-						"FLRCL1", // XXX
-						1)
-					qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, mwColumn)
+					// above as separate entity
+					if maskedWallInfo.Above != "" {
+						var abovez1 float64 = floorDepth + float64(rtlmap.FloorHeight()-1)*gridSizeZ
+						var abovez2 float64 = floorDepth + float64(rtlmap.FloorHeight())*gridSizeZ
+						aboveClassName := "func_detail"
+						if maskedWallInfo.Flags&MWF_AbovePassable > 0 {
+							aboveClassName = "func_detail_illusionary"
+						}
+						aboveColumn := quakemap.BasicCuboid(x1, y1, abovez1, x2, y2, abovez2,
+							"{"+maskedWallInfo.Above,
+							scale)
+						aboveEntity := quakemap.NewEntity(0, aboveClassName, qm)
+						aboveEntity.Brushes = append(aboveEntity.Brushes, aboveColumn)
+						qm.Entities = append(qm.Entities, aboveEntity)
+					}
+
+					// middle
+					if maskedWallInfo.Middle != "" {
+						var middlez1 float64 = floorDepth + gridSizeZ
+						var middlez2 float64 = floorDepth + float64(rtlmap.FloorHeight()-1)*gridSizeZ
+						mwColumn := quakemap.BasicCuboid(x1, y1, middlez1, x2, y2, middlez2,
+							"{"+maskedWallInfo.Middle,
+							scale)
+						qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, mwColumn)
+					}
+
+					// bottom
+					// above as separate entity
+					if maskedWallInfo.Bottom != "" {
+						var z1 float64 = floorDepth
+						var z2 float64 = floorDepth + gridSizeZ
+						className := "func_detail"
+						if maskedWallInfo.Flags&MWF_Shootable > 0 {
+							className = "func_breakable"
+						} else if maskedWallInfo.Flags&MWF_BottomPassable > 0 {
+							className = "func_detail_illusionary"
+						}
+						column := quakemap.BasicCuboid(x1, y1, z1, x2, y2, z2,
+							"{"+maskedWallInfo.Bottom,
+							scale)
+						bottomEntity := quakemap.NewEntity(0, className, qm)
+						bottomEntity.Brushes = append(bottomEntity.Brushes, column)
+						qm.Entities = append(qm.Entities, bottomEntity)
+					}
+
+					// TODO: sides
+
 				} else {
 					panic(fmt.Sprintf("Masked wall at %d,%d has non-existent ID (%d)", i, j, wallInfo.MaskedWallID))
 				}

@@ -147,7 +147,24 @@ func (r *RTLMapData) FloorTexture() string {
 	return fmt.Sprintf("FLRCL%d", r.FloorNumber-179)
 }
 
+func (r *RTLMapData) CeilingTexture() string {
+	if r.CeilingNumber >= 198 && r.CeilingNumber <= 213 {
+		return fmt.Sprintf("FLRCL%d", r.CeilingNumber-197)
+	}
+	return ""
+}
+
 func (r *RTLMapData) FloorHeight() int {
+	if r.Height >= 90 && r.Height <= 98 {
+		return r.Height - 89
+	} else if r.Height >= 450 && r.Height <= 457 {
+		return r.Height - 441
+	} else {
+		panic("Map has invalid height")
+	}
+}
+
+func (r *RTLMapData) CeilingHeight() int {
 	if r.Height >= 90 && r.Height <= 98 {
 		return r.Height - 89
 	} else if r.Height >= 450 && r.Height <= 457 {

@@ -3,7 +3,6 @@ package wad2
 import (
 	"bytes"
 	"encoding/binary"
-	//"github.com/esimov/colorquant"
 	"github.com/nfnt/resize"
 	"gitlab.com/camtap/lumps/pkg/imgutil"
 	"image"

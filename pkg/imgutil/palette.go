@@ -48,8 +48,8 @@ var (
 )
 
 func init() {
-	RottPalette = BuildPalette(rottPaletteData)
-	QuakePalette = BuildPalette(quakePaletteData)
+	RottPalette = BuildPalette(rottPaletteData, 0)
+	QuakePalette = BuildPalette(quakePaletteData, 255)
 }
 
 // translates the pixels from a paletted image based on ROTT's
@@ -65,13 +65,17 @@ func TranslateRottPalettedImageToQuake(img *image.Paletted) {
 	img.Palette = QuakePalette
 }
 
-func BuildPalette(data []byte) color.Palette {
+func BuildPalette(data []byte, transparencyIdx int) color.Palette {
 	if len(data) != 768 {
 		log.Fatalf("len(data) != 768 (%d)", len(data))
 	}
 	var pal color.Palette
 	for i := 0; i < len(data); i += 3 {
-		pal = append(pal, color.RGBA{data[i], data[i+1], data[i+2], 0xff})
+		if i/3 == transparencyIdx {
+			pal = append(pal, color.RGBA{data[i], data[i+1], data[i+2], 0x00})
+		} else {
+			pal = append(pal, color.RGBA{data[i], data[i+1], data[i+2], 0xff})
+		}
 	}
 
 	return pal

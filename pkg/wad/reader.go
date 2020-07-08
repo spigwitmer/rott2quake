@@ -16,6 +16,10 @@ type WADReader struct {
 	LumpDirectory   []*LumpHeader
 }
 
+type Palette struct {
+	R, G, B uint8
+}
+
 func getBasePaletteData(iwad *WADReader) error {
 	paletteData := make([]Palette, 256)
 
