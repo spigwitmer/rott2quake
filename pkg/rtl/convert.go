@@ -69,17 +69,81 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 		for j := 0; j < 128; j++ {
 			wallInfo := rtlmap.CookedWallGrid[i][j]
 			if wallInfo.Type == WALL_Regular || wallInfo.Type == WALL_AnimatedWall || wallInfo.Type == WALL_Elevator {
-				wallColumn := quakemap.BasicCuboid(
-					float64(i)*gridSizeX,   // x1
-					float64(j)*gridSizeY,   // y1
-					floorDepth,             // z1
-					float64(i+1)*gridSizeX, // x2
-					float64(j+1)*gridSizeY, // y2
-					floorDepth+float64(rtlmap.FloorHeight())*gridSizeZ, // z2
-					wallInfo.WallTileToTextureName(false),
-					scale) // scale
+				infoVal := rtlmap.InfoPlane[i][j]
+				if infoVal == 4 {
+					// thin wall, above only
+					wallDirection := rtlmap.ThinWallDirection(i, j)
+					var x1, y1, x2, y2 float64
+					var z1 float64 = floorDepth + float64(rtlmap.FloorHeight()-1)*gridSizeZ
+					var z2 float64 = floorDepth + float64(rtlmap.FloorHeight())*gridSizeZ
+					if wallDirection == WALLDIR_NorthSouth {
+						x1 = float64(i)*gridSizeX + (gridSizeX / 2) - 2
+						x2 = float64(i)*gridSizeX + (gridSizeX / 2) + 2
+						y1 = float64(j) * gridSizeY
+						y2 = float64(j+1) * gridSizeY
+					} else {
+						x1 = float64(i) * gridSizeX
+						x2 = float64(i+1) * gridSizeX
+						y1 = float64(j)*gridSizeY + (gridSizeY / 2) - 2
+						y2 = float64(j)*gridSizeY + (gridSizeY / 2) + 2
+					}
+					wallColumn := quakemap.BasicCuboid(x1, y1, z1, x2, y2, z2,
+						wallInfo.WallTileToTextureName(false), scale)
+					qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, wallColumn)
+				} else if infoVal == 7 {
+					// thin wall, everything but below
+					wallDirection := rtlmap.ThinWallDirection(i, j)
+					var x1, y1, x2, y2 float64
+					var z1 float64 = floorDepth + gridSizeZ
+					var z2 float64 = floorDepth + float64(rtlmap.FloorHeight())*gridSizeZ
+					if wallDirection == WALLDIR_NorthSouth {
+						x1 = float64(i)*gridSizeX + (gridSizeX / 2) - 2
+						x2 = float64(i)*gridSizeX + (gridSizeX / 2) + 2
+						y1 = float64(j) * gridSizeY
+						y2 = float64(j+1) * gridSizeY
+					} else {
+						x1 = float64(i) * gridSizeX
+						x2 = float64(i+1) * gridSizeX
+						y1 = float64(j)*gridSizeY + (gridSizeY / 2) - 2
+						y2 = float64(j)*gridSizeY + (gridSizeY / 2) + 2
+					}
+					wallColumn := quakemap.BasicCuboid(x1, y1, z1, x2, y2, z2,
+						wallInfo.WallTileToTextureName(false), scale)
+					qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, wallColumn)
+				} else if infoVal == 9 {
+					// thin wall, everything but above
+					wallDirection := rtlmap.ThinWallDirection(i, j)
+					var x1, y1, x2, y2 float64
+					var z1 float64 = floorDepth
+					var z2 float64 = floorDepth + float64(rtlmap.FloorHeight()-1)*gridSizeZ
+					if wallDirection == WALLDIR_NorthSouth {
+						x1 = float64(i)*gridSizeX + (gridSizeX / 2) - 2
+						x2 = float64(i)*gridSizeX + (gridSizeX / 2) + 2
+						y1 = float64(j) * gridSizeY
+						y2 = float64(j+1) * gridSizeY
+					} else {
+						x1 = float64(i) * gridSizeX
+						x2 = float64(i+1) * gridSizeX
+						y1 = float64(j)*gridSizeY + (gridSizeY / 2) - 2
+						y2 = float64(j)*gridSizeY + (gridSizeY / 2) + 2
+					}
+					wallColumn := quakemap.BasicCuboid(x1, y1, z1, x2, y2, z2,
+						wallInfo.WallTileToTextureName(false), scale)
+					qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, wallColumn)
+				} else {
+					// plain ol' column
+					wallColumn := quakemap.BasicCuboid(
+						float64(i)*gridSizeX,   // x1
+						float64(j)*gridSizeY,   // y1
+						floorDepth,             // z1
+						float64(i+1)*gridSizeX, // x2
+						float64(j+1)*gridSizeY, // y2
+						floorDepth+float64(rtlmap.FloorHeight())*gridSizeZ, // z2
+						wallInfo.WallTileToTextureName(false),
+						scale) // scale
+					qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, wallColumn)
+				}
 
-				qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, wallColumn)
 			} else if wallInfo.Type == WALL_MaskedWall {
 				// masked walls have adjacent sides, a thin wall in the
 				// middle, and the bottom may be passable
