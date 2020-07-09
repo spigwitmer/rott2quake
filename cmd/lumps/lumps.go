@@ -166,6 +166,12 @@ func dumpLumpDataToFile(archive lumps.ArchiveReader, entry lumps.ArchiveEntry, d
 					break
 				}
 			}
+			for _, wallInfo := range rtlfile.Platforms {
+				if wallInfo.Side == entryName || wallInfo.Above == entryName || wallInfo.Middle == entryName {
+					isForMaskedWall = true
+					break
+				}
+			}
 
 			if !isForMaskedWall {
 				return

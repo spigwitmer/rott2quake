@@ -77,3 +77,33 @@ var MaskedWalls = map[uint16]MaskedWallInfo{
 	MW_HiSwitchOn:          MaskedWallInfo{MWF_Blocking | MWF_SwitchOn, "", "HSWITCH2", "HSWITCH4", "HSWITCH1"},
 	MW_Railing:             MaskedWallInfo{MWF_AbovePassable | MWF_MiddlePassable, "", "", "", "RAILING"},
 }
+
+var HMSK_Lumps = []string{
+	"HSWITCH1",
+	"HSWITCH2",
+	"HSWITCH3",
+	"HSWTICH4",
+	"HSWITCH5",
+	"HSWITCH6",
+	"HSWTCH6A",
+	"HSWITCH7",
+	"HSWITCH8",
+	"HSWTCH8A",
+	"HSWTCH9",
+	"HSWTCH10",
+	"HSWTCH11",
+	"HSWTCH12",
+	"HSWTCH13",
+	"HSWTCH14",
+}
+
+// rt_ted.c:2818
+var Platforms = map[int]MaskedWallInfo{
+	4: MaskedWallInfo{MWF_BottomPassable | MWF_MiddlePassable, "", "", HMSK_Lumps[10], ""},
+	5: MaskedWallInfo{MWF_AbovePassable | MWF_MiddlePassable, "", "", "", HMSK_Lumps[8]},
+	6: MaskedWallInfo{MWF_MiddlePassable, "", "", HMSK_Lumps[10], HMSK_Lumps[8]},
+	7: MaskedWallInfo{MWF_BottomPassable, "", HMSK_Lumps[7], HMSK_Lumps[7], HMSK_Lumps[12]},
+	8: MaskedWallInfo{MWF_BottomPassable | MWF_AbovePassable, "", HMSK_Lumps[7], HMSK_Lumps[5], HMSK_Lumps[12]},
+	9: MaskedWallInfo{MWF_AbovePassable, "", HMSK_Lumps[7], HMSK_Lumps[5], HMSK_Lumps[4]},
+	1: MaskedWallInfo{MWF_AbovePassable, "", HMSK_Lumps[7], HMSK_Lumps[5], HMSK_Lumps[4]},
+}

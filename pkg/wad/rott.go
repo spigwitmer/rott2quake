@@ -388,10 +388,29 @@ func DumpLBMDataToFile(destFhnd io.WriteSeeker, lumpInfo lumps.ArchiveEntry, lum
 var TypeOneOffs = map[string][2]string{
 	"SND_ON":   [2]string{"patch", "widgets"},
 	"SND_OFF":  [2]string{"patch", "widgets"},
+	"BLOCK1":   [2]string{"patch", "block"},
+	"BLOCK2":   [2]string{"patch", "block"},
+	"BLOCK3":   [2]string{"patch", "block"},
+	"CACHEBAR": [2]string{"patch", "misc"},
+	"INFO1":    [2]string{"patch", "info"},
+	"INFO2":    [2]string{"patch", "info"},
+	"INFO3":    [2]string{"patch", "info"},
+	"INFO4":    [2]string{"patch", "info"},
+	"INFO5":    [2]string{"patch", "info"},
+	"INFO6":    [2]string{"patch", "info"},
+	"INFO7":    [2]string{"patch", "info"},
+	"INFO8":    [2]string{"patch", "info"},
+	"INFO9":    [2]string{"patch", "info"},
 	"DEADJOE":  [2]string{"patch", "boss-deaths"},
 	"DEADROBO": [2]string{"patch", "boss-deaths"},
 	"DEADSTEV": [2]string{"patch", "boss-deaths"},
 	"DEADTOM":  [2]string{"patch", "boss-deaths"},
+	"HSWITCH5": [2]string{"tpatch", "masked"},
+	"HSWITCH8": [2]string{"tpatch", "masked"},
+	"HSWTICH4": [2]string{"patch", "masked"},
+	"HSWITCH6": [2]string{"patch", "masked"},
+	"HSWITCH7": [2]string{"patch", "masked"},
+	"HSWTCH9":  [2]string{"patch", "masked"},
 	"PAL":      [2]string{"raw", "misc"},
 	"LICENSE":  [2]string{"raw", "misc"},
 	"IMFREE":   [2]string{"lbm", "misc"},
@@ -433,6 +452,16 @@ func ROTTGuessFileTypeAndSubdir(entry *WADEntry) (string, string) {
 	// masked walls have more specific requirements on what type of
 	// format it is
 	for _, maskedentry := range rtl.MaskedWalls {
+		if entryName == maskedentry.Bottom {
+			return "tpatch", "masked"
+		} else if entryName == maskedentry.Above || entryName == maskedentry.Middle {
+			return "patch", "masked"
+		} else if entryName == maskedentry.Side {
+			return "wall", "masked"
+		}
+	}
+
+	for _, maskedentry := range rtl.Platforms {
 		if entryName == maskedentry.Bottom {
 			return "tpatch", "masked"
 		} else if entryName == maskedentry.Above || entryName == maskedentry.Middle {

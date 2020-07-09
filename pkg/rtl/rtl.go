@@ -14,6 +14,7 @@ var (
 	rtlMagic = [4]byte{'R', 'T', 'L', '\x00'}
 	// any tile value in the first plane above this number is part of an area
 	AreaTileMin uint16 = 107
+	NumAreas    uint16 = 47
 )
 
 type RTLHeader struct {
@@ -43,6 +44,7 @@ const (
 	WALL_Elevator
 	WALL_AnimatedWall
 	WALL_MaskedWall
+	WALL_Platform
 	WALL_Window
 	WALL_PushWall
 )
@@ -67,6 +69,7 @@ type WallInfo struct {
 	Damage       bool
 	AnimWallID   int // see anim.go
 	MaskedWallID int // see maskedwall.go
+	PlatformID   int // see maskedwall.go
 	AreaID       int // see area.go
 }
 
@@ -106,7 +109,6 @@ func (wallInfo *WallInfo) WallTileToTextureName(html bool) string {
 	} else if wallInfo.Type == WALL_Elevator {
 		return fmt.Sprintf("ELEV%d", tileId-71)
 	} else {
-		// TODO: masked walls
 		return ""
 	}
 }
@@ -289,6 +291,7 @@ func (r *RTLMapData) renderWallGrid() {
 			r.CookedWallGrid[i][j].Type = WALL_None
 
 			tileId := r.WallPlane[i][j]
+			infoVal := r.InfoPlane[i][j]
 
 			// for reference: rt_ted.c:1965 in ROTT source code (wall
 			// setup algorithm, absolute mess)
@@ -304,14 +307,6 @@ func (r *RTLMapData) renderWallGrid() {
 			if tileId >= AreaTileMin {
 				r.CookedWallGrid[i][j].AreaID = int(tileId - AreaTileMin)
 			}
-
-			/*
-				if tileId <= 32 {
-					index = tileId
-				} else {
-					index = tileId - 3
-				}
-			*/
 
 			if tileId <= 32 || (tileId >= 36 && tileId <= 43) {
 				// static wall
@@ -331,8 +326,6 @@ func (r *RTLMapData) renderWallGrid() {
 				r.CookedWallGrid[i][j].Type = WALL_Regular
 			}
 
-			// TODO: animated wall masking, tile-specific heights
-			//
 			// for reference: rt_ted.c:2218
 			if tileId == 44 || tileId == 45 {
 				// animated wall
@@ -369,13 +362,11 @@ func (r *RTLMapData) renderWallGrid() {
 			} else if _, ismasked := MaskedWalls[tileId]; ismasked {
 				r.CookedWallGrid[i][j].Tile = tileId
 				r.CookedWallGrid[i][j].Type = WALL_MaskedWall
-				/*
-					} else if (tileId >= 36 && tileId <= 43) || (tileId >= 47 && tileId <= 88) {
-						// static wall
-						r.CookedWallGrid[i][j].Tile = tileId
-						r.CookedWallGrid[i][j].MapFlags |= WALLFLAGS_Static
-						r.CookedWallGrid[i][j].Type = WALL_Regular
-				*/
+			} else if (tileId == 0 || (tileId >= AreaTileMin && tileId <= (AreaTileMin+NumAreas))) && infoVal > 0 {
+				// platform
+				r.CookedWallGrid[i][j].Type = WALL_Platform
+				r.CookedWallGrid[i][j].PlatformID = int(infoVal)
+				r.CookedWallGrid[i][j].Tile = tileId
 			} else if tileId > 89 || (tileId > 32 && tileId < 36) || tileId == 0 {
 				r.CookedWallGrid[i][j].Tile = 0
 				r.CookedWallGrid[i][j].Type = WALL_None
