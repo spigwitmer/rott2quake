@@ -70,14 +70,10 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 			wallInfo := rtlmap.CookedWallGrid[i][j]
 			texName := wallInfo.WallTileToTextureName(false)
 			if wallInfo.Type == WALL_Regular || wallInfo.Type == WALL_AnimatedWall || wallInfo.Type == WALL_Elevator {
+				var x1, y1, x2, y2 float64
 				infoVal := rtlmap.InfoPlane[i][j]
-				// TODO: 1, 5,6,8
-				if infoVal == 4 {
-					// thin wall, above only
-					wallDirection := rtlmap.ThinWallDirection(i, j)
-					var x1, y1, x2, y2 float64
-					var z1 float64 = floorDepth + float64(rtlmap.FloorHeight()-1)*gridSizeZ
-					var z2 float64 = floorDepth + float64(rtlmap.FloorHeight())*gridSizeZ
+				wallDirection := rtlmap.ThinWallDirection(i, j)
+				if infoVal == 1 || (infoVal >= 4 && infoVal <= 9) {
 					if wallDirection == WALLDIR_NorthSouth {
 						x1 = float64(i)*gridSizeX + (gridSizeX / 2) - 2
 						x2 = float64(i)*gridSizeX + (gridSizeX / 2) + 2
@@ -89,49 +85,62 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 						y1 = float64(j)*gridSizeY + (gridSizeY / 2) - 2
 						y2 = float64(j)*gridSizeY + (gridSizeY / 2) + 2
 					}
-					wallColumn := quakemap.BasicCuboid(x1, y1, z1, x2, y2, z2,
-						texName, scale)
-					qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, wallColumn)
-				} else if infoVal == 7 {
-					// thin wall, everything but below
-					wallDirection := rtlmap.ThinWallDirection(i, j)
-					var x1, y1, x2, y2 float64
-					var z1 float64 = floorDepth + gridSizeZ
-					var z2 float64 = floorDepth + float64(rtlmap.FloorHeight())*gridSizeZ
-					if wallDirection == WALLDIR_NorthSouth {
-						x1 = float64(i)*gridSizeX + (gridSizeX / 2) - 2
-						x2 = float64(i)*gridSizeX + (gridSizeX / 2) + 2
-						y1 = float64(j) * gridSizeY
-						y2 = float64(j+1) * gridSizeY
-					} else {
-						x1 = float64(i) * gridSizeX
-						x2 = float64(i+1) * gridSizeX
-						y1 = float64(j)*gridSizeY + (gridSizeY / 2) - 2
-						y2 = float64(j)*gridSizeY + (gridSizeY / 2) + 2
+					switch infoVal {
+					case 1:
+						// thin wall, above passable
+						var z1 float64 = floorDepth
+						var z2 float64 = floorDepth + float64(rtlmap.FloorHeight()-1)*gridSizeZ
+						wallColumn := quakemap.BasicCuboid(x1, y1, z1, x2, y2, z2,
+							texName, scale)
+						qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, wallColumn)
+					case 4:
+						// thin wall, above only
+						var z1 float64 = floorDepth + float64(rtlmap.FloorHeight()-1)*gridSizeZ
+						var z2 float64 = floorDepth + float64(rtlmap.FloorHeight())*gridSizeZ
+						wallColumn := quakemap.BasicCuboid(x1, y1, z1, x2, y2, z2,
+							texName, scale)
+						qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, wallColumn)
+					case 5:
+						// thin wall, below only
+						var z1 float64 = floorDepth
+						var z2 float64 = floorDepth + gridSizeZ
+						wallColumn := quakemap.BasicCuboid(x1, y1, z1, x2, y2, z2,
+							texName, scale)
+						qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, wallColumn)
+					case 6:
+						// thin wall, middle passable
+						var bottomz1 float64 = floorDepth
+						var bottomz2 float64 = floorDepth + gridSizeZ
+						var topz1 float64 = floorDepth + float64(rtlmap.FloorHeight()-1)*gridSizeZ
+						var topz2 float64 = floorDepth + float64(rtlmap.FloorHeight())*gridSizeZ
+						wallColumn1 := quakemap.BasicCuboid(x1, y1, bottomz1, x2, y2, bottomz2,
+							texName, scale)
+						wallColumn2 := quakemap.BasicCuboid(x1, y1, topz1, x2, y2, topz2,
+							texName, scale)
+						qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, wallColumn1)
+						qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, wallColumn2)
+					case 7:
+						// thin wall, everything but below
+						var z1 float64 = floorDepth + gridSizeZ
+						var z2 float64 = floorDepth + float64(rtlmap.FloorHeight())*gridSizeZ
+						wallColumn := quakemap.BasicCuboid(x1, y1, z1, x2, y2, z2,
+							texName, scale)
+						qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, wallColumn)
+					case 8:
+						// thin wall, middle only
+						var z1 float64 = floorDepth + gridSizeZ
+						var z2 float64 = floorDepth + float64(rtlmap.FloorHeight()-1)*gridSizeZ
+						wallColumn := quakemap.BasicCuboid(x1, y1, z1, x2, y2, z2,
+							texName, scale)
+						qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, wallColumn)
+					case 9:
+						// thin wall, everything but above
+						var z1 float64 = floorDepth
+						var z2 float64 = floorDepth + float64(rtlmap.FloorHeight()-1)*gridSizeZ
+						wallColumn := quakemap.BasicCuboid(x1, y1, z1, x2, y2, z2,
+							texName, scale)
+						qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, wallColumn)
 					}
-					wallColumn := quakemap.BasicCuboid(x1, y1, z1, x2, y2, z2,
-						texName, scale)
-					qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, wallColumn)
-				} else if infoVal == 9 {
-					// thin wall, everything but above
-					wallDirection := rtlmap.ThinWallDirection(i, j)
-					var x1, y1, x2, y2 float64
-					var z1 float64 = floorDepth
-					var z2 float64 = floorDepth + float64(rtlmap.FloorHeight()-1)*gridSizeZ
-					if wallDirection == WALLDIR_NorthSouth {
-						x1 = float64(i)*gridSizeX + (gridSizeX / 2) - 2
-						x2 = float64(i)*gridSizeX + (gridSizeX / 2) + 2
-						y1 = float64(j) * gridSizeY
-						y2 = float64(j+1) * gridSizeY
-					} else {
-						x1 = float64(i) * gridSizeX
-						x2 = float64(i+1) * gridSizeX
-						y1 = float64(j)*gridSizeY + (gridSizeY / 2) - 2
-						y2 = float64(j)*gridSizeY + (gridSizeY / 2) + 2
-					}
-					wallColumn := quakemap.BasicCuboid(x1, y1, z1, x2, y2, z2,
-						texName, scale)
-					qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, wallColumn)
 				} else {
 					// plain ol' column
 					wallColumn := quakemap.BasicCuboid(

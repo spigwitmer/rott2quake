@@ -1,4 +1,4 @@
-Converts [Rise of the Triad](https://www.gog.com/game/rise_of_the_triad__dark_war) maps and textures to Quake BSP and WAD files.
+Converts [Rise of the Triad](https://www.gog.com/game/rise_of_the_triad__dark_war) maps and textures to Quake MAP and WAD files.
 
 ## Building
 
