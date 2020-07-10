@@ -37,9 +37,15 @@ NOTE: you need to generate a Quake .wad file from the invocation above and pass 
 ./lumps -wad-out quake-rott.wad -rtl DARKWAR.RTL -rtl-map-outdir <dest dir>
 ```
 
-If you're generating maps to play in Dusk, use at least 1.5x scale:
+If you're generating maps to play in Dusk, scale the map to at least 1.5 its size:
 ```bash
 ./lumps -wad-out quake-rott.wad -rtl DARKWAR.RTL -rtl-map-scale 1.5 -rtl-map-outdir <dest dir>
+```
+
+### Dumping Quake .pak files to a folder
+
+```bash
+./lumps -pak -dump pak0.pak <dest dir>
 ```
 
 ### Listing textures in a .wad file
@@ -63,13 +69,16 @@ Quake:
 - [ ] Trampolines (TODO)
 - [ ] Weapon placement (TODO)
 - [ ] Enemy placement (TODO)
+- [ ] Doors (TODO)
 - [ ] Switchplates (TODO)
 - [ ] Moving Walls (TODO)
+- [ ] GADs (TODO)
 - [ ] Obstacles e.g. flamethrowers, crushers (maybe)
 
 
-## Known issues
+## Quirks / Known Issues
 
-- Tops of platform are (intentionally) not rendered
-- Scale cannot go past 3x without bad things happening. Quake won't
+- Tops and bottoms of hswitch platforms are (intentionally) not rendered
+- Map Scale cannot go past 3x without bad things happening. Quake won't
   render the floor or ceiling.
+- Lair of El Oscuro, Canyon Chase, and Into The Dark Nest are incomplete

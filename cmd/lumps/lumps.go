@@ -96,12 +96,6 @@ func dumpLumpDataToFile(archive lumps.ArchiveReader, entry lumps.ArchiveEntry, d
 	}
 
 	if wad2Writer != nil {
-		// dump select lumps into outgoing quake wad
-		// specifically, we want:
-		// * palette
-		// * sky/floor textures
-		// just dump the palette data as is, convert sky/floor data
-		// into MIP textures
 		if entry.Name() == "PAL" {
 			var paletteData [768]byte
 			rawLumpReader, err := entry.Open()

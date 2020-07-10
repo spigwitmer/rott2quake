@@ -64,7 +64,7 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 		qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, ceilBrush)
 	}
 
-	// place static walls
+	// place walls
 	for i := 0; i < 128; i++ {
 		for j := 0; j < 128; j++ {
 			wallInfo := rtlmap.CookedWallGrid[i][j]
@@ -157,8 +157,8 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 					y2 := float64(j+1) * gridSizeY
 
 					// above as separate entity
-					// NOTE: don't render tops and bottoms of platforms,
-					// they look nasty
+					// NOTE: don't render tops and bottoms of platforms
+					// if they're passable, they look nasty
 					if platformInfo.Above != "" && platformInfo.Flags&MWF_AbovePassable == 0 {
 						var abovez1 float64 = floorDepth + float64(rtlmap.FloorHeight()-1)*gridSizeZ
 						var abovez2 float64 = floorDepth + float64(rtlmap.FloorHeight())*gridSizeZ
