@@ -52,6 +52,7 @@ ROTT:
 Quake:
 ```bash
 ./lumps -list -quake QUAKE101.WAD
+```
 
 
 ## Supported items
