@@ -71,6 +71,7 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 			texName := wallInfo.WallTileToTextureName(false)
 			if wallInfo.Type == WALL_Regular || wallInfo.Type == WALL_AnimatedWall || wallInfo.Type == WALL_Elevator {
 				infoVal := rtlmap.InfoPlane[i][j]
+				// TODO: 1, 5,6,8
 				if infoVal == 4 {
 					// thin wall, above only
 					wallDirection := rtlmap.ThinWallDirection(i, j)
@@ -156,13 +157,12 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 					y2 := float64(j+1) * gridSizeY
 
 					// above as separate entity
-					if platformInfo.Above != "" {
+					// NOTE: don't render tops and bottoms of platforms,
+					// they look nasty
+					if platformInfo.Above != "" && platformInfo.Flags&MWF_AbovePassable == 0 {
 						var abovez1 float64 = floorDepth + float64(rtlmap.FloorHeight()-1)*gridSizeZ
 						var abovez2 float64 = floorDepth + float64(rtlmap.FloorHeight())*gridSizeZ
 						aboveClassName := "func_detail"
-						if platformInfo.Flags&MWF_AbovePassable > 0 {
-							aboveClassName = "func_detail_illusionary"
-						}
 						aboveColumn := quakemap.BasicCuboid(x1, y1, abovez1, x2, y2, abovez2,
 							"{"+platformInfo.Above,
 							scale)
@@ -183,14 +183,12 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 
 					// bottom
 					// above as separate entity
-					if platformInfo.Bottom != "" {
+					if platformInfo.Bottom != "" && platformInfo.Flags&MWF_BottomPassable == 0 {
 						var z1 float64 = floorDepth
 						var z2 float64 = floorDepth + gridSizeZ
 						className := "func_detail"
 						if platformInfo.Flags&MWF_Shootable > 0 {
 							className = "func_breakable"
-						} else if platformInfo.Flags&MWF_BottomPassable > 0 {
-							className = "func_detail_illusionary"
 						}
 						column := quakemap.BasicCuboid(x1, y1, z1, x2, y2, z2,
 							"{"+platformInfo.Bottom,

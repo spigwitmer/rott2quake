@@ -181,22 +181,30 @@ func (r *RTLMapData) ThinWallDirection(x, y int) WallDirection {
 	var adjacentCountX, adjacentCountY int
 
 	if x > 0 {
-		if r.CookedWallGrid[x-1][y].Type != WALL_None {
+		if r.CookedWallGrid[x-1][y].Type == WALL_Regular {
+			adjacentCountX += 2
+		} else if r.CookedWallGrid[x-1][y].Type != WALL_None {
 			adjacentCountX++
 		}
 	}
 	if x < 127 {
-		if r.CookedWallGrid[x+1][y].Type != WALL_None {
+		if r.CookedWallGrid[x+1][y].Type == WALL_Regular {
+			adjacentCountX += 2
+		} else if r.CookedWallGrid[x+1][y].Type != WALL_None {
 			adjacentCountX++
 		}
 	}
 	if y > 0 {
-		if r.CookedWallGrid[x][y-1].Type != WALL_None {
+		if r.CookedWallGrid[x][y-1].Type == WALL_Regular {
+			adjacentCountY += 2
+		} else if r.CookedWallGrid[x][y-1].Type != WALL_None {
 			adjacentCountY++
 		}
 	}
 	if y < 127 {
-		if r.CookedWallGrid[x][y+1].Type != WALL_None {
+		if r.CookedWallGrid[x][y+1].Type == WALL_Regular {
+			adjacentCountY += 2
+		} else if r.CookedWallGrid[x][y+1].Type != WALL_None {
 			adjacentCountY++
 		}
 	}
@@ -489,9 +497,10 @@ type RowData struct {
 func (r *RTLMapData) DumpMapToHtmlFile(w io.Writer) error {
 	tmpl := `
 {{define "mapcell"}}<td class="mapcell" id="cell-{{ .X }}-{{ .Y }}" {{ if ne .Img "" }}style="background: url(imgs/{{ .Img }}.png)"{{end}}>
-<span>W: {{ printf "%04x" .Wall }}</span><br />
-<span>S: {{ printf "%04x" .Sprite }}</span><br />
-<span>I: {{ printf "%04x" .Info }}</span>
+<div>({{ .X }}, {{ .Y }})</div>
+<div>W: {{ printf "%04x" .Wall }}</div>
+<div>S: {{ printf "%04x" .Sprite }}</div>
+<div>I: {{ printf "%04x" .Info }}</div>
 </td>{{end}}
 {{define "maprow"}}<tr class="maprow">{{ range .Cells }}{{ template "mapcell" . }}{{ end }}</tr>{{end}}
 {{define "map"}}
@@ -519,10 +528,11 @@ func (r *RTLMapData) DumpMapToHtmlFile(w io.Writer) error {
 		padding: 0px;
 		margin: 0px
       }
-      .mapcell > span {
-		font-size: 12px;
+      .mapcell > div {
+		font-size: 11px;
 		padding: 0px;
-		margin: 0px
+		margin: 0px;
+		display: inline-block;
       }
     </style>
   </head>

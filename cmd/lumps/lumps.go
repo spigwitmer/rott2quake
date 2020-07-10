@@ -185,8 +185,9 @@ func dumpLumpDataToFile(archive lumps.ArchiveReader, entry lumps.ArchiveEntry, d
 			if err != nil {
 				log.Fatalf("Could not get patch data image: %v\n", err)
 			}
-			// quake texture dimensions must be a factor of 16
-			mipdata, err := wad2.PalettedImageToMIPTexture(imgutil.AlignImageDimensions(img, 16))
+			// quake texture dimensions must be a factor of 16, but
+			// make them 64 to align weird textures like gates
+			mipdata, err := wad2.PalettedImageToMIPTexture(imgutil.AlignImageDimensions(img, 64))
 			if err != nil {
 				log.Fatalf("Could not get MIP texture from flat: %v\n", err)
 			}
@@ -200,7 +201,7 @@ func dumpLumpDataToFile(archive lumps.ArchiveReader, entry lumps.ArchiveEntry, d
 			if err != nil {
 				log.Fatalf("Could not get tpatch data image: %v\n", err)
 			}
-			mipdata, err := wad2.PalettedImageToMIPTexture(imgutil.AlignImageDimensions(img, 16))
+			mipdata, err := wad2.PalettedImageToMIPTexture(imgutil.AlignImageDimensions(img, 64))
 			if err != nil {
 				log.Fatalf("Could not get MIP texture from flat: %v\n", err)
 			}
