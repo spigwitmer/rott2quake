@@ -103,11 +103,15 @@ func (e *Entity) Render() string {
 		output += fmt.Sprintf("\"%s\" \"%s\"\n", k, v)
 	}
 
-	switch e.ClassName {
-	case "info_player_start":
+	if e.ClassName != "worldspawn" {
 		output += fmt.Sprintf("\"origin\" \"%.02f %.02f %.02f\"\n",
 			e.OriginX, e.OriginY, e.OriginZ)
-		output += fmt.Sprintf("\"angle\" \"%.02f\"\n", e.Angle)
+		if e.ClassName == "info_player_start" || e.Angle != 0 {
+			output += fmt.Sprintf("\"angle\" \"%.02f\"\n", e.Angle)
+		}
+	}
+
+	switch e.ClassName {
 	case "worldspawn":
 		output += fmt.Sprintf("\"wad\" \"%s\"\n", e.Map.Wad)
 	}

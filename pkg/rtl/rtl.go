@@ -114,6 +114,7 @@ func (wallInfo *WallInfo) WallTileToTextureName(html bool) string {
 }
 
 type SpriteInfo struct {
+	Item *ItemInfo
 }
 
 type RTLMapData struct {
@@ -287,12 +288,16 @@ func (r *RTLMapData) renderSpriteGrid() {
 				r.SpawnY = j
 				r.SpawnDirection = int(spriteValue) - 19
 			}
+
+			// items (represented as sprites in the RTL data)
+			if itemInfo, ok := Items[spriteValue]; ok {
+				r.CookedSpriteGrid[i][j].Item = &itemInfo
+			}
 		}
 	}
 }
 
 func (r *RTLMapData) renderWallGrid() {
-	//index := uint16(0)
 	for i := 0; i < 128; i++ {
 		for j := 0; j < 128; j++ {
 			// defaults
@@ -304,7 +309,7 @@ func (r *RTLMapData) renderWallGrid() {
 			// for reference: rt_ted.c:1965 in ROTT source code (wall
 			// setup algorithm, absolute mess)
 
-			// the first 4 tiles are not used and contain metadata
+			// the first 4 tiles are not used and contain metadata.
 			// tile values of 0 have nothing
 			if (i == 0 && j < 4) || tileId == 0 {
 				r.CookedWallGrid[i][j].Tile = 0
@@ -596,7 +601,7 @@ func (r *RTL) PrintMetadata() {
 		fmt.Printf("\tSprite Plane Length: %d\n", md.Header.SpritePlaneLength)
 		fmt.Printf("\tInfo Plane Length: %d\n", md.Header.InfoPlaneLength)
 		fmt.Printf("\tMap Name: %s\n", md.MapName())
-		fmt.Printf("\tHeight: %d\n", md.Height)
+		fmt.Printf("\tHeight: %d\n", md.FloorHeight())
 		fmt.Printf("\tSky Height: %d\n", md.SkyHeight)
 	}
 }

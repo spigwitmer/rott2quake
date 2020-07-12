@@ -280,6 +280,28 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 		}
 	}
 
+	// place items
+	for i := 0; i < 128; i++ {
+		for j := 0; j < 128; j++ {
+			itemInfo := rtlmap.CookedSpriteGrid[i][j].Item
+			if itemInfo != nil {
+				if itemInfo.AddCallback != nil {
+					itemInfo.AddCallback(i, j, gridSizeX, gridSizeY, gridSizeZ, itemInfo, rtlmap, qm, dusk)
+				} else {
+					entityName := itemInfo.QuakeEntityName
+					if dusk {
+						entityName = itemInfo.DuskEntityName
+					}
+					entity := quakemap.NewEntity(0, entityName, qm)
+					entity.OriginX = float64(i)*gridSizeX + (gridSizeX / 2)
+					entity.OriginY = float64(j)*gridSizeY + (gridSizeY / 2)
+					entity.OriginZ = floorDepth + (gridSizeZ / 2)
+					qm.Entities = append(qm.Entities, entity)
+				}
+			}
+		}
+	}
+
 	// 2. TODO: clip brushes around floor extending height
 	return qm
 }
