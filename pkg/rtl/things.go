@@ -28,6 +28,10 @@ var Items = map[uint16]ItemInfo{
 	0xc1: ItemInfo{
 		0, 0x5a, "object_jump_pad", "object_jump_pad", AddTrampoline,
 	},
+	// rotating blades
+	0xae: ItemInfo{
+		0, 0xae, "object_blades", "object_blades", AddSpinningBlades,
+	},
 }
 
 // adds teleport entities to simulate the functionality of an elevator
@@ -51,5 +55,22 @@ func AddTrampoline(x int, y int, gridSizeX float64, gridSizeY float64, gridSizeZ
 	// this logarithmic formula is a ballpark factor that just Seems Right(tm)
 	jumpAmount := math.Log10(float64(r.FloorHeight())+0.5) * ((gridSizeZ / 64) / 2)
 	entity.AdditionalKeys["amount"] = fmt.Sprintf("%02f", jumpAmount)
+	q.Entities = append(q.Entities, entity)
+}
+
+// adds static spinning blades
+func AddSpinningBlades(x int, y int, gridSizeX float64, gridSizeY float64, gridSizeZ float64,
+	item *ItemInfo, r *RTLMapData, q *quakemap.QuakeMap, dusk bool) {
+
+	entityName := item.QuakeEntityName
+	if dusk {
+		entityName = item.DuskEntityName
+	}
+	entity := quakemap.NewEntity(0, entityName, q)
+	entity.OriginX = float64(x)*gridSizeX + (gridSizeX / 2)
+	entity.OriginY = float64(y)*gridSizeY + (gridSizeY / 2)
+	entity.OriginZ = gridSizeZ * 1.5
+	entity.AdditionalKeys["damage"] = "10.0"
+	entity.AdditionalKeys["frequency"] = "0.8"
 	q.Entities = append(q.Entities, entity)
 }
