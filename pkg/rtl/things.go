@@ -30,7 +30,11 @@ var Items = map[uint16]ItemInfo{
 	},
 	// rotating blades
 	0xae: ItemInfo{
-		0, 0xae, "object_blades", "object_blades", AddSpinningBlades,
+		0, 0xae, "", "object_blades", AddSpinningBlades,
+	},
+	// flamethrowers
+	0x186: ItemInfo{
+		0, 0x186, "", "object_anomaly_fire", AddFlamethrower,
 	},
 }
 
@@ -58,19 +62,36 @@ func AddTrampoline(x int, y int, gridSizeX float64, gridSizeY float64, gridSizeZ
 	q.Entities = append(q.Entities, entity)
 }
 
-// adds static spinning blades
+// adds static spinning blades centered in the grid
 func AddSpinningBlades(x int, y int, gridSizeX float64, gridSizeY float64, gridSizeZ float64,
 	item *ItemInfo, r *RTLMapData, q *quakemap.QuakeMap, dusk bool) {
 
-	entityName := item.QuakeEntityName
-	if dusk {
-		entityName = item.DuskEntityName
+	if !dusk {
+		// not supported for quake
+		return
 	}
+	entityName := item.DuskEntityName
 	entity := quakemap.NewEntity(0, entityName, q)
 	entity.OriginX = float64(x)*gridSizeX + (gridSizeX / 2)
 	entity.OriginY = float64(y)*gridSizeY + (gridSizeY / 2)
 	entity.OriginZ = gridSizeZ * 1.5
 	entity.AdditionalKeys["damage"] = "10.0"
 	entity.AdditionalKeys["frequency"] = "0.8"
+	q.Entities = append(q.Entities, entity)
+}
+
+// adds static flamethrowers on the bottom facing up
+func AddFlamethrower(x int, y int, gridSizeX float64, gridSizeY float64, gridSizeZ float64,
+	item *ItemInfo, r *RTLMapData, q *quakemap.QuakeMap, dusk bool) {
+
+	if !dusk {
+		// not supported for quake
+		return
+	}
+	entityName := item.DuskEntityName
+	entity := quakemap.NewEntity(0, entityName, q)
+	entity.OriginX = float64(x)*gridSizeX + (gridSizeX / 2)
+	entity.OriginY = float64(y)*gridSizeY + (gridSizeY / 2)
+	entity.OriginZ = gridSizeZ
 	q.Entities = append(q.Entities, entity)
 }
