@@ -66,17 +66,21 @@ Quake:
 - [x] World structure
 - [x] Masked walls
 - [x] Platforms
-- [ ] Trampolines (TODO)
+- [x] Trampolines
 - [ ] Weapon placement (TODO)
 - [ ] Enemy placement (TODO)
 - [ ] Doors (TODO)
 - [ ] Switchplates (TODO)
 - [ ] Moving Walls (TODO)
 - [ ] GADs (TODO)
-- [ ] Obstacles e.g. flamethrowers, crushers (maybe)
+- [ ] Obstacles
+  - [x] Flamethrowers
+  - [x] Fireball shooters
+  - [x] Rotating Blades
+  - [ ] Crushers
 
 
-## Quirks / Known Issues
+## Quirks / Known Issues / Fooken Raws
 
 - Tops and bottoms of hswitch platforms are (intentionally) not rendered
 - Map Scale cannot go past 3x without bad things happening. Quake won't
