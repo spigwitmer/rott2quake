@@ -281,6 +281,7 @@ func (r *RTLMapData) renderSpriteGrid() {
 	for i := 0; i < 128; i++ {
 		for j := 0; j < 128; j++ {
 			spriteValue := r.SpritePlane[i][j]
+			wallValue := r.WallPlane[i][j]
 
 			// spawn location
 			if spriteValue >= 19 && spriteValue <= 22 {
@@ -291,6 +292,11 @@ func (r *RTLMapData) renderSpriteGrid() {
 
 			// items (represented as sprites in the RTL data)
 			if itemInfo, ok := Items[spriteValue]; ok {
+				r.CookedSpriteGrid[i][j].Item = &itemInfo
+			}
+
+			if wallValue == 0x0b { // fireball shooter
+				itemInfo, _ := Items[0x0b]
 				r.CookedSpriteGrid[i][j].Item = &itemInfo
 			}
 		}

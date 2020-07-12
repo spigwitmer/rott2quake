@@ -36,6 +36,10 @@ var Items = map[uint16]ItemInfo{
 	0x186: ItemInfo{
 		0, 0x186, "", "object_anomaly_fire", AddFlamethrower,
 	},
+	// fireball shooter
+	0x0b: ItemInfo{
+		0x0b, 0, "trap_spikeshoote", "object_fireball_shooter", AddFireballShooter,
+	},
 }
 
 // adds teleport entities to simulate the functionality of an elevator
@@ -93,5 +97,95 @@ func AddFlamethrower(x int, y int, gridSizeX float64, gridSizeY float64, gridSiz
 	entity.OriginX = float64(x)*gridSizeX + (gridSizeX / 2)
 	entity.OriginY = float64(y)*gridSizeY + (gridSizeY / 2)
 	entity.OriginZ = gridSizeZ
+	q.Entities = append(q.Entities, entity)
+}
+
+func AddFireballShooter(x int, y int, gridSizeX float64, gridSizeY float64, gridSizeZ float64,
+	item *ItemInfo, r *RTLMapData, q *quakemap.QuakeMap, dusk bool) {
+
+	entityName := item.QuakeEntityName
+	if dusk {
+		entityName = item.DuskEntityName
+	}
+
+	// direction the fireball should go depends on a tile of id 0x0c that's aligned
+	// by the x or y axis
+
+	// traverse in each direction until the location of an 0x0c tile is
+	// found. Default to west.
+	angle := float64(360.0)
+	var targetWallTile uint16 = 0x0c
+	var curSteps int = 0
+	var xoffset, yoffset float64
+
+	// north
+	if y > 0 {
+		for j := y - 1; j >= 0; j-- {
+			if r.CookedWallGrid[x][j].Type == WALL_Regular {
+				if r.CookedWallGrid[x][j].Tile == targetWallTile {
+					if y-j > curSteps {
+						curSteps = y - j
+						angle = 90.0
+						xoffset = 0
+						yoffset = -(gridSizeY / 2)
+					}
+				}
+				break
+			}
+		}
+	}
+	// south
+	if y < 127 {
+		for j := y + 1; j < 128; j++ {
+			if r.CookedWallGrid[x][j].Type == WALL_Regular {
+				if r.CookedWallGrid[x][j].Tile == targetWallTile {
+					if j-y > curSteps {
+						curSteps = j - y
+						angle = 270.0
+						xoffset = 0
+						yoffset = (gridSizeY / 2)
+					}
+				}
+				break
+			}
+		}
+	}
+	// west
+	if x > 0 {
+		for i := x - 1; i >= 0; i-- {
+			if r.CookedWallGrid[i][y].Type == WALL_Regular {
+				if r.CookedWallGrid[i][y].Tile == targetWallTile {
+					if x-i > curSteps {
+						curSteps = x - i
+						angle = 0.0
+						xoffset = -(gridSizeX / 2)
+						yoffset = 0
+					}
+				}
+				break
+			}
+		}
+	}
+	// east
+	if x < 127 {
+		for i := x + 1; i < 128; i++ {
+			if r.CookedWallGrid[i][y].Type == WALL_Regular {
+				if r.CookedWallGrid[i][y].Tile == targetWallTile {
+					if i-x > curSteps {
+						angle = 180.0
+						xoffset = (gridSizeX / 2)
+						yoffset = 0
+					}
+				}
+				break
+			}
+		}
+	}
+
+	entity := quakemap.NewEntity(0, entityName, q)
+	entity.OriginX = float64(x)*gridSizeX + (gridSizeX / 2) + xoffset
+	entity.OriginY = float64(y)*gridSizeY + (gridSizeY / 2) + yoffset
+	entity.OriginZ = gridSizeZ * 1.5
+	entity.AdditionalKeys["angle"] = fmt.Sprintf("%02f", angle)
 	q.Entities = append(q.Entities, entity)
 }

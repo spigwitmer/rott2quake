@@ -15,6 +15,30 @@ var (
 	}
 )
 
+func ClassNameForMaskedWall(w *MaskedWallInfo, position string) string {
+	passable := false  // can we walk through without any other action?
+	shootable := false // can we pass through it after we shoot it?
+	if position == "above" && w.Flags&MWF_AbovePassable > 0 {
+		passable = true
+	}
+	if position == "bottom" && w.Flags&MWF_BottomPassable > 0 {
+		passable = true
+	}
+	if position == "middle" && w.Flags&MWF_MiddlePassable > 0 {
+		passable = true
+	}
+	if w.Flags&(MWF_Shootable|MWF_BlockingChanges) == (MWF_Shootable | MWF_BlockingChanges) {
+		shootable = true
+	}
+	if shootable {
+		return "func_breakable"
+	}
+	if passable {
+		return "func_illusionary"
+	}
+	return "func_detail"
+}
+
 func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale float64, dusk bool) *quakemap.QuakeMap {
 
 	// worldspawn:
@@ -63,6 +87,8 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 			scale)
 		qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, ceilBrush)
 	}
+
+	floorHeight := rtlmap.FloorHeight()
 
 	// place walls
 	for i := 0; i < 128; i++ {
@@ -168,7 +194,7 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 					// above as separate entity
 					// NOTE: don't render tops and bottoms of platforms
 					// if they're passable, they look nasty
-					if platformInfo.Above != "" && platformInfo.Flags&MWF_AbovePassable == 0 {
+					if platformInfo.Above != "" && platformInfo.Flags&MWF_AbovePassable == 0 && floorHeight > 1 {
 						var abovez1 float64 = floorDepth + float64(rtlmap.FloorHeight()-1)*gridSizeZ
 						var abovez2 float64 = floorDepth + float64(rtlmap.FloorHeight())*gridSizeZ
 						aboveClassName := "func_detail"
@@ -181,7 +207,7 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 					}
 
 					// middle
-					if platformInfo.Middle != "" {
+					if platformInfo.Middle != "" && floorHeight > 2 {
 						var middlez1 float64 = floorDepth + gridSizeZ
 						var middlez2 float64 = floorDepth + float64(rtlmap.FloorHeight()-1)*gridSizeZ
 						mwColumn := quakemap.BasicCuboid(x1, y1, middlez1, x2, y2, middlez2,
@@ -195,10 +221,7 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 					if platformInfo.Bottom != "" && platformInfo.Flags&MWF_BottomPassable == 0 {
 						var z1 float64 = floorDepth
 						var z2 float64 = floorDepth + gridSizeZ
-						className := "func_detail"
-						if platformInfo.Flags&MWF_Shootable > 0 {
-							className = "func_breakable"
-						}
+						className := ClassNameForMaskedWall(&platformInfo, "bottom")
 						column := quakemap.BasicCuboid(x1, y1, z1, x2, y2, z2,
 							"{"+platformInfo.Bottom,
 							scale)
@@ -227,13 +250,10 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 					}
 
 					// above as separate entity
-					if maskedWallInfo.Above != "" {
+					if maskedWallInfo.Above != "" && floorHeight > 1 {
 						var abovez1 float64 = floorDepth + float64(rtlmap.FloorHeight()-1)*gridSizeZ
 						var abovez2 float64 = floorDepth + float64(rtlmap.FloorHeight())*gridSizeZ
-						aboveClassName := "func_detail"
-						if maskedWallInfo.Flags&MWF_AbovePassable > 0 {
-							aboveClassName = "func_detail_illusionary"
-						}
+						aboveClassName := ClassNameForMaskedWall(&maskedWallInfo, "above")
 						aboveColumn := quakemap.BasicCuboid(x1, y1, abovez1, x2, y2, abovez2,
 							"{"+maskedWallInfo.Above,
 							scale)
@@ -243,7 +263,7 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 					}
 
 					// middle
-					if maskedWallInfo.Middle != "" {
+					if maskedWallInfo.Middle != "" && floorHeight > 2 {
 						var middlez1 float64 = floorDepth + gridSizeZ
 						var middlez2 float64 = floorDepth + float64(rtlmap.FloorHeight()-1)*gridSizeZ
 						mwColumn := quakemap.BasicCuboid(x1, y1, middlez1, x2, y2, middlez2,
@@ -257,12 +277,7 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 					if maskedWallInfo.Bottom != "" {
 						var z1 float64 = floorDepth
 						var z2 float64 = floorDepth + gridSizeZ
-						className := "func_detail"
-						if maskedWallInfo.Flags&MWF_Shootable > 0 {
-							className = "func_breakable"
-						} else if maskedWallInfo.Flags&MWF_BottomPassable > 0 {
-							className = "func_detail_illusionary"
-						}
+						className := ClassNameForMaskedWall(&maskedWallInfo, "bottom")
 						column := quakemap.BasicCuboid(x1, y1, z1, x2, y2, z2,
 							"{"+maskedWallInfo.Bottom,
 							scale)
