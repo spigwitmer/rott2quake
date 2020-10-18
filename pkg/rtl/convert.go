@@ -98,6 +98,7 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 			if wallInfo.Type == WALL_Regular || wallInfo.Type == WALL_AnimatedWall || wallInfo.Type == WALL_Elevator {
 				var x1, y1, x2, y2 float64
 				infoVal := rtlmap.InfoPlane[i][j]
+				spriteVal := rtlmap.SpritePlane[i][j]
 				wallDirection := rtlmap.ThinWallDirection(i, j)
 				if infoVal == 1 || (infoVal >= 4 && infoVal <= 9) {
 					if wallDirection == WALLDIR_NorthSouth {
@@ -178,7 +179,16 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 						floorDepth+float64(rtlmap.FloorHeight())*gridSizeZ, // z2
 						texName,
 						scale) // scale
-					qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, wallColumn)
+
+					// make static walls part of the worldspawn,
+					// everything else a separate entity
+					if spriteVal == 0 && infoVal == 0 && wallInfo.Type == WALL_Regular {
+						qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, wallColumn)
+					} else {
+						entity := quakemap.NewEntity(0, "func_wall", qm)
+						entity.Brushes = []quakemap.Brush{wallColumn}
+						qm.Entities = append(qm.Entities, entity)
+					}
 				}
 
 			} else if wallInfo.Type == WALL_Platform {
@@ -238,15 +248,15 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 					var x1, y1, x2, y2 float64
 
 					if wallDirection == WALLDIR_NorthSouth {
-						x1 = float64(i)*gridSizeX + (gridSizeX / 2) - 2
-						x2 = float64(i)*gridSizeX + (gridSizeX / 2) + 2
+						x1 = float64(i)*gridSizeX + (gridSizeX / 2)
+						x2 = float64(i)*gridSizeX + (gridSizeX / 2) + 1
 						y1 = float64(j) * gridSizeY
 						y2 = float64(j+1) * gridSizeY
 					} else {
 						x1 = float64(i) * gridSizeX
 						x2 = float64(i+1) * gridSizeX
-						y1 = float64(j)*gridSizeY + (gridSizeY / 2) - 2
-						y2 = float64(j)*gridSizeY + (gridSizeY / 2) + 2
+						y1 = float64(j)*gridSizeY + (gridSizeY / 2)
+						y2 = float64(j)*gridSizeY + (gridSizeY / 2) + 1
 					}
 
 					// above as separate entity
