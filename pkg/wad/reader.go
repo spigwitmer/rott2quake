@@ -23,7 +23,7 @@ type Palette struct {
 func getBasePaletteData(iwad *WADReader) error {
 	paletteData := make([]Palette, 256)
 
-	paletteLump, err := iwad.GetLump("PAL")
+	paletteLump, _, err := iwad.GetLump("PAL")
 	if err != nil {
 		return err
 	}
@@ -81,14 +81,16 @@ func NewIWAD(r io.ReadSeeker) (*WADReader, error) {
 }
 
 type WADEntry struct {
+	Number     int
 	LumpName   string
 	Reader     *WADReader
 	LumpHeader *LumpHeader
 }
 
-func NewWADEntry(name string, header *LumpHeader, reader *WADReader) *WADEntry {
+func NewWADEntry(name string, number int, header *LumpHeader, reader *WADReader) *WADEntry {
 	var w WADEntry
 	w.LumpName = name
+	w.Number = number
 	w.Reader = reader
 	w.LumpHeader = header
 	return &w
@@ -103,7 +105,7 @@ func (w *WADEntry) Size() int {
 }
 
 func (w *WADEntry) Open() (io.Reader, error) {
-	header, err := w.Reader.GetLump(w.LumpName)
+	header, _, err := w.Reader.GetLump(w.LumpName)
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +124,7 @@ func (w *WADEntry) GuessFileTypeAndSubdir() (string, string) {
 }
 
 func (w *WADEntry) Print() {
-	fmt.Printf("%s (%d bytes)\n", w.Name(), w.LumpHeader.Size)
+	fmt.Printf("%d: %s (%d bytes)\n", w.Number, w.Name(), w.LumpHeader.Size)
 }
 
 type WADIterator struct {
@@ -136,7 +138,7 @@ func (w *WADIterator) Next() lumps.ArchiveEntry {
 	}
 	lheader := w.Reader.LumpDirectory[int(w.idx)]
 	w.idx++
-	return NewWADEntry(lheader.NameString(), lheader, w.Reader)
+	return NewWADEntry(lheader.NameString(), int(w.idx-1), lheader, w.Reader)
 }
 
 func (i *WADReader) List() lumps.ArchiveIterator {
@@ -146,22 +148,22 @@ func (i *WADReader) List() lumps.ArchiveIterator {
 	return &iter
 }
 
-func (i *WADReader) GetLump(name string) (*LumpHeader, error) {
-	for _, ld := range i.LumpDirectory {
+func (i *WADReader) GetLump(name string) (*LumpHeader, int, error) {
+	for idx, ld := range i.LumpDirectory {
 		if ld.NameString() == name {
-			return ld, nil
+			return ld, idx, nil
 		}
 	}
-	return nil, fmt.Errorf("lump %s not found", name)
+	return nil, 0, fmt.Errorf("lump %s not found", name)
 }
 
 func (i *WADReader) GetEntry(name string) (lumps.ArchiveEntry, error) {
-	lheader, err := i.GetLump(name)
+	lheader, num, err := i.GetLump(name)
 	if err != nil {
 		return nil, err
 	}
 
-	return NewWADEntry(name, lheader, i), nil
+	return NewWADEntry(name, num, lheader, i), nil
 }
 
 func (i *WADReader) Type() string { return "rott" }
