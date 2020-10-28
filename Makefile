@@ -14,3 +14,7 @@ dump-palette: $(SOURCES)
 .PHONY: show-sources
 show-sources:
 	ls -1 $(SOURCES)
+
+.PHONY: dump-maps-dusk
+dump-maps-dusk: lumps
+	./dump_maps_dusk.sh
