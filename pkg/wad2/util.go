@@ -143,6 +143,7 @@ func scalePalettedImage(img *image.Paletted, invFactor int) *image.Paletted {
 			pimg.SetColorIndex(i, j, uint8(imgutil.QuakePalette.Index(simg.At(i, j))))
 		}
 	}
+	pimg.Palette = imgutil.QuakePalette
 	return pimg
 }
 
@@ -158,9 +159,6 @@ func PalettedImageToMIPTexture(img *image.Paletted) ([]byte, error) {
 	resizedFourth := scalePalettedImage(img, 4)
 	resizedEighth := scalePalettedImage(img, 8)
 	img.Palette = imgutil.RottPalette
-	resizedHalf.Palette = imgutil.RottPalette
-	resizedFourth.Palette = imgutil.RottPalette
-	resizedEighth.Palette = imgutil.RottPalette
 
 	imgutil.TranslateRottPalettedImageToQuake(img)
 
