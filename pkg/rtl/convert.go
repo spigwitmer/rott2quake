@@ -34,7 +34,7 @@ func ClassNameForMaskedWall(w *MaskedWallInfo, position string) string {
 		return "func_breakable"
 	}
 	if passable {
-		return "func_illusionary"
+		return "func_detail_illusionary"
 	}
 	return "func_detail"
 }
@@ -276,10 +276,13 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 					if maskedWallInfo.Middle != "" && floorHeight > 2 {
 						var middlez1 float64 = floorDepth + gridSizeZ
 						var middlez2 float64 = floorDepth + float64(rtlmap.FloorHeight()-1)*gridSizeZ
+						middleClassName := ClassNameForMaskedWall(&maskedWallInfo, "middle")
 						mwColumn := quakemap.BasicCuboid(x1, y1, middlez1, x2, y2, middlez2,
 							"{"+maskedWallInfo.Middle,
 							scale)
-						qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, mwColumn)
+						middleEntity := quakemap.NewEntity(0, middleClassName, qm)
+						middleEntity.Brushes = append(middleEntity.Brushes, mwColumn)
+						qm.Entities = append(qm.Entities, middleEntity)
 					}
 
 					// bottom
