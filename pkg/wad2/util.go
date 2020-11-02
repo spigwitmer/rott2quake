@@ -127,27 +127,33 @@ func PalettedImageToQuakePic(img *image.Paletted) ([]byte, error) {
 	return picData.Bytes(), nil
 }
 
-func scalePalettedImage(img *image.Paletted, invFactor int) *image.Paletted {
+func scaleRGBAImage(img image.Image, invFactor int) *image.RGBA {
 	width := img.Bounds().Dx() / invFactor
 	height := img.Bounds().Dy() / invFactor
-	timg := resize.Resize(uint(width), uint(height), img, resize.Lanczos3)
-	// TODO: this is disgusting. We go from Paletted to RGBA back to
-	// Paletted. Find a simpler, more efficient way.
-	simg := image.NewRGBA(image.Rect(0, 0, width, height))
-	pimg := image.NewPaletted(image.Rect(0, 0, width, height), imgutil.RottPalette)
-	draw.Draw(simg, simg.Bounds(), timg, timg.Bounds().Min, draw.Src)
-
-	// quantize image to Quake palette on the fly
-	for i := 0; i < width; i++ {
-		for j := 0; j < height; j++ {
-			pimg.SetColorIndex(i, j, uint8(imgutil.QuakePalette.Index(simg.At(i, j))))
-		}
-	}
-	pimg.Palette = imgutil.QuakePalette
-	return pimg
+	resized := resize.Resize(uint(width), uint(height), img, resize.Lanczos3)
+	nimg := image.NewRGBA(img.Bounds())
+	draw.Draw(nimg, nimg.Bounds(), resized, resized.Bounds().Min, draw.Src)
+	return nimg
 }
 
-func PalettedImageToMIPTexture(img *image.Paletted) ([]byte, error) {
+func processRGBAForMIPTexture(img *image.RGBA) *image.Paletted {
+	width := img.Bounds().Dx()
+	height := img.Bounds().Dy()
+	dimg := image.NewPaletted(image.Rect(0, 0, width, height), imgutil.QuakePalette)
+	for i := 0; i < width; i++ {
+		for j := 0; j < height; j++ {
+			if _, _, _, a := img.RGBAAt(i, j).RGBA(); a < 128 {
+				// transparent pixel
+				dimg.SetColorIndex(i, j, 255)
+			} else {
+				dimg.SetColorIndex(i, j, uint8(imgutil.QuakePalette.Index(img.At(i, j))))
+			}
+		}
+	}
+	return dimg
+}
+
+func RGBAImageToMIPTexture(img *image.RGBA) ([]byte, error) {
 	// convert a peletted image to MIP texture data by scaling the image
 	// 1/2x, 1/4x, and 1/8x
 	var mip MIPTexture
@@ -155,25 +161,23 @@ func PalettedImageToMIPTexture(img *image.Paletted) ([]byte, error) {
 	headerSize := int32(40)
 	width := img.Bounds().Dx()
 	height := img.Bounds().Dy()
-	resizedHalf := scalePalettedImage(img, 2)
-	resizedFourth := scalePalettedImage(img, 4)
-	resizedEighth := scalePalettedImage(img, 8)
-	img.Palette = imgutil.RottPalette
-
-	imgutil.TranslateRottPalettedImageToQuake(img)
+	newImg := processRGBAForMIPTexture(img)
+	resizedHalf := processRGBAForMIPTexture(scaleRGBAImage(img, 2))
+	resizedFourth := processRGBAForMIPTexture(scaleRGBAImage(img, 4))
+	resizedEighth := processRGBAForMIPTexture(scaleRGBAImage(img, 8))
 
 	mip.Width = int32(width)
 	mip.Height = int32(height)
 	mip.Scale1Pos = headerSize
-	mip.Scale2Pos = headerSize + int32(len(img.Pix))
-	mip.Scale4Pos = headerSize + int32(len(img.Pix)+len(resizedHalf.Pix))
-	mip.Scale8Pos = headerSize + int32(len(img.Pix)+len(resizedHalf.Pix)+len(resizedFourth.Pix))
+	mip.Scale2Pos = headerSize + int32(len(newImg.Pix))
+	mip.Scale4Pos = headerSize + int32(len(newImg.Pix)+len(resizedHalf.Pix))
+	mip.Scale8Pos = headerSize + int32(len(newImg.Pix)+len(resizedHalf.Pix)+len(resizedFourth.Pix))
 
 	b := new(bytes.Buffer)
 	if err := binary.Write(b, binary.LittleEndian, &mip); err != nil {
 		return nil, err
 	}
-	b.Write(img.Pix)
+	b.Write(newImg.Pix)
 	b.Write(resizedHalf.Pix)
 	b.Write(resizedFourth.Pix)
 	b.Write(resizedEighth.Pix)

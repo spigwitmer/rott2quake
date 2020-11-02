@@ -12,7 +12,7 @@ import (
 	"io"
 )
 
-func GetImageFromFlatData(lumpReader io.Reader, iwad lumps.ArchiveReader, width int, height int) (*image.Paletted, error) {
+func GetImageFromFlatData(lumpReader io.Reader, iwad lumps.ArchiveReader, width int, height int) (*image.RGBA, error) {
 	rawImgData := make([]byte, width*height)
 	numRead, err := lumpReader.Read(rawImgData[:])
 	if err != nil {
@@ -22,14 +22,14 @@ func GetImageFromFlatData(lumpReader io.Reader, iwad lumps.ArchiveReader, width 
 		return nil, errors.New("numRead != width*height???")
 	}
 
-	pal := imgutil.GetPalette(iwad.Type())
+	pal := *imgutil.GetPalette(iwad.Type())
 	if pal == nil {
 		return nil, fmt.Errorf("Game %s does not have a palette", iwad.Type())
 	}
-	img := image.NewPaletted(image.Rect(0, 0, width, height), *pal)
+	img := image.NewRGBA(image.Rect(0, 0, width, height))
 	for i := 0; i < height; i++ {
 		for j := 0; j < width; j++ {
-			img.SetColorIndex(i, j, rawImgData[(i*width)+j])
+			img.Set(i, j, pal[rawImgData[(i*width)+j]])
 		}
 	}
 

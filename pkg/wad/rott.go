@@ -41,7 +41,7 @@ type RottPicHeader struct {
 }
 
 // https://doomwiki.org/wiki/Picture_format
-func GetImageFromPatchData(lumpInfo lumps.ArchiveEntry, lumpReader io.Reader, iwad lumps.ArchiveReader) (*image.Paletted, error) {
+func GetImageFromPatchData(lumpInfo lumps.ArchiveEntry, lumpReader io.Reader, iwad lumps.ArchiveReader) (*image.RGBA, error) {
 	// read entire lump to perform random access
 	patchBytes := make([]byte, lumpInfo.Size())
 	_, err := lumpReader.Read(patchBytes)
@@ -60,17 +60,11 @@ func GetImageFromPatchData(lumpInfo lumps.ArchiveEntry, lumpReader io.Reader, iw
 		return nil, err
 	}
 
-	pal := imgutil.GetPalette(iwad.Type())
+	pal := *imgutil.GetPalette(iwad.Type())
 	if pal == nil {
 		return nil, fmt.Errorf("Game %s does not have a palette", iwad.Type())
 	}
-	img := image.NewPaletted(image.Rect(0, 0, int(patchHeader.Width), int(patchHeader.Height)), *pal)
-	// default to transparent
-	for i := 0; i < 128; i++ {
-		for j := 0; j < 128; j++ {
-			img.SetColorIndex(i, j, 0)
-		}
-	}
+	img := image.NewRGBA(image.Rect(0, 0, int(patchHeader.Width), int(patchHeader.Height)))
 	for idx, cOffset := range columnOffsets {
 		_, err := lumpBuffer.Seek(int64(cOffset), io.SeekStart)
 		if err != nil {
@@ -99,7 +93,7 @@ func GetImageFromPatchData(lumpInfo lumps.ArchiveEntry, lumpReader io.Reader, iw
 						return nil, err
 					}
 
-					img.SetColorIndex(idx, int(i+rowstart), paletteCode)
+					img.Set(idx, int(i+rowstart), pal[paletteCode])
 				}
 			}
 
@@ -128,7 +122,7 @@ func DumpPatchDataToFile(destFhnd io.WriteSeeker, lumpInfo lumps.ArchiveEntry, l
 	return destFhnd.Seek(0, io.SeekCurrent)
 }
 
-func GetImageFromPicData(lumpInfo lumps.ArchiveEntry, lumpReader io.Reader, iwad lumps.ArchiveReader) (*image.Paletted, error) {
+func GetImageFromPicData(lumpInfo lumps.ArchiveEntry, lumpReader io.Reader, iwad lumps.ArchiveReader) (*image.RGBA, error) {
 	var header RottPicHeader
 
 	if err := binary.Read(lumpReader, binary.LittleEndian, &header); err != nil {
@@ -141,17 +135,17 @@ func GetImageFromPicData(lumpInfo lumps.ArchiveEntry, lumpReader io.Reader, iwad
 		return nil, err
 	}
 
-	pal := imgutil.GetPalette(iwad.Type())
+	pal := *imgutil.GetPalette(iwad.Type())
 	if pal == nil {
 		return nil, fmt.Errorf("Game %s does not have a palette", iwad.Type())
 	}
-	img := image.NewPaletted(image.Rect(0, 0, int(header.Width)*4, int(header.Height)), *pal)
+	img := image.NewRGBA(image.Rect(0, 0, int(header.Width)*4, int(header.Height)))
 	for planenum := 0; planenum < 4; planenum++ {
 		for i := 0; i < int(header.Height); i++ {
 			for j := 0; j < int(header.Width); j++ {
 				rawPos := (i * int(header.Width)) + j
-				val := rawData[rawPos+(int(header.Width)*int(header.Height)*planenum)]
-				img.SetColorIndex((j*4)+planenum, i, val)
+				paletteCode := rawData[rawPos+(int(header.Width)*int(header.Height)*planenum)]
+				img.Set((j*4)+planenum, i, pal[paletteCode])
 			}
 		}
 	}
@@ -173,7 +167,7 @@ func DumpPicDataToFile(destFhnd io.WriteSeeker, lumpInfo lumps.ArchiveEntry, lum
 	return destFhnd.Seek(0, io.SeekCurrent)
 }
 
-func GetImageFromLpicData(lumpInfo lumps.ArchiveEntry, lumpReader io.Reader, iwad lumps.ArchiveReader) (*image.Paletted, error) {
+func GetImageFromLpicData(lumpInfo lumps.ArchiveEntry, lumpReader io.Reader, iwad lumps.ArchiveReader) (*image.RGBA, error) {
 	var header RottLpicHeader
 
 	if err := binary.Read(lumpReader, binary.LittleEndian, &header); err != nil {
@@ -186,14 +180,14 @@ func GetImageFromLpicData(lumpInfo lumps.ArchiveEntry, lumpReader io.Reader, iwa
 		return nil, err
 	}
 
-	pal := imgutil.GetPalette(iwad.Type())
+	pal := *imgutil.GetPalette(iwad.Type())
 	if pal == nil {
 		return nil, fmt.Errorf("Game %s does not have a palette", iwad.Type())
 	}
-	img := image.NewPaletted(image.Rect(0, 0, 128, 128), *pal)
+	img := image.NewRGBA(image.Rect(0, 0, 128, 128))
 	for i := 0; i < 128; i++ {
 		for j := 0; j < 128; j++ {
-			img.SetColorIndex(j, i, rawData[(i*128)+j])
+			img.Set(j, i, pal[rawData[(i*128)+j]])
 		}
 	}
 
@@ -216,7 +210,7 @@ func DumpLpicDataToFile(destFhnd io.WriteSeeker, lumpInfo lumps.ArchiveEntry, lu
 }
 
 // https://doomwiki.org/wiki/Picture_format
-func GetImageFromTransPatchData(lumpInfo lumps.ArchiveEntry, lumpReader io.Reader, iwad lumps.ArchiveReader) (*image.Paletted, error) {
+func GetImageFromTransPatchData(lumpInfo lumps.ArchiveEntry, lumpReader io.Reader, iwad lumps.ArchiveReader) (*image.RGBA, error) {
 	// read entire lump to perform random access
 	patchBytes := make([]byte, lumpInfo.Size())
 	_, err := lumpReader.Read(patchBytes)
@@ -235,17 +229,11 @@ func GetImageFromTransPatchData(lumpInfo lumps.ArchiveEntry, lumpReader io.Reade
 		return nil, err
 	}
 
-	pal := imgutil.GetPalette(iwad.Type())
+	pal := *imgutil.GetPalette(iwad.Type())
 	if pal == nil {
 		return nil, fmt.Errorf("Game %s does not have a palette", iwad.Type())
 	}
-	img := image.NewPaletted(image.Rect(0, 0, int(patchHeader.Width), int(patchHeader.Height)), *pal)
-	// default to transparent
-	for i := 0; i < 128; i++ {
-		for j := 0; j < 128; j++ {
-			img.SetColorIndex(i, j, 0)
-		}
-	}
+	img := image.NewRGBA(image.Rect(0, 0, int(patchHeader.Width), int(patchHeader.Height)))
 	for idx, cOffset := range columnOffsets {
 		//log.Printf("\tcOffset(%d): %04x", idx, cOffset)
 		_, err := lumpBuffer.Seek(int64(cOffset), io.SeekStart)
@@ -281,17 +269,19 @@ func GetImageFromTransPatchData(lumpInfo lumps.ArchiveEntry, lumpReader io.Reade
 			//log.Printf("\t\tsrc(%d): %02x", idx, src)
 			if src == 254 {
 				// TODO: translucency shiz?
-				for i := byte(0); i < pixelCount; i++ {
-					img.SetColorIndex(idx, int(i+rowstart), 0)
-				}
+				/*
+					for i := byte(0); i < pixelCount; i++ {
+						img.SetColorIndex(idx, int(i+rowstart), 0)
+					}
+				*/
 			} else {
-				img.SetColorIndex(idx, int(rowstart), src)
+				img.Set(idx, int(rowstart), pal[src])
 				for i := uint8(1); i < pixelCount; i++ {
 					paletteCode, err := lumpBuffer.ReadByte()
 					if err != nil {
 						return nil, err
 					}
-					img.SetColorIndex(idx, int(i+rowstart), paletteCode)
+					img.Set(idx, int(i+rowstart), pal[paletteCode])
 				}
 			}
 		}
