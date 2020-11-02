@@ -137,6 +137,7 @@ func NewQuakeMap(startx, starty, startz float64) *QuakeMap {
 	var qmap QuakeMap
 
 	qmap.WorldSpawn = NewEntity(0, "worldspawn", &qmap)
+	qmap.WorldSpawn.AdditionalKeys["light"] = "256"
 	qmap.InfoPlayerStart = NewEntity(0, "info_player_start", &qmap)
 	qmap.InfoPlayerStart.OriginX = startx
 	qmap.InfoPlayerStart.OriginY = starty
@@ -144,13 +145,6 @@ func NewQuakeMap(startx, starty, startz float64) *QuakeMap {
 
 	return &qmap
 }
-
-/*
-func indent(what string, byhowmuch int) string {
-	re := regexp.MustCompile(`^`)
-	return re.ReplaceAllLiteralString(what, strings.Repeat(" ", byhowmuch))
-}
-*/
 
 func (q *QuakeMap) Render() string {
 	output := q.WorldSpawn.Render() + "\n" + q.InfoPlayerStart.Render()
