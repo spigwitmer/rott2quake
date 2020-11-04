@@ -116,7 +116,7 @@ func dumpLumpDataToFile(archive lumps.ArchiveReader, entry lumps.ArchiveEntry, d
 			if err != nil {
 				log.Fatalf("Could not get flat data image: %v\n", err)
 			}
-			mipdata, err := wad2.RGBAImageToMIPTexture(img)
+			mipdata, err := wad2.RGBAImageToMIPTexture(img, entry.Name())
 			if err != nil {
 				log.Fatalf("Could not get MIP texture from flat: %v\n", err)
 			}
@@ -130,7 +130,7 @@ func dumpLumpDataToFile(archive lumps.ArchiveReader, entry lumps.ArchiveEntry, d
 			if err != nil {
 				log.Fatalf("Could not get lpic data image: %v\n", err)
 			}
-			mipdata, err := wad2.RGBAImageToMIPTexture(img)
+			mipdata, err := wad2.RGBAImageToMIPTexture(img, entry.Name())
 			if err != nil {
 				log.Fatalf("Could not get MIP texture from flat: %v\n", err)
 			}
@@ -144,7 +144,7 @@ func dumpLumpDataToFile(archive lumps.ArchiveReader, entry lumps.ArchiveEntry, d
 			if err != nil {
 				log.Fatalf("Could not get pic data image: %v\n", err)
 			}
-			mipdata, err := wad2.RGBAImageToMIPTexture(img)
+			mipdata, err := wad2.RGBAImageToMIPTexture(img, entry.Name())
 			if err != nil {
 				log.Fatalf("Could not get MIP texture from flat: %v\n", err)
 			}
@@ -181,7 +181,7 @@ func dumpLumpDataToFile(archive lumps.ArchiveReader, entry lumps.ArchiveEntry, d
 			}
 			// quake texture dimensions must be a factor of 16, but
 			// make them 64 to align weird textures like gates
-			mipdata, err := wad2.RGBAImageToMIPTexture(imgutil.AlignImageDimensions(img, 64))
+			mipdata, err := wad2.RGBAImageToMIPTexture(imgutil.AlignImageDimensions(img, 64), "{"+entryName)
 			if err != nil {
 				log.Fatalf("Could not get MIP texture from flat: %v\n", err)
 			}
@@ -195,7 +195,7 @@ func dumpLumpDataToFile(archive lumps.ArchiveReader, entry lumps.ArchiveEntry, d
 			if err != nil {
 				log.Fatalf("Could not get tpatch data image: %v\n", err)
 			}
-			mipdata, err := wad2.RGBAImageToMIPTexture(imgutil.AlignImageDimensions(img, 64))
+			mipdata, err := wad2.RGBAImageToMIPTexture(imgutil.AlignImageDimensions(img, 64), "{"+entry.Name())
 			if err != nil {
 				log.Fatalf("Could not get MIP texture from flat: %v\n", err)
 			}
@@ -212,7 +212,7 @@ func dumpLumpDataToFile(archive lumps.ArchiveReader, entry lumps.ArchiveEntry, d
 				if err != nil {
 					log.Fatalf("Could not get wall data image: %v\n", err)
 				}
-				mipdata, err := wad2.RGBAImageToMIPTexture(img)
+				mipdata, err := wad2.RGBAImageToMIPTexture(img, strings.ToLower(wad2LumpName))
 				if err != nil {
 					log.Fatalf("Could not get MIP texture from flat: %v\n", err)
 				}
@@ -227,7 +227,7 @@ func dumpLumpDataToFile(archive lumps.ArchiveReader, entry lumps.ArchiveEntry, d
 				if err != nil {
 					log.Fatalf("Could not get flat data image: %v\n", err)
 				}
-				mipdata, err := wad2.RGBAImageToMIPTexture(img)
+				mipdata, err := wad2.RGBAImageToMIPTexture(img, entry.Name())
 				if err != nil {
 					log.Fatalf("Could not get MIP texture from flat: %v\n", err)
 				}

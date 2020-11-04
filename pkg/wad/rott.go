@@ -93,7 +93,14 @@ func GetImageFromPatchData(lumpInfo lumps.ArchiveEntry, lumpReader io.Reader, iw
 						return nil, err
 					}
 
-					img.Set(idx, int(i+rowstart), pal[paletteCode])
+					palR, palG, palB, _ := pal[paletteCode].RGBA()
+					img.Set(idx, int(i+rowstart),
+						color.RGBA{
+							R: uint8(palR),
+							G: uint8(palG),
+							B: uint8(palB),
+							A: 0xff,
+						})
 				}
 			}
 
@@ -281,7 +288,14 @@ func GetImageFromTransPatchData(lumpInfo lumps.ArchiveEntry, lumpReader io.Reade
 					if err != nil {
 						return nil, err
 					}
-					img.Set(idx, int(i+rowstart), pal[paletteCode])
+					palR, palG, palB, _ := pal[paletteCode].RGBA()
+					img.Set(idx, int(i+rowstart),
+						color.RGBA{
+							R: uint8(palR),
+							G: uint8(palG),
+							B: uint8(palB),
+							A: 0xff,
+						})
 				}
 			}
 		}
