@@ -34,7 +34,7 @@ func ClassNameForMaskedWall(w *MaskedWallInfo, position string) string {
 		return "func_breakable"
 	}
 	if passable {
-		return "func_detail_illusionary"
+		return "func_illusionary"
 	}
 	return "func_detail"
 }

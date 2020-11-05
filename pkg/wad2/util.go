@@ -3,14 +3,11 @@ package wad2
 import (
 	"bytes"
 	"encoding/binary"
-	"fmt"
 	"github.com/nfnt/resize"
 	"gitlab.com/camtap/lumps/pkg/imgutil"
 	"image"
 	"image/color"
 	"image/draw"
-	"image/png"
-	"os"
 )
 
 type MIPTexture struct {
