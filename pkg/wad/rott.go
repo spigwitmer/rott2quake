@@ -65,6 +65,11 @@ func GetImageFromPatchData(lumpInfo lumps.ArchiveEntry, lumpReader io.Reader, iw
 		return nil, fmt.Errorf("Game %s does not have a palette", iwad.Type())
 	}
 	img := image.NewRGBA(image.Rect(0, 0, int(patchHeader.Width), int(patchHeader.Height)))
+	for i := 0; i < int(patchHeader.Height); i++ {
+		for j := 0; j < int(patchHeader.Width); j++ {
+			img.SetRGBA(j, i, color.RGBA{uint8(0), uint8(0), uint8(0), uint8(0)})
+		}
+	}
 	for idx, cOffset := range columnOffsets {
 		_, err := lumpBuffer.Seek(int64(cOffset), io.SeekStart)
 		if err != nil {
@@ -147,12 +152,18 @@ func GetImageFromPicData(lumpInfo lumps.ArchiveEntry, lumpReader io.Reader, iwad
 		return nil, fmt.Errorf("Game %s does not have a palette", iwad.Type())
 	}
 	img := image.NewRGBA(image.Rect(0, 0, int(header.Width)*4, int(header.Height)))
+	for i := 0; i < int(header.Height); i++ {
+		for j := 0; j < int(header.Width)*4; j++ {
+			img.SetRGBA(j, i, color.RGBA{0, 0, 0, 0xff})
+		}
+	}
 	for planenum := 0; planenum < 4; planenum++ {
 		for i := 0; i < int(header.Height); i++ {
 			for j := 0; j < int(header.Width); j++ {
 				rawPos := (i * int(header.Width)) + j
 				paletteCode := rawData[rawPos+(int(header.Width)*int(header.Height)*planenum)]
-				img.Set((j*4)+planenum, i, pal[paletteCode])
+				r, g, b, _ := pal[paletteCode].RGBA()
+				img.SetRGBA((j*4)+planenum, i, color.RGBA{uint8(r), uint8(g), uint8(b), 0xff})
 			}
 		}
 	}
@@ -241,8 +252,12 @@ func GetImageFromTransPatchData(lumpInfo lumps.ArchiveEntry, lumpReader io.Reade
 		return nil, fmt.Errorf("Game %s does not have a palette", iwad.Type())
 	}
 	img := image.NewRGBA(image.Rect(0, 0, int(patchHeader.Width), int(patchHeader.Height)))
+	for i := 0; i < int(patchHeader.Height); i++ {
+		for j := 0; j < int(patchHeader.Width); j++ {
+			img.SetRGBA(j, i, color.RGBA{uint8(0), uint8(0), uint8(0), uint8(0)})
+		}
+	}
 	for idx, cOffset := range columnOffsets {
-		//log.Printf("\tcOffset(%d): %04x", idx, cOffset)
 		_, err := lumpBuffer.Seek(int64(cOffset), io.SeekStart)
 		if err != nil {
 			return nil, err
@@ -253,7 +268,6 @@ func GetImageFromTransPatchData(lumpInfo lumps.ArchiveEntry, lumpReader io.Reade
 			if err != nil {
 				return nil, err
 			}
-			//log.Printf("\t\trowstart(%d): %02x", idx, rowstart)
 			if rowstart == 255 {
 				break
 			}
@@ -262,7 +276,6 @@ func GetImageFromTransPatchData(lumpInfo lumps.ArchiveEntry, lumpReader io.Reade
 			if err != nil {
 				return nil, err
 			}
-			//log.Printf("\t\tpixelCount(%d): %d", idx, pixelCount)
 
 			if pixelCount == 0 {
 				continue
@@ -273,7 +286,6 @@ func GetImageFromTransPatchData(lumpInfo lumps.ArchiveEntry, lumpReader io.Reade
 				return nil, err
 			}
 
-			//log.Printf("\t\tsrc(%d): %02x", idx, src)
 			if src == 254 {
 				// TODO: translucency shiz?
 				/*

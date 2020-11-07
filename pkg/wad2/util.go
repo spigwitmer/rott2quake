@@ -6,8 +6,8 @@ import (
 	"github.com/nfnt/resize"
 	"gitlab.com/camtap/lumps/pkg/imgutil"
 	"image"
-	"image/color"
 	"image/draw"
+	"strings"
 )
 
 type MIPTexture struct {
@@ -137,14 +137,15 @@ func scaleRGBAImage(img image.Image, invFactor int) *image.RGBA {
 	return nimg
 }
 
-func processRGBAForMIPTexture(img *image.RGBA) *image.Paletted {
+func processRGBAForMIPTexture(lumpName string, img *image.RGBA) *image.Paletted {
 	width := img.Bounds().Dx()
 	height := img.Bounds().Dy()
 	dimg := image.NewPaletted(image.Rect(0, 0, width, height), imgutil.QuakePalette)
 	for i := 0; i < width; i++ {
 		for j := 0; j < height; j++ {
+			_, _, _, a := img.RGBAAt(i, j).RGBA()
 			paletteCode := uint8(imgutil.QuakePalette.Index(img.At(i, j)))
-			if paletteCode == 0 {
+			if strings.HasPrefix(lumpName, "{") && a < 255 {
 				// transparent pixel
 				dimg.SetColorIndex(i, j, 255)
 			} else {
@@ -155,27 +156,6 @@ func processRGBAForMIPTexture(img *image.RGBA) *image.Paletted {
 	return dimg
 }
 
-// set pixels that are supposed to be transparent as pure black
-// (that's how it's set up for ROTT anyway), then convert them
-// back to palette 255 after resize. Trying to quantize palette
-// 255 pixels does not keep them as palette 255 pixels.
-func processTransparency(img *image.RGBA) {
-	width := img.Bounds().Dx()
-	height := img.Bounds().Dy()
-	for i := 0; i < width; i++ {
-		for j := 0; j < height; j++ {
-			if r, g, b, _ := img.RGBAAt(i, j).RGBA(); r == 0 && g == 0 && b == 0 {
-				img.Set(i, j, color.RGBA{
-					R: uint8(0),
-					G: uint8(0),
-					B: uint8(0),
-					A: 0xff,
-				})
-			}
-		}
-	}
-}
-
 func MIPName(lumpName string) [16]byte {
 	var processedName [16]byte
 	copy(processedName[:], []byte(lumpName))
@@ -183,18 +163,17 @@ func MIPName(lumpName string) [16]byte {
 }
 
 func RGBAImageToMIPTexture(img *image.RGBA, lumpName string) ([]byte, error) {
-	// convert a peletted image to MIP texture data by scaling the image
+	// convert an RGBA image to MIP texture data by scaling the image
 	// 1/2x, 1/4x, and 1/8x
 	var mip MIPTexture
 	// name + width + height + 1pos + 2pos + 4pos + 8pos
 	headerSize := int32(40)
 	width := img.Bounds().Dx()
 	height := img.Bounds().Dy()
-	processTransparency(img)
-	newImg := processRGBAForMIPTexture(img)
-	resizedHalf := processRGBAForMIPTexture(scaleRGBAImage(img, 2))
-	resizedFourth := processRGBAForMIPTexture(scaleRGBAImage(img, 4))
-	resizedEighth := processRGBAForMIPTexture(scaleRGBAImage(img, 8))
+	newImg := processRGBAForMIPTexture(lumpName, img)
+	resizedHalf := processRGBAForMIPTexture(lumpName, scaleRGBAImage(img, 2))
+	resizedFourth := processRGBAForMIPTexture(lumpName, scaleRGBAImage(img, 4))
+	resizedEighth := processRGBAForMIPTexture(lumpName, scaleRGBAImage(img, 8))
 
 	mip.Name = MIPName(lumpName)
 	mip.Width = int32(width)

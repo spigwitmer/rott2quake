@@ -196,10 +196,10 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 				// however just implement that as full walls since
 				// they're made to allow the player walk across
 				if platformInfo, ok := Platforms[wallInfo.PlatformID]; ok {
-					x1 := float64(i) * gridSizeX + 1
-					y1 := float64(j) * gridSizeY + 1
-					x2 := float64(i+1) * gridSizeX - 1
-					y2 := float64(j+1) * gridSizeY - 1
+					x1 := float64(i)*gridSizeX + 1
+					y1 := float64(j)*gridSizeY + 1
+					x2 := float64(i+1)*gridSizeX - 1
+					y2 := float64(j+1)*gridSizeY - 1
 
 					// above as separate entity
 					// NOTE: don't render tops and bottoms of platforms
