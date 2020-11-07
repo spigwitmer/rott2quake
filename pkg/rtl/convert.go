@@ -196,10 +196,10 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 				// however just implement that as full walls since
 				// they're made to allow the player walk across
 				if platformInfo, ok := Platforms[wallInfo.PlatformID]; ok {
-					x1 := float64(i) * gridSizeX
-					y1 := float64(j) * gridSizeY
-					x2 := float64(i+1) * gridSizeX
-					y2 := float64(j+1) * gridSizeY
+					x1 := float64(i) * gridSizeX + 1
+					y1 := float64(j) * gridSizeY + 1
+					x2 := float64(i+1) * gridSizeX - 1
+					y2 := float64(j+1) * gridSizeY - 1
 
 					// above as separate entity
 					// NOTE: don't render tops and bottoms of platforms
@@ -229,7 +229,7 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 					// bottom
 					// above as separate entity
 					if platformInfo.Bottom != "" && platformInfo.Flags&MWF_BottomPassable == 0 {
-						var z1 float64 = floorDepth
+						var z1 float64 = floorDepth + 1
 						var z2 float64 = floorDepth + gridSizeZ
 						className := ClassNameForMaskedWall(&platformInfo, "bottom")
 						column := quakemap.BasicCuboid(x1, y1, z1, x2, y2, z2,
