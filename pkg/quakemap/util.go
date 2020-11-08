@@ -23,7 +23,7 @@ func BasicCuboid(x1, y1, z1, x2, y2, z2 float64, texture string, scale float64) 
 		texture,
 		0, 0, // offset
 		0, // rotation
-		scale, scale)
+		scale*-1.0, scale)
 	// west
 	b.AddPlane(
 		x1, y1, z1, // p1
@@ -32,7 +32,7 @@ func BasicCuboid(x1, y1, z1, x2, y2, z2 float64, texture string, scale float64) 
 		texture,
 		0, 0, // offset
 		0, // rotation
-		scale, scale)
+		scale*-1.0, scale)
 	// east
 	b.AddPlane(
 		x2, y1, z1, // p1
