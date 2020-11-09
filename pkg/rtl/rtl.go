@@ -184,12 +184,16 @@ func (r *RTLMapData) ThinWallDirection(x, y int) WallDirection {
 	if x > 0 {
 		if r.CookedWallGrid[x-1][y].Type == WALL_Regular {
 			adjacentCountX += 2
+        } else if r.CookedWallGrid[x-1][y].Type == WALL_MaskedWall {
+			adjacentCountX += 2
 		} else if r.CookedWallGrid[x-1][y].Type != WALL_None {
 			adjacentCountX++
 		}
 	}
 	if x < 127 {
 		if r.CookedWallGrid[x+1][y].Type == WALL_Regular {
+			adjacentCountX += 2
+        } else if r.CookedWallGrid[x+1][y].Type == WALL_MaskedWall {
 			adjacentCountX += 2
 		} else if r.CookedWallGrid[x+1][y].Type != WALL_None {
 			adjacentCountX++
@@ -198,12 +202,16 @@ func (r *RTLMapData) ThinWallDirection(x, y int) WallDirection {
 	if y > 0 {
 		if r.CookedWallGrid[x][y-1].Type == WALL_Regular {
 			adjacentCountY += 2
+        } else if r.CookedWallGrid[x][y-1].Type == WALL_MaskedWall {
+			adjacentCountY += 2
 		} else if r.CookedWallGrid[x][y-1].Type != WALL_None {
 			adjacentCountY++
 		}
 	}
 	if y < 127 {
 		if r.CookedWallGrid[x][y+1].Type == WALL_Regular {
+			adjacentCountY += 2
+        } else if r.CookedWallGrid[x][y+1].Type == WALL_MaskedWall {
 			adjacentCountY += 2
 		} else if r.CookedWallGrid[x][y+1].Type != WALL_None {
 			adjacentCountY++
