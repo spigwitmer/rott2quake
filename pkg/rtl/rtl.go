@@ -551,7 +551,6 @@ func (r *RTLMapData) DumpMapToHtmlFile(w io.Writer) error {
 		font-size: 11px;
 		padding: 0px;
 		margin: 0px;
-		display: inline-block;
       }
     </style>
   </head>
