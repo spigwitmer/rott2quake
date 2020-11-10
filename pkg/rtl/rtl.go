@@ -47,6 +47,7 @@ const (
 	WALL_Platform
 	WALL_Window
 	WALL_PushWall
+	WALL_Door
 )
 
 const (
@@ -65,12 +66,21 @@ const (
 type WallInfo struct {
 	Tile         uint16 // matches up to lump name (WALL1, WALL2, etc.)
 	Type         WallType
+	X            int
+	Y            int
 	MapFlags     uint32
 	Damage       bool
 	AnimWallID   int // see anim.go
 	MaskedWallID int // see maskedwall.go
 	PlatformID   int // see maskedwall.go
 	AreaID       int // see area.go
+}
+
+type DoorInfo struct {
+	TileID    uint16 // tile sprite ID
+	KeyID     uint16 // was there a key sprite for the tiles?
+	Direction WallDirection
+	Tiles     []*WallInfo // tiles making up the door
 }
 
 // html -- true for HTML map gen (return static image equivalent texture name)
@@ -80,6 +90,45 @@ func (wallInfo *WallInfo) WallTileToTextureName(html bool) string {
 	tileId := wallInfo.Tile
 	if wallInfo.Type == WALL_None {
 		return ""
+	} else if wallInfo.Type == WALL_Door {
+		doorId := 99
+		if tileId >= 33 && tileId <= 35 {
+			doorId = int(tileId) - 33 + 15
+		} else if tileId >= 90 && tileId <= 93 {
+			doorId = int(tileId) - 90
+		} else if tileId >= 98 && tileId <= 104 {
+			doorId = int(tileId) - 90
+		} else if tileId >= 94 && tileId <= 97 {
+			doorId = int(tileId) - 86
+		} else if tileId >= 154 && tileId <= 156 {
+			doorId = int(tileId) - 154 + 18
+		}
+		switch doorId {
+		case 0, 8:
+			return "RAMDOOR1"
+		case 1, 9:
+			return "DOOR2"
+		case 2, 3, 13:
+			return "TRIDOOR1"
+		case 10, 11, 14:
+			return "SDOOR4"
+		case 12:
+			return "EDOOR"
+		case 15:
+			return "SNDOOR"
+		case 16:
+			return "SNADOOR"
+		case 17:
+			return "SNKDOOR"
+		case 18:
+			return "TNDOOR"
+		case 19:
+			return "TNADOOR"
+		case 20:
+			return "TNKDOOR"
+		default:
+			panic(fmt.Sprintf("Illegal door number %d at (%d, %d)", tileId, wallInfo.X, wallInfo.Y))
+		}
 	} else if wallInfo.Type == WALL_Regular {
 		if tileId >= 1 && tileId <= 32 {
 			return fmt.Sprintf("WALL%d", tileId)
@@ -184,7 +233,7 @@ func (r *RTLMapData) ThinWallDirection(x, y int) WallDirection {
 	if x > 0 {
 		if r.CookedWallGrid[x-1][y].Type == WALL_Regular {
 			adjacentCountX += 2
-        } else if r.CookedWallGrid[x-1][y].Type == WALL_MaskedWall {
+		} else if r.CookedWallGrid[x-1][y].Type == WALL_MaskedWall {
 			adjacentCountX += 2
 		} else if r.CookedWallGrid[x-1][y].Type != WALL_None {
 			adjacentCountX++
@@ -193,7 +242,7 @@ func (r *RTLMapData) ThinWallDirection(x, y int) WallDirection {
 	if x < 127 {
 		if r.CookedWallGrid[x+1][y].Type == WALL_Regular {
 			adjacentCountX += 2
-        } else if r.CookedWallGrid[x+1][y].Type == WALL_MaskedWall {
+		} else if r.CookedWallGrid[x+1][y].Type == WALL_MaskedWall {
 			adjacentCountX += 2
 		} else if r.CookedWallGrid[x+1][y].Type != WALL_None {
 			adjacentCountX++
@@ -202,7 +251,7 @@ func (r *RTLMapData) ThinWallDirection(x, y int) WallDirection {
 	if y > 0 {
 		if r.CookedWallGrid[x][y-1].Type == WALL_Regular {
 			adjacentCountY += 2
-        } else if r.CookedWallGrid[x][y-1].Type == WALL_MaskedWall {
+		} else if r.CookedWallGrid[x][y-1].Type == WALL_MaskedWall {
 			adjacentCountY += 2
 		} else if r.CookedWallGrid[x][y-1].Type != WALL_None {
 			adjacentCountY++
@@ -211,7 +260,7 @@ func (r *RTLMapData) ThinWallDirection(x, y int) WallDirection {
 	if y < 127 {
 		if r.CookedWallGrid[x][y+1].Type == WALL_Regular {
 			adjacentCountY += 2
-        } else if r.CookedWallGrid[x][y+1].Type == WALL_MaskedWall {
+		} else if r.CookedWallGrid[x][y+1].Type == WALL_MaskedWall {
 			adjacentCountY += 2
 		} else if r.CookedWallGrid[x][y+1].Type != WALL_None {
 			adjacentCountY++
@@ -316,6 +365,8 @@ func (r *RTLMapData) renderWallGrid() {
 		for j := 0; j < 128; j++ {
 			// defaults
 			r.CookedWallGrid[i][j].Type = WALL_None
+			r.CookedWallGrid[i][j].X = i
+			r.CookedWallGrid[i][j].Y = j
 
 			tileId := r.WallPlane[i][j]
 			infoVal := r.InfoPlane[i][j]
@@ -333,6 +384,13 @@ func (r *RTLMapData) renderWallGrid() {
 
 			if tileId >= AreaTileMin {
 				r.CookedWallGrid[i][j].AreaID = int(tileId - AreaTileMin)
+			}
+
+			if (tileId >= 33 && tileId <= 35) || (tileId >= 90 && tileId <= 104) || (tileId >= 154 && tileId <= 156) {
+				// doors
+				r.CookedWallGrid[i][j].Tile = tileId
+				r.CookedWallGrid[i][j].Type = WALL_Door
+				continue
 			}
 
 			if tileId <= 32 || (tileId >= 36 && tileId <= 43) {
@@ -580,6 +638,8 @@ func (r *RTLMapData) DumpMapToHtmlFile(w io.Writer) error {
 				img = "anim/" + img
 			} else if wallInfo.Type == WALL_Elevator {
 				img = "elev/" + img
+			} else if wallInfo.Type == WALL_Door {
+				img = "doors/" + img
 			}
 			cellData = append(cellData, CellData{
 				Wall:   r.WallPlane[i][j],
