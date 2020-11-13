@@ -330,6 +330,40 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 		}
 	}
 
+    // place doors
+    for doornum, door := range rtlmap.GetDoors() {
+        entity := quakemap.NewEntity(0, "func_door", qm)
+        for _, doorTile := range door.Tiles {
+            if doorTile.Type != WALL_Door {
+                panic(fmt.Sprintf("(%d,%d) not WALL_Door type!", doorTile.X, doorTile.Y))
+            }
+            texInfo := GetDoorTextures(doorTile.Tile)
+            var x1, y1, x2, y2 float64
+            var z1 float64 = floorDepth
+            var z2 float64 = floorDepth + gridSizeZ
+            if door.Direction == WALLDIR_NorthSouth {
+                x1 = float64(doorTile.X)*gridSizeX + (gridSizeX / 2)
+                x2 = float64(doorTile.X)*gridSizeX + (gridSizeX / 2) + 1
+                y1 = float64(doorTile.Y) * gridSizeY
+                y2 = float64(doorTile.Y+1) * gridSizeY
+            } else {
+                x1 = float64(doorTile.X) * gridSizeX
+                x2 = float64(doorTile.X+1) * gridSizeX
+                y1 = float64(doorTile.Y)*gridSizeY + (gridSizeY / 2)
+                y2 = float64(doorTile.Y)*gridSizeY + (gridSizeY / 2) + 1
+            }
+            brush := quakemap.BasicCuboid(x1, y1, z1, x2, y2, z2,
+                                          texInfo.BaseTexture,
+                                          scale)
+            entity.Brushes = append(entity.Brushes, brush)
+        }
+        entity.AdditionalKeys["_doornum"] = fmt.Sprintf("%d", doornum)
+        // move upward when open
+        entity.AdditionalKeys["angle"] = "-1"
+        entity.AdditionalKeys["speed"] = "290"
+        qm.Entities = append(qm.Entities, entity)
+    }
+
 	// 2. TODO: clip brushes around floor extending height
 	return qm
 }
