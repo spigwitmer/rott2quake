@@ -487,6 +487,12 @@ func ROTTGuessFileTypeAndSubdir(entry *WADEntry) (string, string) {
 		}
 	}
 
+	for _, doorentry := range rtl.DoorTextures {
+		if entryName == doorentry.AltTexture {
+			return "wall", "doors"
+		}
+	}
+
 	if oneOff, found := TypeOneOffs[entry.Name()]; found {
 		return oneOff[0], oneOff[1]
 	}
