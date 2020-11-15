@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"gitlab.com/camtap/lumps/pkg/lumps"
+	"gitlab.com/camtap/rott2quake/pkg/lumps"
 	"io"
 )
 

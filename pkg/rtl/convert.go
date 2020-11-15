@@ -2,7 +2,7 @@ package rtl
 
 import (
 	"fmt"
-	"gitlab.com/camtap/lumps/pkg/quakemap"
+	"gitlab.com/camtap/rott2quake/pkg/quakemap"
 )
 
 var (

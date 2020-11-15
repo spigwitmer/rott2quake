@@ -1,4 +1,4 @@
-module gitlab.com/camtap/lumps
+module gitlab.com/camtap/rott2quake
 
 go 1.14
 

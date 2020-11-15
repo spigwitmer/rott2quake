@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"github.com/nfnt/resize"
-	"gitlab.com/camtap/lumps/pkg/imgutil"
+	"gitlab.com/camtap/rott2quake/pkg/imgutil"
 	"image"
 	"image/draw"
 	"strings"

@@ -11,12 +11,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"gitlab.com/camtap/lumps/pkg/imgutil"
-	"gitlab.com/camtap/lumps/pkg/lumps"
-	"gitlab.com/camtap/lumps/pkg/pak"
-	rtlfile "gitlab.com/camtap/lumps/pkg/rtl"
-	"gitlab.com/camtap/lumps/pkg/wad"
-	"gitlab.com/camtap/lumps/pkg/wad2"
+	"gitlab.com/camtap/rott2quake/pkg/imgutil"
+	"gitlab.com/camtap/rott2quake/pkg/lumps"
+	"gitlab.com/camtap/rott2quake/pkg/pak"
+	rtlfile "gitlab.com/camtap/rott2quake/pkg/rtl"
+	"gitlab.com/camtap/rott2quake/pkg/wad"
+	"gitlab.com/camtap/rott2quake/pkg/wad2"
 )
 
 func init() {

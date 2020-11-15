@@ -4,16 +4,16 @@ set -eu
 DEBUG="${DEBUG:-""}"
 lumpname=${1:-PAUSED}
 lumptype=${2:-""}
-wadfile=${3:-lumps-data/DARKWAR.WAD}
+wadfile=${3:-r2q-data/DARKWAR.WAD}
 destdir=${4:-darkwar}
 rm -rf ${destdir}
 
 if [ "x$DEBUG" != "x" ]; then
-    dlv debug ./cmd/lumps -- -dump-raw \
+    dlv debug ./cmd/rott2quake -- -dump-raw \
         -lname "${lumpname}" \
         -ltype "${lumptype}" \
         -dump-data ${wadfile} \
         ${destdir}
 else
-    ./lumps -dump-raw -lname "${lumpname}" -ltype "${lumptype}" -dump-data ${wadfile} ${destdir}
+    ./rott2quake -dump-raw -lname "${lumpname}" -ltype "${lumptype}" -dump-data ${wadfile} ${destdir}
 fi

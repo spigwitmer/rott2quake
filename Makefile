@@ -2,11 +2,11 @@ SOURCES := $(wildcard cmd/*/*.go pkg/*/*.go)
 GOPRIVATE := '*'
 export GOPRIVATE
 
-TARGETS = lumps dump-palette
+TARGETS = rott2quake dump-palette
 
-all: lumps dump-palette
+all: rott2quake dump-palette
 
-lumps: $(SOURCES)
+rott2quake: $(SOURCES)
 	go build -o $@ ./cmd/$@
 dump-palette: $(SOURCES)
 	go build -o $@ ./cmd/$@
@@ -16,11 +16,11 @@ show-sources:
 	ls -1 $(SOURCES)
 
 .PHONY: dump-darkwar-to-wad2
-dump-darkwar-to-wad2: lumps
+dump-darkwar-to-wad2: rott2quake
 	./dump_darkwar_to_wad2.sh
 
 .PHONY: dump-maps-dusk
-dump-maps-dusk: lumps
+dump-maps-dusk: rott2quake
 	./dump_maps_dusk.sh
 
 .PHONY: gofmt

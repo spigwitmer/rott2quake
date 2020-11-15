@@ -5,8 +5,8 @@ package wad
 import (
 	"errors"
 	"fmt"
-	"gitlab.com/camtap/lumps/pkg/imgutil"
-	"gitlab.com/camtap/lumps/pkg/lumps"
+	"gitlab.com/camtap/rott2quake/pkg/imgutil"
+	"gitlab.com/camtap/rott2quake/pkg/lumps"
 	"image"
 	"image/png"
 	"io"

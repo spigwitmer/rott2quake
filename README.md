@@ -16,7 +16,7 @@ make
 ## Invocation
 
 ```bash
-./lumps -help
+./rott2quake -help
 ```
 
 ### Dumping textures to a folder and .wad file
@@ -24,7 +24,7 @@ make
 This will dump out (most) textures in ROTT's .wad file to a destination folder as well as a .wad file usable in Quake:
 
 ```bash
-./lumps -wad-out quake-rott.wad -dump DARKWAR.WAD <dest dir>
+./rott2quake -wad-out quake-rott.wad -dump DARKWAR.WAD <dest dir>
 ```
 
 ### Dumping maps to a folder
@@ -34,30 +34,30 @@ This will dump the following map data into a new folder: an HTML file containing
 NOTE: you need to generate a Quake .wad file from the invocation above and pass the path to it as `-wad-out`
 
 ```bash
-./lumps -wad-out quake-rott.wad -rtl DARKWAR.RTL -rtl-map-outdir <dest dir>
+./rott2quake -wad-out quake-rott.wad -rtl DARKWAR.RTL -rtl-map-outdir <dest dir>
 ```
 
 If you're generating maps to play in Dusk, scale the map to at least 1.5 its size:
 ```bash
-./lumps -wad-out quake-rott.wad -rtl DARKWAR.RTL -rtl-map-scale 1.5 -rtl-map-outdir <dest dir>
+./rott2quake -wad-out quake-rott.wad -rtl DARKWAR.RTL -rtl-map-scale 1.5 -rtl-map-outdir <dest dir>
 ```
 
 ### Dumping Quake .pak files to a folder
 
 ```bash
-./lumps -pak -dump pak0.pak <dest dir>
+./rott2quake -pak -dump pak0.pak <dest dir>
 ```
 
 ### Listing textures in a .wad file
 
 ROTT:
 ```bash
-./lumps -list DARKWAR.WAD
+./rott2quake -list DARKWAR.WAD
 ```
 
 Quake:
 ```bash
-./lumps -list -quake QUAKE101.WAD
+./rott2quake -list -quake QUAKE101.WAD
 ```
 
 
