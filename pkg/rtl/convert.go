@@ -72,7 +72,7 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 		0, 0, 0,
 		floorWidth, floorLength, floorDepth,
 		rtlmap.FloorTexture(),
-		scale)
+		scale, false)
 	qm.WorldSpawn.Brushes = []quakemap.Brush{floorBrush}
 
 	// add ceiling if declared
@@ -84,7 +84,7 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 			0, 0, ceilz1,
 			floorWidth, floorLength, ceilz2,
 			ceilTexture,
-			scale)
+			scale, false)
 		qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, ceilBrush)
 	}
 
@@ -118,21 +118,21 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 						var z1 float64 = floorDepth
 						var z2 float64 = floorDepth + float64(rtlmap.FloorHeight()-1)*gridSizeZ
 						wallColumn := quakemap.BasicCuboid(x1, y1, z1, x2, y2, z2,
-							texName, scale)
+							texName, scale, false)
 						qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, wallColumn)
 					case 4:
 						// thin wall, above only
 						var z1 float64 = floorDepth + float64(rtlmap.FloorHeight()-1)*gridSizeZ
 						var z2 float64 = floorDepth + float64(rtlmap.FloorHeight())*gridSizeZ
 						wallColumn := quakemap.BasicCuboid(x1, y1, z1, x2, y2, z2,
-							texName, scale)
+							texName, scale, false)
 						qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, wallColumn)
 					case 5:
 						// thin wall, below only
 						var z1 float64 = floorDepth
 						var z2 float64 = floorDepth + gridSizeZ
 						wallColumn := quakemap.BasicCuboid(x1, y1, z1, x2, y2, z2,
-							texName, scale)
+							texName, scale, false)
 						qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, wallColumn)
 					case 6:
 						// thin wall, middle passable
@@ -141,9 +141,9 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 						var topz1 float64 = floorDepth + float64(rtlmap.FloorHeight()-1)*gridSizeZ
 						var topz2 float64 = floorDepth + float64(rtlmap.FloorHeight())*gridSizeZ
 						wallColumn1 := quakemap.BasicCuboid(x1, y1, bottomz1, x2, y2, bottomz2,
-							texName, scale)
+							texName, scale, false)
 						wallColumn2 := quakemap.BasicCuboid(x1, y1, topz1, x2, y2, topz2,
-							texName, scale)
+							texName, scale, false)
 						qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, wallColumn1)
 						qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, wallColumn2)
 					case 7:
@@ -151,21 +151,21 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 						var z1 float64 = floorDepth + gridSizeZ
 						var z2 float64 = floorDepth + float64(rtlmap.FloorHeight())*gridSizeZ
 						wallColumn := quakemap.BasicCuboid(x1, y1, z1, x2, y2, z2,
-							texName, scale)
+							texName, scale, false)
 						qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, wallColumn)
 					case 8:
 						// thin wall, middle only
 						var z1 float64 = floorDepth + gridSizeZ
 						var z2 float64 = floorDepth + float64(rtlmap.FloorHeight()-1)*gridSizeZ
 						wallColumn := quakemap.BasicCuboid(x1, y1, z1, x2, y2, z2,
-							texName, scale)
+							texName, scale, false)
 						qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, wallColumn)
 					case 9:
 						// thin wall, everything but above
 						var z1 float64 = floorDepth
 						var z2 float64 = floorDepth + float64(rtlmap.FloorHeight()-1)*gridSizeZ
 						wallColumn := quakemap.BasicCuboid(x1, y1, z1, x2, y2, z2,
-							texName, scale)
+							texName, scale, false)
 						qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, wallColumn)
 					}
 				} else {
@@ -178,7 +178,7 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 						float64(j+1)*gridSizeY, // y2
 						floorDepth+float64(rtlmap.FloorHeight())*gridSizeZ, // z2
 						texName,
-						scale) // scale
+						scale, true) // scale
 
 					// make static walls part of the worldspawn,
 					// everything else a separate entity
@@ -210,7 +210,7 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 						aboveClassName := "func_detail"
 						aboveColumn := quakemap.BasicCuboid(x1, y1, abovez1, x2, y2, abovez2,
 							"{"+platformInfo.Above,
-							scale)
+							scale, false)
 						aboveEntity := quakemap.NewEntity(0, aboveClassName, qm)
 						aboveEntity.Brushes = append(aboveEntity.Brushes, aboveColumn)
 						qm.Entities = append(qm.Entities, aboveEntity)
@@ -222,7 +222,7 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 						var middlez2 float64 = floorDepth + float64(rtlmap.FloorHeight()-1)*gridSizeZ
 						mwColumn := quakemap.BasicCuboid(x1, y1, middlez1, x2, y2, middlez2,
 							"{"+platformInfo.Middle,
-							scale)
+							scale, false)
 						qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, mwColumn)
 					}
 
@@ -234,7 +234,7 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 						className := ClassNameForMaskedWall(&platformInfo, "bottom")
 						column := quakemap.BasicCuboid(x1, y1, z1, x2, y2, z2,
 							"{"+platformInfo.Bottom,
-							scale)
+							scale, false)
 						bottomEntity := quakemap.NewEntity(0, className, qm)
 						bottomEntity.Brushes = append(bottomEntity.Brushes, column)
 						qm.Entities = append(qm.Entities, bottomEntity)
@@ -266,7 +266,7 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 						aboveClassName := ClassNameForMaskedWall(&maskedWallInfo, "above")
 						aboveColumn := quakemap.BasicCuboid(x1, y1, abovez1, x2, y2, abovez2,
 							"{"+maskedWallInfo.Above,
-							scale)
+							scale, false)
 						aboveEntity := quakemap.NewEntity(0, aboveClassName, qm)
 						aboveEntity.Brushes = append(aboveEntity.Brushes, aboveColumn)
 						qm.Entities = append(qm.Entities, aboveEntity)
@@ -279,7 +279,7 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 						middleClassName := ClassNameForMaskedWall(&maskedWallInfo, "middle")
 						mwColumn := quakemap.BasicCuboid(x1, y1, middlez1, x2, y2, middlez2,
 							"{"+maskedWallInfo.Middle,
-							scale)
+							scale, false)
 						middleEntity := quakemap.NewEntity(0, middleClassName, qm)
 						middleEntity.Brushes = append(middleEntity.Brushes, mwColumn)
 						qm.Entities = append(qm.Entities, middleEntity)
@@ -293,7 +293,7 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 						className := ClassNameForMaskedWall(&maskedWallInfo, "bottom")
 						column := quakemap.BasicCuboid(x1, y1, z1, x2, y2, z2,
 							"{"+maskedWallInfo.Bottom,
-							scale)
+							scale, false)
 						bottomEntity := quakemap.NewEntity(0, className, qm)
 						bottomEntity.Brushes = append(bottomEntity.Brushes, column)
 						qm.Entities = append(qm.Entities, bottomEntity)
@@ -364,12 +364,12 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 			}
 			doorBrush := quakemap.BasicCuboid(x1, y1, z1, x2, y2, z2,
 				texInfo.BaseTexture,
-				scale)
+				scale, false)
 			doorEntity.Brushes = append(doorEntity.Brushes, doorBrush)
 			aboveBrush := quakemap.BasicCuboid(abovex1, abovey1, z2,
 				abovex2, abovey2, floorDepth+float64(rtlmap.FloorHeight())*gridSizeZ,
 				texInfo.AltTexture,
-				scale)
+				scale, false)
 			qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, aboveBrush)
 		}
 		doorEntity.AdditionalKeys["_doornum"] = fmt.Sprintf("%d", doornum)

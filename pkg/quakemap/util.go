@@ -3,8 +3,13 @@ package quakemap
 // create a cube(-ish) brush with 6 sides, no rotation,
 // and a single texture
 // x/y/z coordinate sets are 2 opposite corners
-func BasicCuboid(x1, y1, z1, x2, y2, z2 float64, texture string, scale float64) Brush {
+func BasicCuboid(x1, y1, z1, x2, y2, z2 float64, texture string, scale float64, wrapTexture bool) Brush {
 	var b Brush
+	var wrapFactor float64 = 1.0
+
+	if wrapTexture {
+		wrapFactor = -1.0
+	}
 
 	// south
 	b.AddPlane(
@@ -23,7 +28,7 @@ func BasicCuboid(x1, y1, z1, x2, y2, z2 float64, texture string, scale float64) 
 		texture,
 		0, 0, // offset
 		0, // rotation
-		scale*-1.0, scale)
+		scale*wrapFactor, scale)
 	// west
 	b.AddPlane(
 		x1, y1, z1, // p1
@@ -32,7 +37,7 @@ func BasicCuboid(x1, y1, z1, x2, y2, z2 float64, texture string, scale float64) 
 		texture,
 		0, 0, // offset
 		0, // rotation
-		scale*-1.0, scale)
+		scale*wrapFactor, scale)
 	// east
 	b.AddPlane(
 		x2, y1, z1, // p1
