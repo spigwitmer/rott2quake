@@ -459,6 +459,10 @@ var TypeOneOffs = map[string][2]string{
 	"SIDE13":   [2]string{"wall", "side"},
 	"SIDE16":   [2]string{"wall", "side"},
 	"SIDE17":   [2]string{"wall", "side"},
+	"KEY1":     [2]string{"pic", "keys"},
+	"KEY2":     [2]string{"pic", "keys"},
+	"KEY3":     [2]string{"pic", "keys"},
+	"KEY4":     [2]string{"pic", "keys"},
 }
 
 func ROTTGuessFileTypeAndSubdir(entry *WADEntry) (string, string) {

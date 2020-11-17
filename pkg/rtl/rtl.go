@@ -409,6 +409,10 @@ func (r *RTLMapData) renderWallGrid() {
 				r.CookedWallGrid[i][j].Tile = tileId
 				r.CookedWallGrid[i][j].MapFlags |= WALLFLAGS_Static
 				r.CookedWallGrid[i][j].Type = WALL_Regular
+			} else if tileId >= 49 && tileId <= 71 {
+				r.CookedWallGrid[i][j].Tile = tileId
+				r.CookedWallGrid[i][j].MapFlags |= WALLFLAGS_Static
+				r.CookedWallGrid[i][j].Type = WALL_Regular
 			}
 
 			// for reference: rt_ted.c:2218

@@ -21,6 +21,21 @@ const (
 	LOCK_Trigger // Touchplate trigger
 )
 
+func (d DoorLock) KeyName() string {
+	switch d {
+	case LOCK_GoldKey:
+		return "Gold"
+	case LOCK_SilverKey:
+		return "Silver"
+	case LOCK_IronKey:
+		return "Iron"
+	case LOCK_OscuroKey:
+		return "Oscuro"
+	default:
+		return "(no key)"
+	}
+}
+
 type Door struct {
 	Lock      DoorLock
 	TriggerX  int
@@ -83,10 +98,15 @@ func (r *RTLMapData) GetDoors() []Door {
 			if r.CookedWallGrid[x][y].Type == WALL_Door {
 				// door placed here, find neighboring door tiles
 				var newDoor Door
+				newDoor.Lock = LOCK_Unlocked
 				newDoor.Tiles = append(newDoor.Tiles, r.CookedWallGrid[x][y])
 				mapTileToDoor[mapKey] = &newDoor
 
 				// TODO: key sprites?
+				if r.CookedWallGrid[x][y].Tile > 93 && r.CookedWallGrid[x][y].Tile < 98 {
+					newDoor.Lock = DoorLock(r.CookedWallGrid[x][y].Tile - 93)
+				}
+
 				// TODO: touchplate trigger locations?
 
 				// find adjacent door tiles north of it
