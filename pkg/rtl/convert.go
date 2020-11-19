@@ -100,7 +100,7 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 				var x1, y1, x2, y2 float64
 				infoVal := rtlmap.InfoPlane[i][j]
 				spriteVal := rtlmap.SpritePlane[i][j]
-				wallDirection := rtlmap.ThinWallDirection(i, j)
+				wallDirection, _, _ := rtlmap.ThinWallDirection(i, j)
 				if infoVal == 1 || (infoVal >= 4 && infoVal <= 9) {
 					if wallDirection == WALLDIR_NorthSouth {
 						x1 = float64(i)*gridSizeX + (gridSizeX / 2) - 2
@@ -245,7 +245,7 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 				// masked walls have adjacent sides, a thin wall in the
 				// middle, and the bottom may be passable
 				if maskedWallInfo, ok := MaskedWalls[wallInfo.Tile]; ok {
-					wallDirection := rtlmap.ThinWallDirection(i, j)
+					wallDirection, _, _ := rtlmap.ThinWallDirection(i, j)
 					var x1, y1, x2, y2 float64
 
 					if wallDirection == WALLDIR_NorthSouth {
@@ -382,6 +382,9 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 			qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, aboveBrush)
 		}
 
+		doorEntity.AdditionalKeys["grid_start_x"] = fmt.Sprintf("%d", door.Tiles[0].X)
+		doorEntity.AdditionalKeys["grid_start_y"] = fmt.Sprintf("%d", door.Tiles[0].Y)
+
 		if door.Lock != LOCK_Unlocked && door.Lock != LOCK_Trigger {
 			if dusk {
 				doorEntity.AdditionalKeys["key"] = fmt.Sprintf("%d", whichKey+1)
@@ -402,7 +405,7 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 								// FIXME when/if dusk SDK fixes keys
 								// being placed a lot lower than the
 								// entity's origin
-								entity.OriginZ += 300.0
+								entity.OriginZ += 600.0
 							}
 							qm.Entities = append(qm.Entities, entity)
 						}

@@ -101,6 +101,7 @@ func (r *RTLMapData) GetDoors() []Door {
 				newDoor.Lock = LOCK_Unlocked
 				newDoor.Tiles = append(newDoor.Tiles, r.CookedWallGrid[x][y])
 				mapTileToDoor[mapKey] = &newDoor
+				directionKnown := false
 
 				// add keys
 				if r.SpritePlane[x][y] >= 0x1d && r.SpritePlane[x][y] <= 0x20 {
@@ -119,6 +120,7 @@ func (r *RTLMapData) GetDoors() []Door {
 					newDoor.Tiles = append(newDoor.Tiles, r.CookedWallGrid[x][y-1])
 					mapTileToDoor[adjacentKey] = &newDoor
 					newDoor.Direction = WALLDIR_NorthSouth
+					directionKnown = true
 
 					for ay := y - 2; ay >= 0 && addTexInfo != nil; ay-- {
 						adjacentKey := fmt.Sprintf("%d%d", x, ay)
@@ -143,6 +145,7 @@ func (r *RTLMapData) GetDoors() []Door {
 					newDoor.Tiles = append(newDoor.Tiles, r.CookedWallGrid[x][y+1])
 					mapTileToDoor[adjacentKey] = &newDoor
 					newDoor.Direction = WALLDIR_NorthSouth
+					directionKnown = true
 
 					for ay := y + 2; ay < 128 && addTexInfo != nil; ay++ {
 						adjacentKey := fmt.Sprintf("%d%d", x, ay)
@@ -167,6 +170,7 @@ func (r *RTLMapData) GetDoors() []Door {
 					newDoor.Tiles = append(newDoor.Tiles, r.CookedWallGrid[x-1][y])
 					mapTileToDoor[adjacentKey] = &newDoor
 					newDoor.Direction = WALLDIR_EastWest
+					directionKnown = true
 
 					for ax := x - 2; ax >= 0 && addTexInfo != nil; ax-- {
 						adjacentKey := fmt.Sprintf("%d%d", ax, y)
@@ -191,6 +195,7 @@ func (r *RTLMapData) GetDoors() []Door {
 					newDoor.Tiles = append(newDoor.Tiles, r.CookedWallGrid[x+1][y])
 					mapTileToDoor[adjacentKey] = &newDoor
 					newDoor.Direction = WALLDIR_EastWest
+					directionKnown = true
 
 					for ax := x + 2; ax < 128 && addTexInfo != nil; ax++ {
 						adjacentKey := fmt.Sprintf("%d%d", ax, y)
@@ -204,6 +209,10 @@ func (r *RTLMapData) GetDoors() []Door {
 						newDoor.Tiles = append(newDoor.Tiles, r.CookedWallGrid[ax][y])
 						mapTileToDoor[adjacentKey] = &newDoor
 					}
+				}
+
+				if !directionKnown {
+					newDoor.Direction, _, _ = r.ThinWallDirection(x, y)
 				}
 
 				doors = append(doors, newDoor)

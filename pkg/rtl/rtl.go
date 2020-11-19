@@ -227,14 +227,14 @@ func (r *RTLMapData) CeilingHeight() int {
 }
 
 // determine which direction thin walls should face
-func (r *RTLMapData) ThinWallDirection(x, y int) WallDirection {
+func (r *RTLMapData) ThinWallDirection(x, y int) (WallDirection, int, int) {
 	var adjacentCountX, adjacentCountY int
 
 	if x > 0 {
 		if r.CookedWallGrid[x-1][y].Type == WALL_Regular {
 			adjacentCountX += 2
 		} else if r.CookedWallGrid[x-1][y].Type == WALL_MaskedWall {
-			adjacentCountX += 2
+			adjacentCountX += 4
 		} else if r.CookedWallGrid[x-1][y].Type != WALL_None {
 			adjacentCountX++
 		}
@@ -243,7 +243,7 @@ func (r *RTLMapData) ThinWallDirection(x, y int) WallDirection {
 		if r.CookedWallGrid[x+1][y].Type == WALL_Regular {
 			adjacentCountX += 2
 		} else if r.CookedWallGrid[x+1][y].Type == WALL_MaskedWall {
-			adjacentCountX += 2
+			adjacentCountX += 4
 		} else if r.CookedWallGrid[x+1][y].Type != WALL_None {
 			adjacentCountX++
 		}
@@ -252,7 +252,7 @@ func (r *RTLMapData) ThinWallDirection(x, y int) WallDirection {
 		if r.CookedWallGrid[x][y-1].Type == WALL_Regular {
 			adjacentCountY += 2
 		} else if r.CookedWallGrid[x][y-1].Type == WALL_MaskedWall {
-			adjacentCountY += 2
+			adjacentCountY += 4
 		} else if r.CookedWallGrid[x][y-1].Type != WALL_None {
 			adjacentCountY++
 		}
@@ -261,16 +261,16 @@ func (r *RTLMapData) ThinWallDirection(x, y int) WallDirection {
 		if r.CookedWallGrid[x][y+1].Type == WALL_Regular {
 			adjacentCountY += 2
 		} else if r.CookedWallGrid[x][y+1].Type == WALL_MaskedWall {
-			adjacentCountY += 2
+			adjacentCountY += 4
 		} else if r.CookedWallGrid[x][y+1].Type != WALL_None {
 			adjacentCountY++
 		}
 	}
 
 	if adjacentCountX > adjacentCountY {
-		return WALLDIR_EastWest
+		return WALLDIR_EastWest, adjacentCountX, adjacentCountY
 	} else {
-		return WALLDIR_NorthSouth
+		return WALLDIR_NorthSouth, adjacentCountX, adjacentCountY
 	}
 }
 
