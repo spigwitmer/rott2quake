@@ -3,6 +3,7 @@ package rtl
 import (
 	"fmt"
 	"gitlab.com/camtap/rott2quake/pkg/quakemap"
+	"log"
 )
 
 var (
@@ -330,6 +331,14 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 		}
 	}
 
+	// place keys, determine which keys to use
+	whichKey := 0
+	availKeys := []string{"item_key1", "item_key2"}
+	if dusk {
+		availKeys = []string{"key_red_key", "key_blue_key", "key_yellow_key"}
+	}
+	keyMap := make(map[DoorLock]string)
+
 	// place doors
 	for doornum, door := range rtlmap.GetDoors() {
 		doorEntity := quakemap.NewEntity(0, "func_door", qm)
@@ -372,10 +381,48 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 				scale, false)
 			qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, aboveBrush)
 		}
+
+		if door.Lock != LOCK_Unlocked && door.Lock != LOCK_Trigger {
+			if dusk {
+				doorEntity.AdditionalKeys["key"] = fmt.Sprintf("%d", whichKey+1)
+			} else {
+				doorEntity.AdditionalKeys["spawnflags"] = fmt.Sprintf("%d", whichKey+1)
+			}
+
+			if _, ok := keyMap[door.Lock]; !ok {
+				// place keys on the map
+				for i := 0; i < 128; i++ {
+					for j := 0; j < 128; j++ {
+						if rtlmap.CookedWallGrid[i][j].Type == WALL_None && rtlmap.SpritePlane[i][j] == uint16(door.Lock+0x1c) {
+							entity := quakemap.NewEntity(0, availKeys[whichKey], qm)
+							entity.OriginX = float64(i)*gridSizeX + (gridSizeX / 2)
+							entity.OriginY = float64(j)*gridSizeY + (gridSizeY / 2)
+							entity.OriginZ = floorDepth + (gridSizeZ / 2)
+							if dusk {
+								// FIXME when/if dusk SDK fixes keys
+								// being placed a lot lower than the
+								// entity's origin
+								entity.OriginZ += 300.0
+							}
+							qm.Entities = append(qm.Entities, entity)
+						}
+					}
+				}
+
+				keyMap[door.Lock] = availKeys[whichKey]
+				whichKey = (whichKey + 1) % len(availKeys)
+				if whichKey == 0 {
+					log.Printf("More than %d keys used, this map may not be playable (or fun)", len(availKeys))
+				}
+			}
+
+		}
+
 		doorEntity.AdditionalKeys["_doornum"] = fmt.Sprintf("%d", doornum)
 		// move upward when open
 		doorEntity.AdditionalKeys["angle"] = "-1"
 		doorEntity.AdditionalKeys["speed"] = "290"
+		// TODO: keys
 		qm.Entities = append(qm.Entities, doorEntity)
 	}
 

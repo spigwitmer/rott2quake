@@ -102,9 +102,9 @@ func (r *RTLMapData) GetDoors() []Door {
 				newDoor.Tiles = append(newDoor.Tiles, r.CookedWallGrid[x][y])
 				mapTileToDoor[mapKey] = &newDoor
 
-				// TODO: key sprites?
-				if r.CookedWallGrid[x][y].Tile > 93 && r.CookedWallGrid[x][y].Tile < 98 {
-					newDoor.Lock = DoorLock(r.CookedWallGrid[x][y].Tile - 93)
+				// add keys
+				if r.SpritePlane[x][y] >= 0x1d && r.SpritePlane[x][y] <= 0x20 {
+					newDoor.Lock = DoorLock(int(r.SpritePlane[x][y] - 0x1c))
 				}
 
 				// TODO: touchplate trigger locations?
