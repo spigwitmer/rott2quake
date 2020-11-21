@@ -67,9 +67,9 @@ Quake:
 - [x] Masked walls
 - [x] Platforms
 - [x] Trampolines
-- [ ] Weapon placement (TODO)
+- [X] Weapon placement
 - [ ] Enemy placement (TODO)
-- [ ] Doors (TODO)
+- [X] Doors
 - [ ] Switchplates (TODO)
 - [ ] Moving Walls (TODO)
 - [ ] GADs (TODO)
@@ -85,4 +85,5 @@ Quake:
 - Tops and bottoms of hswitch platforms are (intentionally) not rendered
 - Map Scale cannot go past 3x without bad things happening. Quake won't
   render the floor or ceiling.
-- Lair of El Oscuro, Canyon Chase, and Into The Dark Nest are incomplete
+- Maps with more than 2 keys cannot be played in Quake. Maps with more
+  than 3 keys cannot be played in Quake nor Dusk.
