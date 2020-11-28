@@ -170,8 +170,8 @@ func AddFireballShooter(x int, y int, gridSizeX float64, gridSizeY float64, grid
 	// north
 	if y > 0 {
 		for j := y - 1; j >= 0; j-- {
-			if r.CookedWallGrid[x][j].Type == WALL_Regular {
-				if r.CookedWallGrid[x][j].Tile == targetWallTile {
+			if r.ActorGrid[x][j].Type == WALL_Regular {
+				if r.ActorGrid[x][j].Tile == targetWallTile {
 					if y-j > curSteps {
 						curSteps = y - j
 						angle = 90.0
@@ -186,8 +186,8 @@ func AddFireballShooter(x int, y int, gridSizeX float64, gridSizeY float64, grid
 	// south
 	if y < 127 {
 		for j := y + 1; j < 128; j++ {
-			if r.CookedWallGrid[x][j].Type == WALL_Regular {
-				if r.CookedWallGrid[x][j].Tile == targetWallTile {
+			if r.ActorGrid[x][j].Type == WALL_Regular {
+				if r.ActorGrid[x][j].Tile == targetWallTile {
 					if j-y > curSteps {
 						curSteps = j - y
 						angle = 270.0
@@ -202,8 +202,8 @@ func AddFireballShooter(x int, y int, gridSizeX float64, gridSizeY float64, grid
 	// west
 	if x > 0 {
 		for i := x - 1; i >= 0; i-- {
-			if r.CookedWallGrid[i][y].Type == WALL_Regular {
-				if r.CookedWallGrid[i][y].Tile == targetWallTile {
+			if r.ActorGrid[i][y].Type == WALL_Regular {
+				if r.ActorGrid[i][y].Tile == targetWallTile {
 					if x-i > curSteps {
 						curSteps = x - i
 						angle = 0.0
@@ -218,8 +218,8 @@ func AddFireballShooter(x int, y int, gridSizeX float64, gridSizeY float64, grid
 	// east
 	if x < 127 {
 		for i := x + 1; i < 128; i++ {
-			if r.CookedWallGrid[i][y].Type == WALL_Regular {
-				if r.CookedWallGrid[i][y].Tile == targetWallTile {
+			if r.ActorGrid[i][y].Type == WALL_Regular {
+				if r.ActorGrid[i][y].Tile == targetWallTile {
 					if i-x > curSteps {
 						angle = 180.0
 						xoffset = (gridSizeX / 2)

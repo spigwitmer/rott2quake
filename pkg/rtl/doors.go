@@ -41,7 +41,7 @@ type Door struct {
 	TriggerX  int
 	TriggerY  int
 	Direction WallDirection
-	Tiles     []WallInfo
+	Tiles     []ActorInfo
 }
 
 // texture ID --> Door texture names
@@ -95,11 +95,11 @@ func (r *RTLMapData) GetDoors() []Door {
 				// tile was already processed
 				continue
 			}
-			if r.CookedWallGrid[x][y].Type == WALL_Door {
+			if r.ActorGrid[x][y].Type == WALL_Door {
 				// door placed here, find neighboring door tiles
 				var newDoor Door
 				newDoor.Lock = LOCK_Unlocked
-				newDoor.Tiles = append(newDoor.Tiles, r.CookedWallGrid[x][y])
+				newDoor.Tiles = append(newDoor.Tiles, r.ActorGrid[x][y])
 				mapTileToDoor[mapKey] = &newDoor
 				directionKnown := false
 
@@ -111,13 +111,13 @@ func (r *RTLMapData) GetDoors() []Door {
 				// TODO: touchplate trigger locations?
 
 				// find adjacent door tiles north of it
-				if y > 0 && r.CookedWallGrid[x][y-1].Type == WALL_Door {
-					addTexInfo := GetDoorTextures(r.CookedWallGrid[x][y-1].Tile)
+				if y > 0 && r.ActorGrid[x][y-1].Type == WALL_Door {
+					addTexInfo := GetDoorTextures(r.ActorGrid[x][y-1].Tile)
 					adjacentKey := fmt.Sprintf("%d%d", x, y-1)
 					if _, ok := mapTileToDoor[adjacentKey]; ok {
 						continue
 					}
-					newDoor.Tiles = append(newDoor.Tiles, r.CookedWallGrid[x][y-1])
+					newDoor.Tiles = append(newDoor.Tiles, r.ActorGrid[x][y-1])
 					mapTileToDoor[adjacentKey] = &newDoor
 					newDoor.Direction = WALLDIR_NorthSouth
 					directionKnown = true
@@ -127,22 +127,22 @@ func (r *RTLMapData) GetDoors() []Door {
 						if _, ok := mapTileToDoor[adjacentKey]; ok {
 							break
 						}
-						if r.CookedWallGrid[x][ay].Type != WALL_Door {
+						if r.ActorGrid[x][ay].Type != WALL_Door {
 							break
 						}
-						addTexInfo = GetDoorTextures(r.CookedWallGrid[x][ay].Tile)
-						newDoor.Tiles = append(newDoor.Tiles, r.CookedWallGrid[x][ay])
+						addTexInfo = GetDoorTextures(r.ActorGrid[x][ay].Tile)
+						newDoor.Tiles = append(newDoor.Tiles, r.ActorGrid[x][ay])
 						mapTileToDoor[adjacentKey] = &newDoor
 					}
 				}
 				// south of it
-				if y < 127 && r.CookedWallGrid[x][y+1].Type == WALL_Door {
-					addTexInfo := GetDoorTextures(r.CookedWallGrid[x][y+1].Tile)
+				if y < 127 && r.ActorGrid[x][y+1].Type == WALL_Door {
+					addTexInfo := GetDoorTextures(r.ActorGrid[x][y+1].Tile)
 					adjacentKey := fmt.Sprintf("%d%d", x, y+1)
 					if _, ok := mapTileToDoor[adjacentKey]; ok {
 						continue
 					}
-					newDoor.Tiles = append(newDoor.Tiles, r.CookedWallGrid[x][y+1])
+					newDoor.Tiles = append(newDoor.Tiles, r.ActorGrid[x][y+1])
 					mapTileToDoor[adjacentKey] = &newDoor
 					newDoor.Direction = WALLDIR_NorthSouth
 					directionKnown = true
@@ -152,22 +152,22 @@ func (r *RTLMapData) GetDoors() []Door {
 						if _, ok := mapTileToDoor[adjacentKey]; ok {
 							break
 						}
-						if r.CookedWallGrid[x][ay].Type != WALL_Door {
+						if r.ActorGrid[x][ay].Type != WALL_Door {
 							break
 						}
-						addTexInfo = GetDoorTextures(r.CookedWallGrid[x][ay].Tile)
-						newDoor.Tiles = append(newDoor.Tiles, r.CookedWallGrid[x][ay])
+						addTexInfo = GetDoorTextures(r.ActorGrid[x][ay].Tile)
+						newDoor.Tiles = append(newDoor.Tiles, r.ActorGrid[x][ay])
 						mapTileToDoor[adjacentKey] = &newDoor
 					}
 				}
 				// west of it
-				if x > 0 && r.CookedWallGrid[x-1][y].Type == WALL_Door {
-					addTexInfo := GetDoorTextures(r.CookedWallGrid[x-1][y].Tile)
+				if x > 0 && r.ActorGrid[x-1][y].Type == WALL_Door {
+					addTexInfo := GetDoorTextures(r.ActorGrid[x-1][y].Tile)
 					adjacentKey := fmt.Sprintf("%d%d", x-1, y)
 					if _, ok := mapTileToDoor[adjacentKey]; ok {
 						continue
 					}
-					newDoor.Tiles = append(newDoor.Tiles, r.CookedWallGrid[x-1][y])
+					newDoor.Tiles = append(newDoor.Tiles, r.ActorGrid[x-1][y])
 					mapTileToDoor[adjacentKey] = &newDoor
 					newDoor.Direction = WALLDIR_EastWest
 					directionKnown = true
@@ -177,22 +177,22 @@ func (r *RTLMapData) GetDoors() []Door {
 						if _, ok := mapTileToDoor[adjacentKey]; ok {
 							break
 						}
-						if r.CookedWallGrid[ax][y].Type != WALL_Door {
+						if r.ActorGrid[ax][y].Type != WALL_Door {
 							break
 						}
-						addTexInfo = GetDoorTextures(r.CookedWallGrid[ax][y].Tile)
-						newDoor.Tiles = append(newDoor.Tiles, r.CookedWallGrid[ax][y])
+						addTexInfo = GetDoorTextures(r.ActorGrid[ax][y].Tile)
+						newDoor.Tiles = append(newDoor.Tiles, r.ActorGrid[ax][y])
 						mapTileToDoor[adjacentKey] = &newDoor
 					}
 				}
 				// east of it
-				if x < 127 && r.CookedWallGrid[x+1][y].Type == WALL_Door {
-					addTexInfo := GetDoorTextures(r.CookedWallGrid[x+1][y].Tile)
+				if x < 127 && r.ActorGrid[x+1][y].Type == WALL_Door {
+					addTexInfo := GetDoorTextures(r.ActorGrid[x+1][y].Tile)
 					adjacentKey := fmt.Sprintf("%d%d", x+1, y)
 					if _, ok := mapTileToDoor[adjacentKey]; ok {
 						continue
 					}
-					newDoor.Tiles = append(newDoor.Tiles, r.CookedWallGrid[x+1][y])
+					newDoor.Tiles = append(newDoor.Tiles, r.ActorGrid[x+1][y])
 					mapTileToDoor[adjacentKey] = &newDoor
 					newDoor.Direction = WALLDIR_EastWest
 					directionKnown = true
@@ -202,11 +202,11 @@ func (r *RTLMapData) GetDoors() []Door {
 						if _, ok := mapTileToDoor[adjacentKey]; ok {
 							break
 						}
-						if r.CookedWallGrid[ax][y].Type != WALL_Door {
+						if r.ActorGrid[ax][y].Type != WALL_Door {
 							break
 						}
-						addTexInfo = GetDoorTextures(r.CookedWallGrid[ax][y].Tile)
-						newDoor.Tiles = append(newDoor.Tiles, r.CookedWallGrid[ax][y])
+						addTexInfo = GetDoorTextures(r.ActorGrid[ax][y].Tile)
+						newDoor.Tiles = append(newDoor.Tiles, r.ActorGrid[ax][y])
 						mapTileToDoor[adjacentKey] = &newDoor
 					}
 				}
