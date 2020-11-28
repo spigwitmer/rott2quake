@@ -148,6 +148,8 @@ func processRGBAForMIPTexture(lumpName string, img *image.RGBA) *image.Paletted 
 			if strings.HasPrefix(lumpName, "{") && a < 255 {
 				// transparent pixel
 				dimg.SetColorIndex(i, j, 255)
+			} else if a < 255 {
+				dimg.SetColorIndex(i, j, 0)
 			} else {
 				dimg.SetColorIndex(i, j, paletteCode)
 			}

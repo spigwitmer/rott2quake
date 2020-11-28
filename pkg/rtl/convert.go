@@ -233,28 +233,28 @@ func CreateThinWall(rtlmap *RTLMapData, i, j int, scale float64, qm *quakemap.Qu
 		}
 		switch infoVal {
 		case 1:
-			// thin wall, above passable
+			// above passable
 			var z1 float64 = floorDepth
 			var z2 float64 = floorDepth + float64(rtlmap.FloorHeight()-1)*gridSizeZ
 			wallColumn := quakemap.BasicCuboid(x1, y1, z1, x2, y2, z2,
 				texName, scale, false)
 			qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, wallColumn)
 		case 4:
-			// thin wall, above only
+			// above only
 			var z1 float64 = floorDepth + float64(rtlmap.FloorHeight()-1)*gridSizeZ
 			var z2 float64 = floorDepth + float64(rtlmap.FloorHeight())*gridSizeZ
 			wallColumn := quakemap.BasicCuboid(x1, y1, z1, x2, y2, z2,
 				texName, scale, false)
 			qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, wallColumn)
 		case 5:
-			// thin wall, below only
+			// below only
 			var z1 float64 = floorDepth
 			var z2 float64 = floorDepth + gridSizeZ
 			wallColumn := quakemap.BasicCuboid(x1, y1, z1, x2, y2, z2,
 				texName, scale, false)
 			qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, wallColumn)
 		case 6:
-			// thin wall, middle passable
+			// middle passable
 			var bottomz1 float64 = floorDepth
 			var bottomz2 float64 = floorDepth + gridSizeZ
 			var topz1 float64 = floorDepth + float64(rtlmap.FloorHeight()-1)*gridSizeZ
@@ -266,21 +266,21 @@ func CreateThinWall(rtlmap *RTLMapData, i, j int, scale float64, qm *quakemap.Qu
 			qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, wallColumn1)
 			qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, wallColumn2)
 		case 7:
-			// thin wall, everything but below
+			// everything but below
 			var z1 float64 = floorDepth + gridSizeZ
 			var z2 float64 = floorDepth + float64(rtlmap.FloorHeight())*gridSizeZ
 			wallColumn := quakemap.BasicCuboid(x1, y1, z1, x2, y2, z2,
 				texName, scale, false)
 			qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, wallColumn)
 		case 8:
-			// thin wall, middle only
+			// middle only
 			var z1 float64 = floorDepth + gridSizeZ
 			var z2 float64 = floorDepth + float64(rtlmap.FloorHeight()-1)*gridSizeZ
 			wallColumn := quakemap.BasicCuboid(x1, y1, z1, x2, y2, z2,
 				texName, scale, false)
 			qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, wallColumn)
 		case 9:
-			// thin wall, everything but above
+			// everything but above
 			var z1 float64 = floorDepth
 			var z2 float64 = floorDepth + float64(rtlmap.FloorHeight()-1)*gridSizeZ
 			wallColumn := quakemap.BasicCuboid(x1, y1, z1, x2, y2, z2,
