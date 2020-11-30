@@ -67,12 +67,15 @@ var Items = map[uint16]ItemInfo{
 		0, 0x38, "", "weapon_riveter", nil,
 	},
 
+	// powerups
+
+	// armor
+	0x10e: ItemInfo{
+		0, 0x10e, "item_armor2", "item_armor2", nil,
+	},
+
 	// misc
 
-	// use teleporters to implement elevators
-	0x5a: ItemInfo{
-		0, 0x5a, "", "", AddQuoteOnQuoteElevator,
-	},
 	// trampolines
 	0xc1: ItemInfo{
 		0, 0x5a, "object_jump_pad", "object_jump_pad", AddTrampoline,
@@ -89,11 +92,6 @@ var Items = map[uint16]ItemInfo{
 	0x0b: ItemInfo{
 		0x0b, 0, "trap_spikeshoote", "object_fireball_shooter", AddFireballShooter,
 	},
-}
-
-// adds teleport entities to simulate the functionality of an elevator
-func AddQuoteOnQuoteElevator(x int, y int, gridSizeX float64, gridSizeY float64, gridSizeZ float64,
-	item *ItemInfo, r *RTLMapData, q *quakemap.QuakeMap, dusk bool) {
 }
 
 // adds trampolines right on the floor

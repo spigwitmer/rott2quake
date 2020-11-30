@@ -629,10 +629,10 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 		qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, ceilBrush)
 	}
 
-	// place walls
 	for i := 0; i < 128; i++ {
 		for j := 0; j < 128; j++ {
 			wallInfo := rtlmap.ActorGrid[i][j]
+			itemInfo := rtlmap.ActorGrid[i][j].Item
 
 			switch wallInfo.Type {
 			case WALL_Regular, WALL_Elevator:
@@ -646,13 +646,7 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 			case WALL_MaskedWall:
 				CreateMaskedWall(rtlmap, i, j, scale, qm)
 			}
-		}
-	}
 
-	// place items
-	for i := 0; i < 128; i++ {
-		for j := 0; j < 128; j++ {
-			itemInfo := rtlmap.ActorGrid[i][j].Item
 			if itemInfo != nil {
 				if itemInfo.AddCallback != nil {
 					itemInfo.AddCallback(i, j, gridSizeX, gridSizeY, gridSizeZ, itemInfo, rtlmap, qm, dusk)
@@ -664,7 +658,11 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 					entity := quakemap.NewEntity(0, entityName, qm)
 					entity.OriginX = float64(i)*gridSizeX + (gridSizeX / 2)
 					entity.OriginY = float64(j)*gridSizeY + (gridSizeY / 2)
-					entity.OriginZ = floorDepth + (gridSizeZ / 2)
+					if wallInfo.HeightOffset != 0 {
+						entity.OriginZ = floorDepth + (gridSizeZ / 2) + ((float64(rtlmap.FloorHeight()-1) * gridSizeZ) + float64(wallInfo.HeightOffset)*(scale/64.0))
+					} else {
+						entity.OriginZ = floorDepth + (gridSizeZ / 2)
+					}
 					qm.Entities = append(qm.Entities, entity)
 				}
 			}

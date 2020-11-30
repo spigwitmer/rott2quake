@@ -52,8 +52,7 @@ const (
 	WALL_PushWall
 	WALL_Switch
 	WALL_Door
-	SPR_Item
-	SPR_Enemy
+	SPR_GAD
 	SPR_Static
 )
 
@@ -86,6 +85,7 @@ type ActorInfo struct {
 	AreaID            int // see area.go
 	ThinWallDirection WallDirection
 	Item              *ItemInfo
+	HeightOffset      int
 }
 
 type DoorInfo struct {
@@ -368,7 +368,18 @@ func NewRTL(rfile io.ReadSeeker) (*RTL, error) {
 func (r *RTLMapData) determineActorHeights() {
 	for i := 0; i < 128; i++ {
 		for j := 0; j < 128; j++ {
-			// TODO
+			actor := &r.ActorGrid[i][j]
+
+			switch actor.Type {
+			case SPR_GAD:
+				if actor.InfoValue > 0 {
+					actor.HeightOffset = ZOffset(actor.InfoValue)
+				}
+			}
+
+			if actor.Item != nil && actor.InfoValue > 0 {
+				actor.HeightOffset = ZOffset(actor.InfoValue)
+			}
 		}
 	}
 }
