@@ -244,6 +244,7 @@ func main() {
 	var isQuakeWad, isPak bool
 	var convertToDusk bool
 	var rtl *rtlfile.RTL
+	var rtlMapNumber int
 	var printRTLInfo bool
 	var rtlMapScale float64
 	var wadExtractor lumps.ArchiveReader
@@ -258,6 +259,7 @@ func main() {
 	flag.BoolVar(&convertToDusk, "dusk", false, "generate maps for Dusk rather than Quake (requires -rtl-map-outdir)")
 	flag.StringVar(&rtlMapOutdir, "rtl-map-outdir", "", "Write RTL ASCII map out to this folder")
 	flag.Float64Var(&rtlMapScale, "rtl-map-scale", 1.0, "Scale generated maps by this factor")
+	flag.IntVar(&rtlMapNumber, "map", 0, "Dump certain map (defaults to all maps)")
 	flag.BoolVar(&dumpLumpData, "dump", false, "Dump Lump Data out to dest dir")
 	flag.BoolVar(&dumpRaw, "dump-raw", false, "Dump raw lump data alongside rendered")
 	flag.BoolVar(&printLumps, "list", false, "Print Lump Directory")
@@ -299,6 +301,10 @@ func main() {
 		}
 		for idx, md := range rtl.MapData {
 			if md.Header.Used == 0 {
+				continue
+			}
+
+			if rtlMapNumber > 0 && idx+1 != rtlMapNumber {
 				continue
 			}
 

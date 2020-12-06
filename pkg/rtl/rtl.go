@@ -61,8 +61,6 @@ const (
 	WALLFLAGS_Static   uint32 = 0x2000
 )
 
-type WallDirection int
-
 const (
 	// thin wall directions (e.g. masked walls, entry gates)
 	WALLDIR_NorthSouth WallDirection = iota
@@ -256,7 +254,7 @@ func (r *RTLMapData) ThinWallDirection(x, y int) (WallDirection, int, int) {
 	var adjacentCountX, adjacentCountY int
 
 	if x > 0 {
-		wallType := r.ActorGrid[x-1][y].Type
+		wallType := r.ActorGrid[y][x-1].Type
 		if wallType == WALL_Regular {
 			adjacentCountX += 2
 		} else if wallType == WALL_MaskedWall {
@@ -266,7 +264,7 @@ func (r *RTLMapData) ThinWallDirection(x, y int) (WallDirection, int, int) {
 		}
 	}
 	if x < 127 {
-		wallType := r.ActorGrid[x+1][y].Type
+		wallType := r.ActorGrid[y][x+1].Type
 		if wallType == WALL_Regular {
 			adjacentCountX += 2
 		} else if wallType == WALL_MaskedWall {
@@ -276,7 +274,7 @@ func (r *RTLMapData) ThinWallDirection(x, y int) (WallDirection, int, int) {
 		}
 	}
 	if y > 0 {
-		wallType := r.ActorGrid[x][y-1].Type
+		wallType := r.ActorGrid[y-1][x].Type
 		if wallType == WALL_Regular {
 			adjacentCountY += 2
 		} else if wallType == WALL_MaskedWall {
@@ -286,7 +284,7 @@ func (r *RTLMapData) ThinWallDirection(x, y int) (WallDirection, int, int) {
 		}
 	}
 	if y < 127 {
-		wallType := r.ActorGrid[x][y+1].Type
+		wallType := r.ActorGrid[y+1][x].Type
 		if wallType == WALL_Regular {
 			adjacentCountY += 2
 		} else if wallType == WALL_MaskedWall {
@@ -366,9 +364,9 @@ func NewRTL(rfile io.ReadSeeker) (*RTL, error) {
 }
 
 func (r *RTLMapData) determineActorHeights() {
-	for i := 0; i < 128; i++ {
-		for j := 0; j < 128; j++ {
-			actor := &r.ActorGrid[i][j]
+	for y := 0; y < 128; y++ {
+		for x := 0; x < 128; x++ {
+			actor := &r.ActorGrid[y][x]
 
 			switch actor.Type {
 			case SPR_GAD:
@@ -385,146 +383,146 @@ func (r *RTLMapData) determineActorHeights() {
 }
 
 func (r *RTLMapData) renderSpriteGrid() {
-	for i := 0; i < 128; i++ {
-		for j := 0; j < 128; j++ {
-			spriteValue := r.SpritePlane[i][j]
-			wallValue := r.WallPlane[i][j]
+	for y := 0; y < 128; y++ {
+		for x := 0; x < 128; x++ {
+			spriteValue := r.SpritePlane[y][x]
+			wallValue := r.WallPlane[y][x]
 
 			// spawn location
 			if spriteValue >= 19 && spriteValue <= 22 {
-				r.SpawnX = i
-				r.SpawnY = j
+				r.SpawnX = x
+				r.SpawnY = y
 				r.SpawnDirection = int(spriteValue) - 19
 			}
 
 			// items (represented as sprites in the RTL data)
 			if itemInfo, ok := Items[spriteValue]; ok {
-				r.ActorGrid[i][j].Item = &itemInfo
+				r.ActorGrid[y][x].Item = &itemInfo
 			}
 
 			if wallValue == 0x0b { // fireball shooter
 				itemInfo, _ := Items[0x0b]
-				r.ActorGrid[i][j].Item = &itemInfo
+				r.ActorGrid[y][x].Item = &itemInfo
 			}
 		}
 	}
 }
 
 func (r *RTLMapData) renderWallGrid() {
-	for i := 0; i < 128; i++ {
-		for j := 0; j < 128; j++ {
+	for y := 0; y < 128; y++ {
+		for x := 0; x < 128; x++ {
 			// defaults
-			r.ActorGrid[i][j].Tile = 0
-			r.ActorGrid[i][j].Type = ACTOR_None
-			r.ActorGrid[i][j].X = i
-			r.ActorGrid[i][j].Y = j
+			r.ActorGrid[y][x].Tile = 0
+			r.ActorGrid[y][x].Type = ACTOR_None
+			r.ActorGrid[y][x].X = x
+			r.ActorGrid[y][x].Y = y
 
-			tileId := r.WallPlane[i][j]
-			infoVal := r.InfoPlane[i][j]
+			tileId := r.WallPlane[y][x]
+			infoVal := r.InfoPlane[y][x]
 
 			// for reference: rt_ted.c:1965 in ROTT source code (wall
 			// setup algorithm, absolute mess)
 
 			// the first 4 tiles are not used and contain metadata.
 			// tile values of 0 have nothing
-			if (i == 0 && j < 4) || tileId == 0 {
+			if (y == 0 && x < 4) || tileId == 0 {
 				continue
 			}
 
 			if tileId >= AreaTileMin {
-				r.ActorGrid[i][j].AreaID = int(tileId - AreaTileMin)
+				r.ActorGrid[y][x].AreaID = int(tileId - AreaTileMin)
 			}
 
 			if (tileId >= 33 && tileId <= 35) || (tileId >= 90 && tileId <= 104) || (tileId >= 154 && tileId <= 156) {
 				// doors
-				r.ActorGrid[i][j].Tile = tileId
-				r.ActorGrid[i][j].Type = WALL_Door
+				r.ActorGrid[y][x].Tile = tileId
+				r.ActorGrid[y][x].Type = WALL_Door
 				continue
 			}
 
 			if tileId <= 32 || (tileId >= 36 && tileId <= 43) {
 				// static wall
-				r.ActorGrid[i][j].Tile = tileId
-				r.ActorGrid[i][j].MapFlags |= WALLFLAGS_Static
-				r.ActorGrid[i][j].Type = WALL_Regular
+				r.ActorGrid[y][x].Tile = tileId
+				r.ActorGrid[y][x].MapFlags |= WALLFLAGS_Static
+				r.ActorGrid[y][x].Type = WALL_Regular
 				continue
 			} else if tileId >= 72 && tileId <= 79 {
 				// elevator tiles
-				r.ActorGrid[i][j].Tile = tileId
-				r.ActorGrid[i][j].MapFlags |= WALLFLAGS_Static
-				r.ActorGrid[i][j].Type = WALL_Elevator
+				r.ActorGrid[y][x].Tile = tileId
+				r.ActorGrid[y][x].MapFlags |= WALLFLAGS_Static
+				r.ActorGrid[y][x].Type = WALL_Elevator
 			} else if tileId == 47 || tileId == 48 {
 				// TODO: what are these tile ids?
-				r.ActorGrid[i][j].Tile = tileId
-				r.ActorGrid[i][j].MapFlags |= WALLFLAGS_Static
-				r.ActorGrid[i][j].Type = WALL_Regular
+				r.ActorGrid[y][x].Tile = tileId
+				r.ActorGrid[y][x].MapFlags |= WALLFLAGS_Static
+				r.ActorGrid[y][x].Type = WALL_Regular
 			} else if tileId >= 49 && tileId <= 71 {
-				r.ActorGrid[i][j].Tile = tileId
-				r.ActorGrid[i][j].MapFlags |= WALLFLAGS_Static
-				r.ActorGrid[i][j].Type = WALL_Regular
+				r.ActorGrid[y][x].Tile = tileId
+				r.ActorGrid[y][x].MapFlags |= WALLFLAGS_Static
+				r.ActorGrid[y][x].Type = WALL_Regular
 			}
 
 			// for reference: rt_ted.c:2218
 			if tileId == 44 || tileId == 45 {
 				// animated wall
-				r.ActorGrid[i][j].Tile = tileId
-				r.ActorGrid[i][j].MapFlags |= WALLFLAGS_Static
-				r.ActorGrid[i][j].Type = WALL_AnimatedWall
+				r.ActorGrid[y][x].Tile = tileId
+				r.ActorGrid[y][x].MapFlags |= WALLFLAGS_Static
+				r.ActorGrid[y][x].Type = WALL_AnimatedWall
 				if tileId == 44 {
-					r.ActorGrid[i][j].Damage = true
-					r.ActorGrid[i][j].AnimWallID = 0
+					r.ActorGrid[y][x].Damage = true
+					r.ActorGrid[y][x].AnimWallID = 0
 				} else {
-					r.ActorGrid[i][j].AnimWallID = 3
+					r.ActorGrid[y][x].AnimWallID = 3
 				}
 			} else if tileId == 106 || tileId == 107 {
 				// animated wall
-				r.ActorGrid[i][j].Tile = tileId
-				r.ActorGrid[i][j].MapFlags |= WALLFLAGS_Animated
-				r.ActorGrid[i][j].Type = WALL_AnimatedWall
-				r.ActorGrid[i][j].AnimWallID = int(tileId) - 105
+				r.ActorGrid[y][x].Tile = tileId
+				r.ActorGrid[y][x].MapFlags |= WALLFLAGS_Animated
+				r.ActorGrid[y][x].Type = WALL_AnimatedWall
+				r.ActorGrid[y][x].AnimWallID = int(tileId) - 105
 			} else if tileId >= 224 && tileId <= 233 {
 				// animated wall
-				r.ActorGrid[i][j].Tile = tileId
-				r.ActorGrid[i][j].MapFlags |= WALLFLAGS_Animated
-				r.ActorGrid[i][j].Type = WALL_AnimatedWall
-				r.ActorGrid[i][j].AnimWallID = int(tileId) - 224 + 4
+				r.ActorGrid[y][x].Tile = tileId
+				r.ActorGrid[y][x].MapFlags |= WALLFLAGS_Animated
+				r.ActorGrid[y][x].Type = WALL_AnimatedWall
+				r.ActorGrid[y][x].AnimWallID = int(tileId) - 224 + 4
 				if tileId == 233 {
-					r.ActorGrid[i][j].Damage = true
+					r.ActorGrid[y][x].Damage = true
 				}
 			} else if tileId >= 242 && tileId <= 244 {
 				// animated wall
-				r.ActorGrid[i][j].Tile = tileId
-				r.ActorGrid[i][j].MapFlags |= WALLFLAGS_Animated
-				r.ActorGrid[i][j].Type = WALL_AnimatedWall
-				r.ActorGrid[i][j].AnimWallID = int(tileId) - 242 + 14
+				r.ActorGrid[y][x].Tile = tileId
+				r.ActorGrid[y][x].MapFlags |= WALLFLAGS_Animated
+				r.ActorGrid[y][x].Type = WALL_AnimatedWall
+				r.ActorGrid[y][x].AnimWallID = int(tileId) - 242 + 14
 			} else if _, ismasked := MaskedWalls[tileId]; ismasked {
-				r.ActorGrid[i][j].Tile = tileId
-				r.ActorGrid[i][j].Type = WALL_MaskedWall
+				r.ActorGrid[y][x].Tile = tileId
+				r.ActorGrid[y][x].Type = WALL_MaskedWall
 			} else if (tileId == 0 || (tileId >= AreaTileMin && tileId <= (AreaTileMin+NumAreas))) && infoVal > 0 {
 				// platform
-				r.ActorGrid[i][j].Type = WALL_Platform
-				r.ActorGrid[i][j].PlatformID = int(infoVal)
-				r.ActorGrid[i][j].Tile = tileId
+				r.ActorGrid[y][x].Type = WALL_Platform
+				r.ActorGrid[y][x].PlatformID = int(infoVal)
+				r.ActorGrid[y][x].Tile = tileId
 			} else if tileId > 89 || (tileId > 32 && tileId < 36) || tileId == 0 {
-				r.ActorGrid[i][j].Tile = 0
-				r.ActorGrid[i][j].Type = ACTOR_None
+				r.ActorGrid[y][x].Tile = 0
+				r.ActorGrid[y][x].Type = ACTOR_None
 			}
 
-			if r.ActorGrid[i][j].Tile > 1024 {
-				log.Fatalf("dun goof at %d, %d (plane: %d)", i, j, tileId)
+			if r.ActorGrid[y][x].Tile > 1024 {
+				log.Fatalf("dun goof at %d, %d (plane: %d)", x, y, tileId)
 			}
 		}
 	}
 }
 
 func (r *RTLMapData) determineThinWallsAndDirections() {
-	for i := 0; i < 128; i++ {
-		for j := 0; j < 128; j++ {
-			if r.ActorGrid[i][j].Type == WALL_Regular {
-				switch r.ActorGrid[i][j].InfoValue {
+	for y := 0; y < 128; y++ {
+		for x := 0; x < 128; x++ {
+			if r.ActorGrid[y][x].Type == WALL_Regular {
+				switch r.ActorGrid[y][x].InfoValue {
 				case 1, 4, 5, 6, 7, 8, 9:
-					r.ActorGrid[i][j].Type = WALL_ThinWall
-					r.ActorGrid[i][j].ThinWallDirection, _, _ = r.ThinWallDirection(i, j)
+					r.ActorGrid[y][x].Type = WALL_ThinWall
+					r.ActorGrid[y][x].ThinWallDirection, _, _ = r.ThinWallDirection(x, y)
 				}
 			}
 		}
@@ -611,10 +609,10 @@ func (r *RTLMapData) MapName() string {
 
 func (r *RTLMapData) DumpWallToFile(w io.Writer) error {
 	var err error
-	for i := 0; i < 128; i++ {
-		for j := 0; j < 128; j++ {
-			dispValue := r.ActorGrid[i][j]
-			if i == r.SpawnX && j == r.SpawnY {
+	for y := 0; y < 128; y++ {
+		for x := 0; x < 128; x++ {
+			dispValue := r.ActorGrid[y][x]
+			if x == r.SpawnX && y == r.SpawnY {
 				switch r.SpawnDirection {
 				case 0:
 					_, err = fmt.Fprintf(w, " P^ ")
@@ -659,7 +657,7 @@ type RowData struct {
 func (r *RTLMapData) DumpMapToHtmlFile(w io.Writer) error {
 	tmpl := `
 {{define "mapcell"}}<td class="mapcell" id="cell-{{ .X }}-{{ .Y }}" {{ if ne .Img "" }}style="background: url(imgs/{{ .Img }}.png)"{{end}}>
-<div>({{ .X }}, {{ .Y }})</div>
+<div>(X:{{ .X }},Y:{{ .Y }})</div>
 <div>W: {{ printf "%04x" .Wall }}</div>
 <div>S: {{ printf "%04x" .Sprite }}</div>
 <div>I: {{ printf "%04x" .Info }}</div>
@@ -712,10 +710,10 @@ func (r *RTLMapData) DumpMapToHtmlFile(w io.Writer) error {
 		Rows []RowData
 	}{}
 	mapTmpl := template.Must(template.New("map").Parse(tmpl))
-	for i := 0; i < 128; i++ {
+	for y := 0; y < 128; y++ {
 		var cellData []CellData
-		for j := 0; j < 128; j++ {
-			wallInfo := r.ActorGrid[i][j]
+		for x := 0; x < 128; x++ {
+			wallInfo := r.ActorGrid[y][x]
 			img := wallInfo.WallTileToTextureName(true)
 			switch wallInfo.Type {
 			case WALL_Regular, WALL_ThinWall:
@@ -728,11 +726,11 @@ func (r *RTLMapData) DumpMapToHtmlFile(w io.Writer) error {
 				img = "doors/" + img
 			}
 			cellData = append(cellData, CellData{
-				Wall:   r.WallPlane[i][j],
-				Sprite: r.SpritePlane[i][j],
-				Info:   r.InfoPlane[i][j],
-				X:      i,
-				Y:      j,
+				Wall:   r.WallPlane[y][x],
+				Sprite: r.SpritePlane[y][x],
+				Info:   r.InfoPlane[y][x],
+				X:      x,
+				Y:      y,
 				Img:    img,
 			})
 		}

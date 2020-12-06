@@ -2,6 +2,7 @@ package rtl
 
 import (
 	"fmt"
+	"log"
 )
 
 type WallPathType int
@@ -12,17 +13,42 @@ var (
 	PATH_Terminal  WallPathType = 2
 )
 
+type WallDirection int
+
+func (w *WallDirection) Name() string {
+	switch int(*w) {
+	case 0:
+		return "East"
+	case 1:
+		return "Northeast"
+	case 2:
+		return "North"
+	case 3:
+		return "Northwest"
+	case 4:
+		return "West"
+	case 5:
+		return "Southwest"
+	case 6:
+		return "South"
+	case 7:
+		return "Southeast"
+	default:
+		return "???"
+	}
+}
+
 var (
-	DIR_East      int = 0
-	DIR_Northeast int = 1
-	DIR_North     int = 2
-	DIR_Northwest int = 3
-	DIR_West      int = 4
-	DIR_Southwest int = 5
-	DIR_South     int = 6
-	DIR_Southeast int = 7
-	DIR_Unknown   int = 8
-	ICONARROWS        = 72 // rt_actor.c:11010
+	DIR_East      WallDirection = 0
+	DIR_Northeast WallDirection = 1
+	DIR_North     WallDirection = 2
+	DIR_Northwest WallDirection = 3
+	DIR_West      WallDirection = 4
+	DIR_Southwest WallDirection = 5
+	DIR_South     WallDirection = 6
+	DIR_Southeast WallDirection = 7
+	DIR_Unknown   WallDirection = 8
+	ICONARROWS                  = 72 // rt_actor.c:11010
 
 	// rt_ted.c:2984
 	MoveWallSpriteIDs = map[uint16]MoveWallInfo{
@@ -39,24 +65,24 @@ var (
 
 type MoveWallInfo struct {
 	Speed            int
-	InitialDirection int
+	InitialDirection WallDirection
 }
 
 type PathNode struct {
 	X         int
 	Y         int
-	Direction int
+	Direction WallDirection
 	Next      *PathNode
 }
 
-func (r *RTLMapData) DetermineWallPath(actor *ActorInfo) (WallPathType, *PathNode) {
+func (r *RTLMapData) DetermineWallPath(actor *ActorInfo) (WallPathType, *PathNode, int) {
 	var nodes []*PathNode
 	markedNodes := make(map[string]*PathNode)
 
 	if actor.Type != WALL_Regular {
-		return PATH_Unknown, nil
+		return PATH_Unknown, nil, 0
 	}
-	addNode := func(X int, Y int, direction int) {
+	addNode := func(X int, Y int, direction WallDirection) {
 		p := PathNode{X: X, Y: Y, Direction: direction, Next: nil}
 		markerTag := fmt.Sprintf("%d-%d", X, Y)
 		markedNodes[markerTag] = &p
@@ -68,9 +94,9 @@ func (r *RTLMapData) DetermineWallPath(actor *ActorInfo) (WallPathType, *PathNod
 	curX, curY := actor.X, actor.Y
 	pathType := PATH_Unknown
 	if moveWallInfo, ok := MoveWallSpriteIDs[actor.SpriteValue]; ok {
-		addNode(curX, curY, moveWallInfo.InitialDirection)
 		curDirection := moveWallInfo.InitialDirection
 		for pathType == PATH_Unknown {
+			//log.Printf("Path (%d,%d) %s: (%d,%d)", actor.X, actor.Y, curDirection.Name(), curX, curY)
 			switch curDirection {
 			case DIR_East:
 				curX++
@@ -84,19 +110,21 @@ func (r *RTLMapData) DetermineWallPath(actor *ActorInfo) (WallPathType, *PathNod
 				panic("Unknown direction")
 			}
 			if curX > 127 || curX < 0 || curY > 127 || curY < 0 {
-				panic("I'M FREE!!")
+				// I'M FREE!!
+				pathType = PATH_Terminal
 			}
 			markerTag := fmt.Sprintf("%d-%d", curX, curY)
 			if prevNode, ok := markedNodes[markerTag]; ok {
+				log.Printf("Perpetual path!")
 				nodes[len(nodes)-1].Next = prevNode
 				pathType = PATH_Perpetual
 				continue
 			}
-			spriteVal := r.ActorGrid[curX][curY].SpriteValue
+			spriteVal := r.ActorGrid[curY][curX].SpriteValue
 			if spriteVal >= 72 && spriteVal <= 78 {
-				switch int(spriteVal - 72) {
+				switch WallDirection(spriteVal - 72) {
 				case DIR_East, DIR_North, DIR_West, DIR_South:
-					curDirection = int(spriteVal - 72)
+					curDirection = WallDirection(spriteVal - 72)
 					addNode(curX, curY, curDirection)
 				default:
 					panic(fmt.Sprintf("weird direction: %d", spriteVal-72))
@@ -104,5 +132,9 @@ func (r *RTLMapData) DetermineWallPath(actor *ActorInfo) (WallPathType, *PathNod
 			}
 		}
 	}
-	return pathType, nodes[0]
+	if len(nodes) > 0 {
+		return pathType, nodes[0], len(nodes)
+	} else {
+		return pathType, nil, 0
+	}
 }

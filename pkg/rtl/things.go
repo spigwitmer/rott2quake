@@ -103,8 +103,8 @@ func AddTrampoline(x int, y int, gridSizeX float64, gridSizeY float64, gridSizeZ
 		return
 	}
 	entity := quakemap.NewEntity(0, item.DuskEntityName, q)
-	entity.OriginX = float64(x)*gridSizeX + (gridSizeX / 2)
-	entity.OriginY = float64(y)*gridSizeY + (gridSizeY / 2)
+	entity.OriginX = float64(x)*gridSizeX + (gridSizeX / 2.0)
+	entity.OriginY = float64(y)*-gridSizeY - (gridSizeY / 2.0)
 	entity.OriginZ = gridSizeZ
 	// could not find where "amount" was documented by NewBlood.
 	// this logarithmic formula is a ballpark factor that just Seems Right(tm)
@@ -123,8 +123,8 @@ func AddSpinningBlades(x int, y int, gridSizeX float64, gridSizeY float64, gridS
 	}
 	entityName := item.DuskEntityName
 	entity := quakemap.NewEntity(0, entityName, q)
-	entity.OriginX = float64(x)*gridSizeX + (gridSizeX / 2)
-	entity.OriginY = float64(y)*gridSizeY + (gridSizeY / 2)
+	entity.OriginX = float64(x)*gridSizeX + (gridSizeX / 2.0)
+	entity.OriginY = float64(y)*-gridSizeY - (gridSizeY / 2.0)
 	entity.OriginZ = gridSizeZ * 1.5
 	entity.AdditionalKeys["damage"] = "10.0"
 	entity.AdditionalKeys["frequency"] = "0.8"
@@ -141,8 +141,8 @@ func AddFlamethrower(x int, y int, gridSizeX float64, gridSizeY float64, gridSiz
 	}
 	entityName := item.DuskEntityName
 	entity := quakemap.NewEntity(0, entityName, q)
-	entity.OriginX = float64(x)*gridSizeX + (gridSizeX / 2)
-	entity.OriginY = float64(y)*gridSizeY + (gridSizeY / 2)
+	entity.OriginX = float64(x)*gridSizeX + (gridSizeX / 2.0)
+	entity.OriginY = float64(y)*-gridSizeY - (gridSizeY / 2.0)
 	entity.OriginZ = gridSizeZ
 	q.Entities = append(q.Entities, entity)
 }
@@ -168,13 +168,13 @@ func AddFireballShooter(x int, y int, gridSizeX float64, gridSizeY float64, grid
 	// north
 	if y > 0 {
 		for j := y - 1; j >= 0; j-- {
-			if r.ActorGrid[x][j].Type == WALL_Regular {
-				if r.ActorGrid[x][j].Tile == targetWallTile {
+			if r.ActorGrid[j][x].Type == WALL_Regular {
+				if r.ActorGrid[j][x].Tile == targetWallTile {
 					if y-j > curSteps {
 						curSteps = y - j
 						angle = 90.0
 						xoffset = 0
-						yoffset = -(gridSizeY / 2)
+						yoffset = (gridSizeY / 2.0)
 					}
 				}
 				break
@@ -184,13 +184,13 @@ func AddFireballShooter(x int, y int, gridSizeX float64, gridSizeY float64, grid
 	// south
 	if y < 127 {
 		for j := y + 1; j < 128; j++ {
-			if r.ActorGrid[x][j].Type == WALL_Regular {
-				if r.ActorGrid[x][j].Tile == targetWallTile {
+			if r.ActorGrid[j][x].Type == WALL_Regular {
+				if r.ActorGrid[j][x].Tile == targetWallTile {
 					if j-y > curSteps {
 						curSteps = j - y
 						angle = 270.0
 						xoffset = 0
-						yoffset = (gridSizeY / 2)
+						yoffset = -(gridSizeY / 2.0)
 					}
 				}
 				break
@@ -200,8 +200,8 @@ func AddFireballShooter(x int, y int, gridSizeX float64, gridSizeY float64, grid
 	// west
 	if x > 0 {
 		for i := x - 1; i >= 0; i-- {
-			if r.ActorGrid[i][y].Type == WALL_Regular {
-				if r.ActorGrid[i][y].Tile == targetWallTile {
+			if r.ActorGrid[y][i].Type == WALL_Regular {
+				if r.ActorGrid[y][i].Tile == targetWallTile {
 					if x-i > curSteps {
 						curSteps = x - i
 						angle = 0.0
@@ -216,8 +216,8 @@ func AddFireballShooter(x int, y int, gridSizeX float64, gridSizeY float64, grid
 	// east
 	if x < 127 {
 		for i := x + 1; i < 128; i++ {
-			if r.ActorGrid[i][y].Type == WALL_Regular {
-				if r.ActorGrid[i][y].Tile == targetWallTile {
+			if r.ActorGrid[y][i].Type == WALL_Regular {
+				if r.ActorGrid[y][i].Tile == targetWallTile {
 					if i-x > curSteps {
 						angle = 180.0
 						xoffset = (gridSizeX / 2)
@@ -231,7 +231,7 @@ func AddFireballShooter(x int, y int, gridSizeX float64, gridSizeY float64, grid
 
 	entity := quakemap.NewEntity(0, entityName, q)
 	entity.OriginX = float64(x)*gridSizeX + (gridSizeX / 2) + xoffset
-	entity.OriginY = float64(y)*gridSizeY + (gridSizeY / 2) + yoffset
+	entity.OriginY = float64(y)*-gridSizeY - (gridSizeY / 2) + yoffset
 	entity.OriginZ = gridSizeZ * 1.5
 	entity.AdditionalKeys["angle"] = fmt.Sprintf("%02f", angle)
 	q.Entities = append(q.Entities, entity)

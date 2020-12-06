@@ -11,6 +11,22 @@ func BasicCuboid(x1, y1, z1, x2, y2, z2 float64, texture string, scale float64, 
 		wrapFactor = -1.0
 	}
 
+	if x1 > x2 {
+		tmp := x1
+		x1 = x2
+		x2 = tmp
+	}
+	if y1 > y2 {
+		tmp := y1
+		y1 = y2
+		y2 = tmp
+	}
+	if z1 > z2 {
+		tmp := z1
+		z1 = z2
+		z2 = tmp
+	}
+
 	// south
 	b.AddPlane(
 		x1, y1, z1, // p1

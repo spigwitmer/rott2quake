@@ -54,34 +54,34 @@ func LinkElevators(rtlmap *RTLMapData, textureWad string,
 	elevatorSwitchTile := uint16(0x4c)
 	elevatorDoorTile := uint16(0x66)
 
-	for x := 0; x < 128; x++ {
-		for y := 0; y < 128; y++ {
+	for y := 0; y < 128; y++ {
+		for x := 0; x < 128; x++ {
 			// look for elevator door, calculate floor from where switch
 			// is
-			if rtlmap.WallPlane[x][y] == elevatorDoorTile {
-				if x > 1 && rtlmap.WallPlane[x-2][y] == elevatorSwitchTile {
-					linkCode := rtlmap.SpritePlane[x-1][y]
+			if rtlmap.WallPlane[y][x] == elevatorDoorTile {
+				if x > 1 && rtlmap.WallPlane[y][x-2] == elevatorSwitchTile {
+					linkCode := rtlmap.SpritePlane[y][x-1]
 					elevators[linkCode] = append(elevators[linkCode], ElevatorNode{
-						Floor:  rtlmap.ActorGrid[x-1][y],
-						Switch: rtlmap.ActorGrid[x-2][y],
+						Floor:  rtlmap.ActorGrid[y][x-1],
+						Switch: rtlmap.ActorGrid[y][x-2],
 					})
-				} else if x < 126 && rtlmap.WallPlane[x+2][y] == elevatorSwitchTile {
-					linkCode := rtlmap.SpritePlane[x+1][y]
+				} else if x < 126 && rtlmap.WallPlane[y][x+2] == elevatorSwitchTile {
+					linkCode := rtlmap.SpritePlane[y][x+1]
 					elevators[linkCode] = append(elevators[linkCode], ElevatorNode{
-						Floor:  rtlmap.ActorGrid[x+1][y],
-						Switch: rtlmap.ActorGrid[x+2][y],
+						Floor:  rtlmap.ActorGrid[y][x+1],
+						Switch: rtlmap.ActorGrid[y][x+2],
 					})
-				} else if y > 1 && rtlmap.WallPlane[x][y-2] == elevatorSwitchTile {
-					linkCode := rtlmap.SpritePlane[x][y-1]
+				} else if y > 1 && rtlmap.WallPlane[y-2][x] == elevatorSwitchTile {
+					linkCode := rtlmap.SpritePlane[y-1][x]
 					elevators[linkCode] = append(elevators[linkCode], ElevatorNode{
-						Floor:  rtlmap.ActorGrid[x][y-1],
-						Switch: rtlmap.ActorGrid[x][y-2],
+						Floor:  rtlmap.ActorGrid[y-1][x],
+						Switch: rtlmap.ActorGrid[y-2][x],
 					})
-				} else if y < 126 && rtlmap.WallPlane[x][y+2] == elevatorSwitchTile {
-					linkCode := rtlmap.SpritePlane[x][y+1]
+				} else if y < 126 && rtlmap.WallPlane[y+2][x] == elevatorSwitchTile {
+					linkCode := rtlmap.SpritePlane[y+1][x]
 					elevators[linkCode] = append(elevators[linkCode], ElevatorNode{
-						Floor:  rtlmap.ActorGrid[x][y+1],
-						Switch: rtlmap.ActorGrid[x][y+2],
+						Floor:  rtlmap.ActorGrid[y+1][x],
+						Switch: rtlmap.ActorGrid[y+2][x],
 					})
 				}
 			}
@@ -104,7 +104,7 @@ func LinkElevators(rtlmap *RTLMapData, textureWad string,
 		if elev1.Switch.X != elev1.Floor.X {
 			// func_button facing east or west
 			floor1ButtonX1 = float64(elev1.Floor.X) * gridSizeX
-			floor1ButtonY1 = float64(elev1.Floor.Y) * gridSizeY
+			floor1ButtonY1 = float64(elev1.Floor.Y) * -gridSizeY
 			floor1ButtonY2 = floor1ButtonY1 + gridSizeY
 			if elev1.Switch.X > elev1.Floor.X {
 				floor1ButtonX1 += gridSizeX
@@ -115,11 +115,11 @@ func LinkElevators(rtlmap *RTLMapData, textureWad string,
 			floor1ButtonX2 = floor1ButtonX1 + 1
 		} else {
 			// func_button facing north or south
-			floor1ButtonY1 = float64(elev1.Floor.Y) * gridSizeY
+			floor1ButtonY1 = float64(elev1.Floor.Y) * -gridSizeY
 			floor1ButtonX1 = float64(elev1.Floor.X) * gridSizeX
 			floor1ButtonX2 = floor1ButtonX1 + gridSizeX
 			if elev1.Switch.Y > elev1.Floor.Y {
-				floor1ButtonY1 += gridSizeY
+				floor1ButtonY1 -= gridSizeY
 				button1Angle = "270"
 			} else {
 				button1Angle = "90"
@@ -128,8 +128,8 @@ func LinkElevators(rtlmap *RTLMapData, textureWad string,
 		}
 		if elev2.Switch.X != elev2.Floor.X {
 			floor2ButtonX1 = float64(elev2.Floor.X) * gridSizeX
-			floor2ButtonY1 = float64(elev2.Floor.Y) * gridSizeY
-			floor2ButtonY2 = floor1ButtonY2 + gridSizeY
+			floor2ButtonY1 = float64(elev2.Floor.Y) * -gridSizeY
+			floor2ButtonY2 = floor1ButtonY2 - gridSizeY
 			if elev2.Switch.X > elev2.Floor.X {
 				floor2ButtonX1 += gridSizeX
 				button2Angle = "180"
@@ -138,11 +138,11 @@ func LinkElevators(rtlmap *RTLMapData, textureWad string,
 			}
 			floor2ButtonX2 = floor2ButtonX1 + 1
 		} else {
-			floor2ButtonY1 = float64(elev2.Floor.Y) * gridSizeY
+			floor2ButtonY1 = float64(elev2.Floor.Y) * -gridSizeY
 			floor2ButtonX1 = float64(elev2.Floor.X) * gridSizeX
 			floor2ButtonX2 = floor2ButtonX1 + gridSizeX
 			if elev2.Switch.Y > elev2.Floor.Y {
-				floor2ButtonY1 += gridSizeY
+				floor2ButtonY1 -= gridSizeY
 				button2Angle = "270"
 			} else {
 				button2Angle = "90"
@@ -164,15 +164,15 @@ func LinkElevators(rtlmap *RTLMapData, textureWad string,
 		floor1TriggerEntity := quakemap.NewEntity(0, "trigger_teleport", qm)
 		floor1TriggerEntity.AdditionalKeys["targetname"] = fmt.Sprintf("elev_%d_1_trigger", linkCode)
 		floor1TriggerEntity.AdditionalKeys["target"] = fmt.Sprintf("elev_%d_1", linkCode)
-		floor1TriggerEntityBrush := quakemap.BasicCuboid(float64(elev1.Floor.X)*gridSizeX, float64(elev1.Floor.Y)*gridSizeY, floorDepth,
-			float64(elev1.Floor.X+1)*gridSizeX, float64(elev1.Floor.Y+1)*gridSizeY, floorDepth+gridSizeZ,
+		floor1TriggerEntityBrush := quakemap.BasicCuboid(float64(elev1.Floor.X)*gridSizeX, float64(elev1.Floor.Y)*-gridSizeY, floorDepth,
+			float64(elev1.Floor.X+1)*gridSizeX, float64(elev1.Floor.Y+1)*-gridSizeY, floorDepth+gridSizeZ,
 			"__TB_empty", -1.0, false)
 		floor1TriggerEntity.Brushes = append(floor1TriggerEntity.Brushes, floor1TriggerEntityBrush)
 		qm.Entities = append(qm.Entities, floor1TriggerEntity)
 
 		floor1DestEntity := quakemap.NewEntity(0, "info_teleport_destination", qm)
 		floor1DestEntity.OriginX = float64(elev2.Floor.X)*gridSizeX + (gridSizeX / 2)
-		floor1DestEntity.OriginY = float64(elev2.Floor.Y)*gridSizeY + (gridSizeY / 2)
+		floor1DestEntity.OriginY = float64(elev2.Floor.Y)*-gridSizeY - (gridSizeY / 2)
 		floor1DestEntity.OriginZ = floorDepth + (gridSizeZ / 2)
 		floor1DestEntity.AdditionalKeys["targetname"] = fmt.Sprintf("elev_%d_1", linkCode)
 		floor1DestEntity.AdditionalKeys["angle"] = button2Angle
@@ -192,15 +192,15 @@ func LinkElevators(rtlmap *RTLMapData, textureWad string,
 		floor2TriggerEntity := quakemap.NewEntity(0, "trigger_teleport", qm)
 		floor2TriggerEntity.AdditionalKeys["targetname"] = fmt.Sprintf("elev_%d_2_trigger", linkCode)
 		floor2TriggerEntity.AdditionalKeys["target"] = fmt.Sprintf("elev_%d_2", linkCode)
-		floor2TriggerEntityBrush := quakemap.BasicCuboid(float64(elev2.Floor.X)*gridSizeX, float64(elev2.Floor.Y)*gridSizeY, floorDepth,
-			float64(elev2.Floor.X+1)*gridSizeX, float64(elev2.Floor.Y+1)*gridSizeY, floorDepth+gridSizeZ,
+		floor2TriggerEntityBrush := quakemap.BasicCuboid(float64(elev2.Floor.X)*gridSizeX, float64(elev2.Floor.Y)*-gridSizeY, floorDepth,
+			float64(elev2.Floor.X+1)*gridSizeX, float64(elev2.Floor.Y+1)*-gridSizeY, floorDepth+gridSizeZ,
 			"__TB_empty", -1.0, false)
 		floor2TriggerEntity.Brushes = append(floor2TriggerEntity.Brushes, floor2TriggerEntityBrush)
 		qm.Entities = append(qm.Entities, floor2TriggerEntity)
 
 		floor2DestEntity := quakemap.NewEntity(0, "info_teleport_destination", qm)
 		floor2DestEntity.OriginX = float64(elev1.Floor.X)*gridSizeX + (gridSizeX / 2)
-		floor2DestEntity.OriginY = float64(elev1.Floor.Y)*gridSizeY + (gridSizeY / 2)
+		floor2DestEntity.OriginY = float64(elev1.Floor.Y)*-gridSizeY - (gridSizeY / 2)
 		floor2DestEntity.OriginZ = floorDepth + (gridSizeZ / 2)
 		floor2DestEntity.AdditionalKeys["targetname"] = fmt.Sprintf("elev_%d_2", linkCode)
 		floor2DestEntity.AdditionalKeys["angle"] = button1Angle
@@ -208,28 +208,28 @@ func LinkElevators(rtlmap *RTLMapData, textureWad string,
 	}
 }
 
-func CreateThinWall(rtlmap *RTLMapData, i, j int, scale float64, qm *quakemap.QuakeMap) {
+func CreateThinWall(rtlmap *RTLMapData, x, y int, scale float64, qm *quakemap.QuakeMap) {
 	var x1, y1, x2, y2 float64
 	var gridSizeX float64 = 64.0 * scale
 	var gridSizeY float64 = 64.0 * scale
 	var gridSizeZ float64 = 64.0 * scale
 	var floorDepth float64 = 64.0 * scale
 
-	infoVal := rtlmap.InfoPlane[i][j]
-	actor := rtlmap.ActorGrid[i][j]
+	infoVal := rtlmap.InfoPlane[y][x]
+	actor := rtlmap.ActorGrid[y][x]
 	texName := actor.WallTileToTextureName(false)
 
 	if infoVal == 1 || (infoVal >= 4 && infoVal <= 9) {
 		if actor.ThinWallDirection == WALLDIR_NorthSouth {
-			x1 = float64(i)*gridSizeX + (gridSizeX / 2) - 2
-			x2 = float64(i)*gridSizeX + (gridSizeX / 2) + 2
-			y1 = float64(j) * gridSizeY
-			y2 = float64(j+1) * gridSizeY
+			x1 = float64(x)*gridSizeX + (gridSizeX / 2) - 2
+			x2 = float64(x)*gridSizeX + (gridSizeX / 2) + 2
+			y1 = float64(y) * -gridSizeY
+			y2 = float64(y+1) * -gridSizeY
 		} else {
-			x1 = float64(i) * gridSizeX
-			x2 = float64(i+1) * gridSizeX
-			y1 = float64(j)*gridSizeY + (gridSizeY / 2) - 2
-			y2 = float64(j)*gridSizeY + (gridSizeY / 2) + 2
+			x1 = float64(x) * gridSizeX
+			x2 = float64(x+1) * gridSizeX
+			y1 = float64(y)*-gridSizeY - ((gridSizeY / 2.0) - 2.0)
+			y2 = float64(y)*-gridSizeY - ((gridSizeY / 2.0) + 2.0)
 		}
 		switch infoVal {
 		case 1:
@@ -290,15 +290,15 @@ func CreateThinWall(rtlmap *RTLMapData, i, j int, scale float64, qm *quakemap.Qu
 	}
 }
 
-func CreateRegularWall(rtlmap *RTLMapData, i, j int, scale float64, qm *quakemap.QuakeMap) {
+func CreateRegularWall(rtlmap *RTLMapData, x, y int, scale float64, qm *quakemap.QuakeMap) {
 	var gridSizeX float64 = 64.0 * scale
 	var gridSizeY float64 = 64.0 * scale
 	var gridSizeZ float64 = 64.0 * scale
 	var floorDepth float64 = 64.0 * scale
 
-	infoVal := rtlmap.InfoPlane[i][j]
-	spriteVal := rtlmap.SpritePlane[i][j]
-	actor := rtlmap.ActorGrid[i][j]
+	infoVal := rtlmap.InfoPlane[y][x]
+	spriteVal := rtlmap.SpritePlane[y][x]
+	actor := rtlmap.ActorGrid[y][x]
 	texName := actor.WallTileToTextureName(false)
 
 	if actor.Tile == 0x4c {
@@ -308,11 +308,11 @@ func CreateRegularWall(rtlmap *RTLMapData, i, j int, scale float64, qm *quakemap
 	}
 	// plain ol' column
 	wallColumn := quakemap.BasicCuboid(
-		float64(i)*gridSizeX,   // x1
-		float64(j)*gridSizeY,   // y1
-		floorDepth,             // z1
-		float64(i+1)*gridSizeX, // x2
-		float64(j+1)*gridSizeY, // y2
+		float64(x)*gridSizeX,    // x1
+		float64(y)*-gridSizeY,   // y1
+		floorDepth,              // z1
+		float64(x+1)*gridSizeX,  // x2
+		float64(y+1)*-gridSizeY, // y2
 		floorDepth+float64(rtlmap.FloorHeight())*gridSizeZ, // z2
 		texName,
 		scale, true) // scale
@@ -324,27 +324,29 @@ func CreateRegularWall(rtlmap *RTLMapData, i, j int, scale float64, qm *quakemap
 	} else {
 		entity := quakemap.NewEntity(0, "func_wall", qm)
 		entity.Brushes = []quakemap.Brush{wallColumn}
+		entity.AdditionalKeys["_x"] = string(actor.X)
+		entity.AdditionalKeys["_y"] = string(actor.Y)
 		qm.Entities = append(qm.Entities, entity)
 	}
 }
 
-func CreatePlatform(rtlmap *RTLMapData, i, j int, scale float64, qm *quakemap.QuakeMap) {
+func CreatePlatform(rtlmap *RTLMapData, x, y int, scale float64, qm *quakemap.QuakeMap) {
 	var gridSizeX float64 = 64.0 * scale
 	var gridSizeY float64 = 64.0 * scale
 	var gridSizeZ float64 = 64.0 * scale
 	var floorDepth float64 = 64.0 * scale
 
-	actor := rtlmap.ActorGrid[i][j]
+	actor := rtlmap.ActorGrid[y][x]
 	floorHeight := rtlmap.FloorHeight()
 
 	// platforms are supposed to work like masked walls,
 	// however just implement that as full walls since
 	// they're made to allow the player walk across
 	if platformInfo, ok := Platforms[actor.PlatformID]; ok {
-		x1 := float64(i)*gridSizeX + 1
-		y1 := float64(j)*gridSizeY + 1
-		x2 := float64(i+1)*gridSizeX - 1
-		y2 := float64(j+1)*gridSizeY - 1
+		x1 := float64(x)*gridSizeX + 1
+		y1 := float64(y)*-gridSizeY - 1
+		x2 := float64(x+1)*gridSizeX - 1
+		y2 := float64(y+1)*-gridSizeY + 1
 
 		// above as separate entity
 		// NOTE: don't render tops and bottoms of platforms
@@ -387,31 +389,31 @@ func CreatePlatform(rtlmap *RTLMapData, i, j int, scale float64, qm *quakemap.Qu
 	}
 }
 
-func CreateMaskedWall(rtlmap *RTLMapData, i, j int, scale float64, qm *quakemap.QuakeMap) {
+func CreateMaskedWall(rtlmap *RTLMapData, x, y int, scale float64, qm *quakemap.QuakeMap) {
 	var gridSizeX float64 = 64.0 * scale
 	var gridSizeY float64 = 64.0 * scale
 	var gridSizeZ float64 = 64.0 * scale
 	var floorDepth float64 = 64.0 * scale
 
-	wallInfo := rtlmap.ActorGrid[i][j]
+	wallInfo := rtlmap.ActorGrid[y][x]
 	floorHeight := rtlmap.FloorHeight()
 
 	// masked walls have adjacent sides, a thin wall in the
 	// middle, and the bottom may be passable
 	if maskedWallInfo, ok := MaskedWalls[wallInfo.Tile]; ok {
-		wallDirection, _, _ := rtlmap.ThinWallDirection(i, j)
+		wallDirection, _, _ := rtlmap.ThinWallDirection(x, y)
 		var x1, y1, x2, y2 float64
 
 		if wallDirection == WALLDIR_NorthSouth {
-			x1 = float64(i)*gridSizeX + (gridSizeX / 2)
-			x2 = float64(i)*gridSizeX + (gridSizeX / 2) + 1
-			y1 = float64(j) * gridSizeY
-			y2 = float64(j+1) * gridSizeY
+			x1 = float64(x)*gridSizeX + (gridSizeX / 2)
+			x2 = float64(x)*gridSizeX + (gridSizeX / 2) + 1
+			y1 = float64(y) * -gridSizeY
+			y2 = float64(y+1) * -gridSizeY
 		} else {
-			x1 = float64(i) * gridSizeX
-			x2 = float64(i+1) * gridSizeX
-			y1 = float64(j)*gridSizeY + (gridSizeY / 2)
-			y2 = float64(j)*gridSizeY + (gridSizeY / 2) + 1
+			x1 = float64(x) * gridSizeX
+			x2 = float64(x+1) * gridSizeX
+			y1 = float64(y)*-gridSizeY - (gridSizeY / 2.0)
+			y2 = float64(y)*-gridSizeY - (gridSizeY / 2.0) + 1
 		}
 
 		// above as separate entity
@@ -457,7 +459,7 @@ func CreateMaskedWall(rtlmap *RTLMapData, i, j int, scale float64, qm *quakemap.
 		// TODO: sides
 
 	} else {
-		panic(fmt.Sprintf("Masked wall at %d,%d has non-existent ID (%d)", i, j, wallInfo.MaskedWallID))
+		panic(fmt.Sprintf("Masked wall at %d,%d has non-existent ID (%d)", x, y, wallInfo.MaskedWallID))
 	}
 }
 
@@ -488,8 +490,8 @@ func CreateDoorEntities(rtlmap *RTLMapData, scale float64, dusk bool, qm *quakem
 			if door.Direction == WALLDIR_NorthSouth {
 				x1 = float64(doorTile.X)*gridSizeX + (gridSizeX / 2)
 				x2 = float64(doorTile.X)*gridSizeX + (gridSizeX / 2) + 1
-				y1 = float64(doorTile.Y) * gridSizeY
-				y2 = float64(doorTile.Y+1) * gridSizeY
+				y1 = float64(doorTile.Y) * -gridSizeY
+				y2 = float64(doorTile.Y+1) * -gridSizeY
 				// give the wall above the door 1 more pixel
 				// or else it looks weird when opened
 				abovey1 = y1
@@ -499,10 +501,10 @@ func CreateDoorEntities(rtlmap *RTLMapData, scale float64, dusk bool, qm *quakem
 			} else {
 				x1 = float64(doorTile.X) * gridSizeX
 				x2 = float64(doorTile.X+1) * gridSizeX
-				y1 = float64(doorTile.Y)*gridSizeY + (gridSizeY / 2)
-				y2 = float64(doorTile.Y)*gridSizeY + (gridSizeY / 2) + 1
-				abovey1 = y1 - 1
-				abovey2 = y2 + 1
+				y1 = float64(doorTile.Y)*-gridSizeY - (gridSizeY / 2.0)
+				y2 = float64(doorTile.Y)*-gridSizeY - ((gridSizeY / 2.0) + 1)
+				abovey1 = y1 + 1
+				abovey2 = y2 - 1
 				abovex1 = x1
 				abovex2 = x2
 			}
@@ -529,12 +531,12 @@ func CreateDoorEntities(rtlmap *RTLMapData, scale float64, dusk bool, qm *quakem
 
 			if _, ok := keyMap[door.Lock]; !ok {
 				// place keys on the map
-				for i := 0; i < 128; i++ {
-					for j := 0; j < 128; j++ {
-						if rtlmap.ActorGrid[i][j].Type == ACTOR_None && rtlmap.SpritePlane[i][j] == uint16(door.Lock+0x1c) {
+				for y := 0; y < 128; y++ {
+					for x := 0; x < 128; x++ {
+						if rtlmap.ActorGrid[y][x].Type == ACTOR_None && rtlmap.SpritePlane[y][x] == uint16(door.Lock+0x1c) {
 							entity := quakemap.NewEntity(0, availKeys[whichKey], qm)
-							entity.OriginX = float64(i)*gridSizeX + (gridSizeX / 2)
-							entity.OriginY = float64(j)*gridSizeY + (gridSizeY / 2)
+							entity.OriginX = float64(x)*gridSizeX + (gridSizeX / 2)
+							entity.OriginY = float64(y)*-gridSizeY - (gridSizeY / 2.0)
 							entity.OriginZ = floorDepth + (gridSizeZ / 2)
 							if dusk {
 								// FIXME when/if dusk SDK fixes keys
@@ -591,18 +593,18 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 	var floorWidth float64 = gridSizeY * 128.0
 	var floorDepth float64 = 64.0 * scale
 
-	var playerStartX float64 = float64(rtlmap.SpawnX)*gridSizeX + (gridSizeX / 2)
-	var playerStartY float64 = float64(rtlmap.SpawnY)*gridSizeY + (gridSizeY / 2)
+	var playerStartX float64 = float64(rtlmap.SpawnX)*gridSizeX + (gridSizeX / 2.0)
+	var playerStartY float64 = float64(rtlmap.SpawnY)*-gridSizeY - (gridSizeY / 2.0)
 	var playerAngle float64
 	switch rtlmap.SpawnDirection {
 	case 0: // up
-		playerAngle = 180
-	case 1: // right
 		playerAngle = 90
-	case 2: // down
+	case 1: // right
 		playerAngle = 0
-	case 3: // left
+	case 2: // down
 		playerAngle = 270
+	case 3: // left
+		playerAngle = 180
 	}
 
 	qm := quakemap.NewQuakeMap(playerStartX, playerStartY, floorDepth+32)
@@ -611,7 +613,7 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 
 	floorBrush := quakemap.BasicCuboid(
 		0, 0, 0,
-		floorWidth, floorLength, floorDepth,
+		floorWidth, -floorLength, floorDepth,
 		rtlmap.FloorTexture(),
 		scale, false)
 	qm.WorldSpawn.Brushes = []quakemap.Brush{floorBrush}
@@ -623,41 +625,41 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 		ceilz2 := floorDepth + float64(rtlmap.FloorHeight()+1)*gridSizeZ
 		ceilBrush := quakemap.BasicCuboid(
 			0, 0, ceilz1,
-			floorWidth, floorLength, ceilz2,
+			floorWidth, -floorLength, ceilz2,
 			ceilTexture,
 			scale, false)
 		qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, ceilBrush)
 	}
 
-	for i := 0; i < 128; i++ {
-		for j := 0; j < 128; j++ {
-			wallInfo := rtlmap.ActorGrid[i][j]
-			itemInfo := rtlmap.ActorGrid[i][j].Item
+	for y := 0; y < 128; y++ {
+		for x := 0; x < 128; x++ {
+			wallInfo := rtlmap.ActorGrid[y][x]
+			itemInfo := rtlmap.ActorGrid[y][x].Item
 
 			switch wallInfo.Type {
 			case WALL_Regular, WALL_Elevator:
-				CreateRegularWall(rtlmap, i, j, scale, qm)
+				CreateRegularWall(rtlmap, x, y, scale, qm)
 			case WALL_ThinWall:
-				CreateThinWall(rtlmap, i, j, scale, qm)
+				CreateThinWall(rtlmap, x, y, scale, qm)
 			case WALL_AnimatedWall:
-				CreateRegularWall(rtlmap, i, j, scale, qm)
+				CreateRegularWall(rtlmap, x, y, scale, qm)
 			case WALL_Platform:
-				CreatePlatform(rtlmap, i, j, scale, qm)
+				CreatePlatform(rtlmap, x, y, scale, qm)
 			case WALL_MaskedWall:
-				CreateMaskedWall(rtlmap, i, j, scale, qm)
+				CreateMaskedWall(rtlmap, x, y, scale, qm)
 			}
 
 			if itemInfo != nil {
 				if itemInfo.AddCallback != nil {
-					itemInfo.AddCallback(i, j, gridSizeX, gridSizeY, gridSizeZ, itemInfo, rtlmap, qm, dusk)
+					itemInfo.AddCallback(x, y, gridSizeX, gridSizeY, gridSizeZ, itemInfo, rtlmap, qm, dusk)
 				} else {
 					entityName := itemInfo.QuakeEntityName
 					if dusk {
 						entityName = itemInfo.DuskEntityName
 					}
 					entity := quakemap.NewEntity(0, entityName, qm)
-					entity.OriginX = float64(i)*gridSizeX + (gridSizeX / 2)
-					entity.OriginY = float64(j)*gridSizeY + (gridSizeY / 2)
+					entity.OriginX = float64(x)*gridSizeX + (gridSizeX / 2.0)
+					entity.OriginY = float64(y)*-gridSizeY - (gridSizeY / 2.0)
 					if wallInfo.HeightOffset != 0 {
 						entity.OriginZ = floorDepth + (gridSizeZ / 2) + ((float64(rtlmap.FloorHeight()-1) * gridSizeZ) + float64(wallInfo.HeightOffset)*(scale/64.0))
 					} else {
