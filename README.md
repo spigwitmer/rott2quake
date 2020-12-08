@@ -71,7 +71,7 @@ Quake:
 - [ ] Enemy placement (TODO)
 - [X] Doors
 - [ ] Switchplates (TODO)
-- [ ] Moving Walls (TODO)
+- [X] Moving Walls
 - [ ] GADs (TODO)
 - [ ] Obstacles
   - [x] Flamethrowers
