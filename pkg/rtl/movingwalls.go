@@ -2,7 +2,6 @@ package rtl
 
 import (
 	"fmt"
-	"log"
 )
 
 type WallPathType int
@@ -96,7 +95,6 @@ func (r *RTLMapData) DetermineWallPath(actor *ActorInfo) (WallPathType, *PathNod
 	if moveWallInfo, ok := MoveWallSpriteIDs[actor.SpriteValue]; ok {
 		curDirection := moveWallInfo.InitialDirection
 		for pathType == PATH_Unknown {
-			//log.Printf("Path (%d,%d) %s: (%d,%d)", actor.X, actor.Y, curDirection.Name(), curX, curY)
 			switch curDirection {
 			case DIR_East:
 				curX++
@@ -115,7 +113,6 @@ func (r *RTLMapData) DetermineWallPath(actor *ActorInfo) (WallPathType, *PathNod
 			}
 			markerTag := fmt.Sprintf("%d-%d", curX, curY)
 			if prevNode, ok := markedNodes[markerTag]; ok {
-				log.Printf("Perpetual path!")
 				nodes[len(nodes)-1].Next = prevNode
 				pathType = PATH_Perpetual
 				continue

@@ -59,6 +59,7 @@ const (
 const (
 	WALLFLAGS_Animated uint32 = 0x1000
 	WALLFLAGS_Static   uint32 = 0x2000
+	WALLFLAGS_Moving   uint32 = 0x4000
 )
 
 const (
@@ -339,6 +340,7 @@ func NewRTL(rfile io.ReadSeeker) (*RTL, error) {
 		}
 		r.MapData[i].renderWallGrid()
 		r.MapData[i].determineThinWallsAndDirections()
+		r.MapData[i].determineMovingWalls()
 		r.MapData[i].renderSpriteGrid()
 		r.MapData[i].determineActorHeights()
 
@@ -523,6 +525,18 @@ func (r *RTLMapData) determineThinWallsAndDirections() {
 				case 1, 4, 5, 6, 7, 8, 9:
 					r.ActorGrid[y][x].Type = WALL_ThinWall
 					r.ActorGrid[y][x].ThinWallDirection, _, _ = r.ThinWallDirection(x, y)
+				}
+			}
+		}
+	}
+}
+
+func (r *RTLMapData) determineMovingWalls() {
+	for y := 0; y < 128; y++ {
+		for x := 0; x < 128; x++ {
+			if r.ActorGrid[y][x].Type == WALL_Regular && r.ActorGrid[y][x].SpriteValue > 0 {
+				if _, ok := MoveWallSpriteIDs[r.ActorGrid[y][x].SpriteValue]; ok {
+					r.ActorGrid[y][x].MapFlags |= WALLFLAGS_Moving
 				}
 			}
 		}

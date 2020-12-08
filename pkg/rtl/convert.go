@@ -300,6 +300,10 @@ func CreateRegularWall(rtlmap *RTLMapData, x, y int, scale float64, qm *quakemap
 	spriteVal := rtlmap.SpritePlane[y][x]
 	actor := rtlmap.ActorGrid[y][x]
 	texName := actor.WallTileToTextureName(false)
+	var initialCorner *quakemap.Entity
+	var moveWallInfo MoveWallInfo
+
+	entityType := "func_wall"
 
 	if actor.Tile == 0x4c {
 		// do not render elevator switches as those get spawned as
@@ -317,15 +321,62 @@ func CreateRegularWall(rtlmap *RTLMapData, x, y int, scale float64, qm *quakemap
 		texName,
 		scale, true) // scale
 
+	if actor.MapFlags&WALLFLAGS_Moving != 0 {
+		// implement moving walls as func_trains
+		// TODO: switchplate activated walls
+		// TODO: push activated walls
+
+		var lastPathCorner, currentPathCorner *quakemap.Entity
+		pathType, wallPath, numNodes := rtlmap.DetermineWallPath(&actor)
+		moveWallInfo = MoveWallSpriteIDs[spriteVal]
+		initialCorner = quakemap.NewEntity(0, "path_corner", qm)
+		cornerZ := floorDepth
+		initialCorner.OriginX = (float64(x)) * gridSizeX
+		initialCorner.OriginY = (float64(y) + 1) * -gridSizeY
+		initialCorner.OriginZ = cornerZ
+		initialCorner.AdditionalKeys["targetname"] = fmt.Sprintf("movewallpath_%d_%d_init", actor.X, actor.Y)
+		lastPathCorner = initialCorner
+		qm.Entities = append(qm.Entities, lastPathCorner)
+
+		currentNode := wallPath
+		nodeToTargetNames := make(map[*PathNode]string)
+		for i := 0; i < numNodes; i++ {
+			currentPathCorner = quakemap.NewEntity(0, "path_corner", qm)
+			currentPathCorner.OriginZ = cornerZ
+			currentPathCorner.OriginX = (float64(currentNode.X)) * gridSizeX
+			currentPathCorner.OriginY = (float64(currentNode.Y) + 1) * -gridSizeY
+			targetName := fmt.Sprintf("movewallpath_%d_%d_%d", actor.X, actor.Y, i)
+			nodeToTargetNames[currentNode] = targetName
+			currentPathCorner.AdditionalKeys["targetname"] = targetName
+			lastPathCorner.AdditionalKeys["target"] = targetName
+			qm.Entities = append(qm.Entities, currentPathCorner)
+			currentNode = currentNode.Next
+			lastPathCorner = currentPathCorner
+		}
+
+		if pathType == PATH_Perpetual {
+			currentPathCorner.AdditionalKeys["target"] = nodeToTargetNames[currentNode]
+		}
+
+		entityType = "func_train"
+	}
+
 	// make static walls part of the worldspawn,
 	// everything else a separate entity
 	if spriteVal == 0 && infoVal == 0 {
 		qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, wallColumn)
 	} else {
-		entity := quakemap.NewEntity(0, "func_wall", qm)
+		entity := quakemap.NewEntity(0, entityType, qm)
 		entity.Brushes = []quakemap.Brush{wallColumn}
-		entity.AdditionalKeys["_x"] = string(actor.X)
-		entity.AdditionalKeys["_y"] = string(actor.Y)
+		entity.AdditionalKeys["_x"] = fmt.Sprintf("%d", actor.X)
+		entity.AdditionalKeys["_y"] = fmt.Sprintf("%d", actor.Y)
+		if initialCorner != nil {
+			entity.OriginX = initialCorner.OriginX
+			entity.OriginY = initialCorner.OriginY
+			entity.OriginZ = initialCorner.OriginZ
+			entity.AdditionalKeys["target"] = initialCorner.AdditionalKeys["targetname"]
+			entity.AdditionalKeys["speed"] = fmt.Sprintf("%d", moveWallInfo.Speed*64)
+		}
 		qm.Entities = append(qm.Entities, entity)
 	}
 }
