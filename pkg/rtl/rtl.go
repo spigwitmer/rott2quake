@@ -534,7 +534,7 @@ func (r *RTLMapData) determineThinWallsAndDirections() {
 func (r *RTLMapData) determineMovingWalls() {
 	for y := 0; y < 128; y++ {
 		for x := 0; x < 128; x++ {
-			if r.ActorGrid[y][x].Type == WALL_Regular && r.ActorGrid[y][x].SpriteValue > 0 {
+			if (r.ActorGrid[y][x].Type == WALL_Regular || r.ActorGrid[y][x].Type == WALL_AnimatedWall) && r.ActorGrid[y][x].SpriteValue > 0 {
 				if _, ok := MoveWallSpriteIDs[r.ActorGrid[y][x].SpriteValue]; ok {
 					r.ActorGrid[y][x].MapFlags |= WALLFLAGS_Moving
 				}

@@ -78,7 +78,7 @@ func (r *RTLMapData) DetermineWallPath(actor *ActorInfo) (WallPathType, *PathNod
 	var nodes []*PathNode
 	markedNodes := make(map[string]*PathNode)
 
-	if actor.Type != WALL_Regular {
+	if actor.Type != WALL_Regular && actor.Type != WALL_AnimatedWall {
 		return PATH_Unknown, nil, 0
 	}
 	addNode := func(X int, Y int, direction WallDirection) {
@@ -98,11 +98,23 @@ func (r *RTLMapData) DetermineWallPath(actor *ActorInfo) (WallPathType, *PathNod
 			switch curDirection {
 			case DIR_East:
 				curX++
+			case DIR_Northeast:
+				curX++
+				curY--
 			case DIR_North:
+				curY--
+			case DIR_Northwest:
+				curX--
 				curY--
 			case DIR_West:
 				curX--
+			case DIR_Southwest:
+				curX--
+				curY++
 			case DIR_South:
+				curY++
+			case DIR_Southeast:
+				curX++
 				curY++
 			default:
 				panic("Unknown direction")
@@ -110,6 +122,7 @@ func (r *RTLMapData) DetermineWallPath(actor *ActorInfo) (WallPathType, *PathNod
 			if curX > 127 || curX < 0 || curY > 127 || curY < 0 {
 				// I'M FREE!!
 				pathType = PATH_Terminal
+				continue
 			}
 			markerTag := fmt.Sprintf("%d-%d", curX, curY)
 			if prevNode, ok := markedNodes[markerTag]; ok {
@@ -118,9 +131,10 @@ func (r *RTLMapData) DetermineWallPath(actor *ActorInfo) (WallPathType, *PathNod
 				continue
 			}
 			spriteVal := r.ActorGrid[curY][curX].SpriteValue
-			if spriteVal >= 72 && spriteVal <= 78 {
+			if spriteVal >= 72 && spriteVal <= 79 {
 				switch WallDirection(spriteVal - 72) {
-				case DIR_East, DIR_North, DIR_West, DIR_South:
+				case DIR_East, DIR_North, DIR_West, DIR_South,
+					DIR_Northeast, DIR_Northwest, DIR_Southwest, DIR_Southeast:
 					curDirection = WallDirection(spriteVal - 72)
 					addNode(curX, curY, curDirection)
 				default:
