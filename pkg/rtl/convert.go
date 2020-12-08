@@ -6,6 +6,12 @@ import (
 	"log"
 )
 
+// RTL to Quake MAP conversion functions
+//
+// Keep in mind that in ROTT, Y increases southward while in
+// Trenchbroom, Y increases northward, so Y axis values are
+// inverted.
+
 var (
 	exitLumps = []string{
 		"EXIT",
@@ -105,7 +111,7 @@ func LinkElevators(rtlmap *RTLMapData, textureWad string,
 			// func_button facing east or west
 			floor1ButtonX1 = float64(elev1.Floor.X) * gridSizeX
 			floor1ButtonY1 = float64(elev1.Floor.Y) * -gridSizeY
-			floor1ButtonY2 = floor1ButtonY1 + gridSizeY
+			floor1ButtonY2 = floor1ButtonY1 - gridSizeY
 			if elev1.Switch.X > elev1.Floor.X {
 				floor1ButtonX1 += gridSizeX
 				button1Angle = "180"
@@ -124,12 +130,12 @@ func LinkElevators(rtlmap *RTLMapData, textureWad string,
 			} else {
 				button1Angle = "90"
 			}
-			floor1ButtonY2 = floor1ButtonY1 + 1
+			floor1ButtonY2 = floor1ButtonY1 - 1
 		}
 		if elev2.Switch.X != elev2.Floor.X {
 			floor2ButtonX1 = float64(elev2.Floor.X) * gridSizeX
 			floor2ButtonY1 = float64(elev2.Floor.Y) * -gridSizeY
-			floor2ButtonY2 = floor1ButtonY2 - gridSizeY
+			floor2ButtonY2 = floor2ButtonY1 - gridSizeY
 			if elev2.Switch.X > elev2.Floor.X {
 				floor2ButtonX1 += gridSizeX
 				button2Angle = "180"
@@ -147,7 +153,7 @@ func LinkElevators(rtlmap *RTLMapData, textureWad string,
 			} else {
 				button2Angle = "90"
 			}
-			floor2ButtonY2 = floor2ButtonY1 + 1
+			floor2ButtonY2 = floor2ButtonY1 - 1
 		}
 
 		// elevator 1
@@ -180,7 +186,7 @@ func LinkElevators(rtlmap *RTLMapData, textureWad string,
 
 		// elevator 2
 		floor2Entity := quakemap.NewEntity(0, "func_button", qm)
-		floor2Entity.AdditionalKeys["target"] = fmt.Sprintf("elev_%d_2", linkCode)
+		floor2Entity.AdditionalKeys["target"] = fmt.Sprintf("elev_%d_2_trigger", linkCode)
 		floor2Entity.AdditionalKeys["angle"] = button2Angle
 		floor2Entity.AdditionalKeys["lip"] = "1"
 		floor2Brush := quakemap.BasicCuboid(floor2ButtonX1, floor2ButtonY1, floorDepth,
@@ -613,13 +619,13 @@ func CreateDoorEntities(rtlmap *RTLMapData, scale float64, dusk bool, qm *quakem
 		// move upward when open
 		if door.Tiles[0].Tile == 0x66 { // but move elevator door sideways
 			elevTileX, elevTileY := door.Tiles[0].X, door.Tiles[0].Y
-			if elevTileX < 126 && rtlmap.WallPlane[elevTileX+2][elevTileY] == 0x4c {
+			if elevTileX < 126 && rtlmap.WallPlane[elevTileY][elevTileX+2] == 0x4c {
 				doorEntity.AdditionalKeys["angle"] = "90"
-			} else if elevTileX > 1 && rtlmap.WallPlane[elevTileX-2][elevTileY] == 0x4c {
+			} else if elevTileX > 1 && rtlmap.WallPlane[elevTileY][elevTileX-2] == 0x4c {
 				doorEntity.AdditionalKeys["angle"] = "270"
-			} else if elevTileY < 126 && rtlmap.WallPlane[elevTileX][elevTileY+2] == 0x4c {
+			} else if elevTileY < 126 && rtlmap.WallPlane[elevTileY+2][elevTileX] == 0x4c {
 				doorEntity.AdditionalKeys["angle"] = "0"
-			} else if elevTileY > 1 && rtlmap.WallPlane[elevTileX][elevTileY-2] == 0x4c {
+			} else if elevTileY > 1 && rtlmap.WallPlane[elevTileY-2][elevTileX] == 0x4c {
 				doorEntity.AdditionalKeys["angle"] = "180"
 			} else {
 				log.Printf("Unknown angle for elevator tile at (%d,%d)", elevTileX, elevTileY)
