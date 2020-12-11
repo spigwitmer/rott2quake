@@ -296,6 +296,47 @@ func CreateThinWall(rtlmap *RTLMapData, x, y int, scale float64, qm *quakemap.Qu
 	}
 }
 
+func CreateTouchplate(rtlmap *RTLMapData, actor *ActorInfo, scale float64, qm *quakemap.QuakeMap) {
+	var gridSizeX float64 = 64.0 * scale
+	var gridSizeY float64 = 64.0 * scale
+	var gridSizeZ float64 = 64.0 * scale
+	var floorDepth float64 = 64.0 * scale
+
+	relayTargetName := fmt.Sprintf("touchplate_%d_%d_relay", actor.X, actor.Y)
+
+	triggerEntity := quakemap.NewEntity(0, "trigger_once", qm)
+	triggerEntity.AdditionalKeys["target"] = relayTargetName
+	triggerEntity.AdditionalKeys["message"] = "Touchplate Triggered"
+	triggerEntity.Brushes = append(triggerEntity.Brushes,
+		quakemap.BasicCuboid(float64(actor.X)*gridSizeX, float64(actor.Y)*-gridSizeY, floorDepth,
+			float64(actor.X+1)*gridSizeX, float64(actor.Y+1)*-gridSizeY, floorDepth+gridSizeZ,
+			"__TB_empty", scale, false))
+	qm.Entities = append(qm.Entities, triggerEntity)
+
+	// place relays above the trigger zone on top of one another
+	relayOriginX := (float64(actor.X) + 0.5) * gridSizeX
+	relayOriginY := (float64(actor.Y) + 0.5) * -gridSizeY
+	relayOriginZbase := floorDepth + (gridSizeZ * 1.5)
+	for i, triggerInfo := range actor.TouchplateTriggers {
+		var relayTarget string
+
+		relayEntity := quakemap.NewEntity(0, "trigger_relay", qm)
+		relayEntity.OriginX = relayOriginX
+		relayEntity.OriginY = relayOriginY
+		relayEntity.OriginZ = relayOriginZbase + (float64(i)*0.5)*gridSizeZ
+		relayEntity.AdditionalKeys["targetname"] = relayTargetName
+		switch triggerInfo.Action {
+		case TOUCH_WallPush:
+			relayTarget = fmt.Sprintf("movewallpath_%d_%d_wall", triggerInfo.Actor.X, triggerInfo.Actor.Y)
+		default:
+			log.Panicf("Unknown trigger target type at (%d,%d)", triggerInfo.Actor.X, triggerInfo.Actor.Y)
+		}
+
+		relayEntity.AdditionalKeys["target"] = relayTarget
+		qm.Entities = append(qm.Entities, relayEntity)
+	}
+}
+
 func CreateRegularWall(rtlmap *RTLMapData, x, y int, scale float64, qm *quakemap.QuakeMap) {
 	var gridSizeX float64 = 64.0 * scale
 	var gridSizeY float64 = 64.0 * scale
@@ -729,6 +770,12 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 					qm.Entities = append(qm.Entities, entity)
 				}
 			}
+
+			if len(wallInfo.TouchplateTriggers) > 0 {
+				log.Printf("Creating touchplate at (%d,%d)", wallInfo.X, wallInfo.Y)
+				CreateTouchplate(rtlmap, &wallInfo, scale, qm)
+			}
+
 		}
 	}
 

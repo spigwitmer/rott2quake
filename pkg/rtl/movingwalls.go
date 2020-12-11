@@ -51,18 +51,22 @@ var (
 
 	// rt_ted.c:2984
 	MoveWallSpriteIDs = map[uint16]MoveWallInfo{
-		uint16(DIR_East) + uint16(ICONARROWS):  MoveWallInfo{2.0, DIR_East},
-		uint16(DIR_North) + uint16(ICONARROWS): MoveWallInfo{2.0, DIR_North},
-		uint16(DIR_West) + uint16(ICONARROWS):  MoveWallInfo{2.0, DIR_West},
-		uint16(DIR_South) + uint16(ICONARROWS): MoveWallInfo{2.0, DIR_South},
-		300:                                    MoveWallInfo{2.0, DIR_East},
-		318:                                    MoveWallInfo{2.0, DIR_North},
-		336:                                    MoveWallInfo{2.0, DIR_West},
-		354:                                    MoveWallInfo{2.0, DIR_South},
-		256:                                    MoveWallInfo{4.0, DIR_East},
-		257:                                    MoveWallInfo{4.0, DIR_North},
-		258:                                    MoveWallInfo{4.0, DIR_West},
-		259:                                    MoveWallInfo{4.0, DIR_South},
+		uint16(DIR_East) + uint16(ICONARROWS):      MoveWallInfo{2.0, DIR_East},
+		uint16(DIR_North) + uint16(ICONARROWS):     MoveWallInfo{2.0, DIR_North},
+		uint16(DIR_West) + uint16(ICONARROWS):      MoveWallInfo{2.0, DIR_West},
+		uint16(DIR_South) + uint16(ICONARROWS):     MoveWallInfo{2.0, DIR_South},
+		uint16(DIR_Northeast) + uint16(ICONARROWS): MoveWallInfo{2.0, DIR_Northeast},
+		uint16(DIR_Northwest) + uint16(ICONARROWS): MoveWallInfo{2.0, DIR_Northwest},
+		uint16(DIR_Southwest) + uint16(ICONARROWS): MoveWallInfo{2.0, DIR_Southwest},
+		uint16(DIR_Southeast) + uint16(ICONARROWS): MoveWallInfo{2.0, DIR_Southeast},
+		300: MoveWallInfo{2.0, DIR_East},
+		318: MoveWallInfo{2.0, DIR_North},
+		336: MoveWallInfo{2.0, DIR_West},
+		354: MoveWallInfo{2.0, DIR_South},
+		256: MoveWallInfo{4.0, DIR_East},
+		257: MoveWallInfo{4.0, DIR_North},
+		258: MoveWallInfo{4.0, DIR_West},
+		259: MoveWallInfo{4.0, DIR_South},
 	}
 )
 
@@ -82,9 +86,9 @@ func (r *RTLMapData) DetermineWallPath(actor *ActorInfo) (WallPathType, *PathNod
 	var nodes []*PathNode
 	markedNodes := make(map[string]*PathNode)
 
-	if actor.Type != WALL_Regular && actor.Type != WALL_AnimatedWall {
+	/*if actor.Type != WALL_Regular && actor.Type != WALL_AnimatedWall {
 		return PATH_Unknown, nil, 0
-	}
+	}*/
 	addNode := func(X int, Y int, direction WallDirection) {
 		p := PathNode{X: X, Y: Y, Direction: direction, Next: nil}
 		markerTag := fmt.Sprintf("%d-%d", X, Y)

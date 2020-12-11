@@ -69,22 +69,23 @@ const (
 )
 
 type ActorInfo struct {
-	X                 int
-	Y                 int
-	WallValue         uint16
-	SpriteValue       uint16
-	InfoValue         uint16
-	Tile              uint16 // matches up to lump name (WALL1, WALL2, etc.)
-	Type              ActorType
-	MapFlags          uint32
-	Damage            bool
-	AnimWallID        int // see anim.go
-	MaskedWallID      int // see maskedwall.go
-	PlatformID        int // see maskedwall.go
-	AreaID            int // see area.go
-	ThinWallDirection WallDirection
-	Item              *ItemInfo
-	HeightOffset      int
+	X                  int
+	Y                  int
+	WallValue          uint16
+	SpriteValue        uint16
+	InfoValue          uint16
+	Tile               uint16 // matches up to lump name (WALL1, WALL2, etc.)
+	Type               ActorType
+	MapFlags           uint32
+	Damage             bool
+	AnimWallID         int // see anim.go
+	MaskedWallID       int // see maskedwall.go
+	PlatformID         int // see maskedwall.go
+	AreaID             int // see area.go
+	ThinWallDirection  WallDirection
+	Item               *ItemInfo
+	HeightOffset       int
+	TouchplateTriggers []TouchplateTrigger
 }
 
 type DoorInfo struct {
@@ -534,9 +535,22 @@ func (r *RTLMapData) determineThinWallsAndDirections() {
 func (r *RTLMapData) determineMovingWalls() {
 	for y := 0; y < 128; y++ {
 		for x := 0; x < 128; x++ {
-			if (r.ActorGrid[y][x].Type == WALL_Regular || r.ActorGrid[y][x].Type == WALL_AnimatedWall) && r.ActorGrid[y][x].SpriteValue > 0 {
-				if _, ok := MoveWallSpriteIDs[r.ActorGrid[y][x].SpriteValue]; ok {
+			spriteVal := r.ActorGrid[y][x].SpriteValue
+			if (r.ActorGrid[y][x].Type == WALL_Regular || r.ActorGrid[y][x].Type == WALL_AnimatedWall) && spriteVal > 0 {
+				if _, ok := MoveWallSpriteIDs[spriteVal]; ok {
+					// perpetual and/or turbo wall
 					r.ActorGrid[y][x].MapFlags |= WALLFLAGS_Moving
+					infoVal := r.ActorGrid[y][x].InfoValue
+					if infoVal > 0 {
+						// touchplate triggered wall
+						log.Printf("touchplate triggered wall at (%d,%d) has touchplate at (%d,%d)", x, y, touchplateX, touchplateY)
+						touchplateX := int((infoVal >> 8) & 0xff)
+						touchplateY := int(infoVal & 0xff)
+						r.AddTouchplateTrigger(&r.ActorGrid[y][x], touchplateX, touchplateY, TOUCH_WallPush)
+					} else {
+						// pushwall
+						log.Printf("pushwall at (%d,%d)", x, y)
+					}
 				}
 			}
 		}
