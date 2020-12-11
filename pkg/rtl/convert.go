@@ -362,6 +362,9 @@ func CreateRegularWall(rtlmap *RTLMapData, x, y int, scale float64, qm *quakemap
 
 		if pathType == PATH_Perpetual {
 			currentPathCorner.AdditionalKeys["target"] = nodeToTargetNames[currentNode]
+		} else {
+			lastPathCorner.AdditionalKeys["target"] = "idontexist"
+			lastPathCorner.AdditionalKeys["wait"] = "-1"
 		}
 
 		entityType = "func_train"
@@ -381,6 +384,7 @@ func CreateRegularWall(rtlmap *RTLMapData, x, y int, scale float64, qm *quakemap
 			entity.OriginY = initialCorner.OriginY
 			entity.OriginZ = initialCorner.OriginZ
 			entity.AdditionalKeys["target"] = initialCorner.AdditionalKeys["targetname"]
+			entity.AdditionalKeys["targetname"] = fmt.Sprintf("movewallpath_%d_%d_wall", actor.X, actor.Y)
 			entity.AdditionalKeys["speed"] = fmt.Sprintf("%d", moveWallInfo.Speed*64)
 		}
 		qm.Entities = append(qm.Entities, entity)

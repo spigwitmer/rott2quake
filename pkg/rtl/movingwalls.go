@@ -47,18 +47,22 @@ var (
 	DIR_South     WallDirection = 6
 	DIR_Southeast WallDirection = 7
 	DIR_Unknown   WallDirection = 8
-	ICONARROWS                  = 72 // rt_actor.c:11010
+	ICONARROWS    int           = 72 // rt_actor.c:11010
 
 	// rt_ted.c:2984
 	MoveWallSpriteIDs = map[uint16]MoveWallInfo{
-		300: MoveWallInfo{2.0, DIR_East},
-		318: MoveWallInfo{2.0, DIR_North},
-		336: MoveWallInfo{2.0, DIR_West},
-		354: MoveWallInfo{2.0, DIR_South},
-		256: MoveWallInfo{4.0, DIR_East},
-		257: MoveWallInfo{4.0, DIR_North},
-		258: MoveWallInfo{4.0, DIR_West},
-		259: MoveWallInfo{4.0, DIR_South},
+		uint16(DIR_East) + uint16(ICONARROWS):  MoveWallInfo{2.0, DIR_East},
+		uint16(DIR_North) + uint16(ICONARROWS): MoveWallInfo{2.0, DIR_North},
+		uint16(DIR_West) + uint16(ICONARROWS):  MoveWallInfo{2.0, DIR_West},
+		uint16(DIR_South) + uint16(ICONARROWS): MoveWallInfo{2.0, DIR_South},
+		300:                                    MoveWallInfo{2.0, DIR_East},
+		318:                                    MoveWallInfo{2.0, DIR_North},
+		336:                                    MoveWallInfo{2.0, DIR_West},
+		354:                                    MoveWallInfo{2.0, DIR_South},
+		256:                                    MoveWallInfo{4.0, DIR_East},
+		257:                                    MoveWallInfo{4.0, DIR_North},
+		258:                                    MoveWallInfo{4.0, DIR_West},
+		259:                                    MoveWallInfo{4.0, DIR_South},
 	}
 )
 
@@ -91,45 +95,63 @@ func (r *RTLMapData) DetermineWallPath(actor *ActorInfo) (WallPathType, *PathNod
 		nodes = append(nodes, &p)
 	}
 	curX, curY := actor.X, actor.Y
+	deltaX, deltaY := 0, 0
 	pathType := PATH_Unknown
 	if moveWallInfo, ok := MoveWallSpriteIDs[actor.SpriteValue]; ok {
 		curDirection := moveWallInfo.InitialDirection
 		for pathType == PATH_Unknown {
 			switch curDirection {
 			case DIR_East:
-				curX++
+				deltaX = 1
+				deltaY = 0
 			case DIR_Northeast:
-				curX++
-				curY--
+				deltaX = 1
+				deltaY = -1
 			case DIR_North:
-				curY--
+				deltaX = 0
+				deltaY = -1
 			case DIR_Northwest:
-				curX--
-				curY--
+				deltaX = -1
+				deltaY = -1
 			case DIR_West:
-				curX--
+				deltaX = -1
+				deltaY = 0
 			case DIR_Southwest:
-				curX--
-				curY++
+				deltaX = -1
+				deltaY = 1
 			case DIR_South:
-				curY++
+				deltaX = 0
+				deltaY = 1
 			case DIR_Southeast:
-				curX++
-				curY++
+				deltaX = 1
+				deltaY = 1
 			default:
 				panic("Unknown direction")
 			}
+			curX += deltaX
+			curY += deltaY
 			if curX > 127 || curX < 0 || curY > 127 || curY < 0 {
 				// I'M FREE!!
 				pathType = PATH_Terminal
 				continue
 			}
+
+			// ran into previous pivot point?
 			markerTag := fmt.Sprintf("%d-%d", curX, curY)
 			if prevNode, ok := markedNodes[markerTag]; ok {
 				nodes[len(nodes)-1].Next = prevNode
 				pathType = PATH_Perpetual
 				continue
 			}
+
+			// ran into static wall?
+			if (r.ActorGrid[curY][curX].Type == WALL_Regular || r.ActorGrid[curY][curX].Type == WALL_AnimatedWall) &&
+				r.ActorGrid[curY][curX].MapFlags&WALLFLAGS_Moving == 0 {
+				addNode(curX-deltaX, curY-deltaY, DIR_Unknown)
+				pathType = PATH_Terminal
+				continue
+			}
+
 			spriteVal := r.ActorGrid[curY][curX].SpriteValue
 			if spriteVal >= 72 && spriteVal <= 79 {
 				switch WallDirection(spriteVal - 72) {
