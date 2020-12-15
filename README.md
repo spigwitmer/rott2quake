@@ -63,21 +63,24 @@ Quake:
 
 ## Supported items
 
-- [x] World structure
-- [x] Masked walls
-- [x] Platforms
-- [x] Trampolines
+- [X] World structure
+- [X] Masked walls
+- [X] Platforms
+- [X] Trampolines
 - [X] Weapon placement
 - [ ] Enemy placement (TODO)
 - [X] Doors
-- [ ] Switchplates (TODO)
+- [ ] Touchplate Triggers
+  - [X] Pushwalls
+  - [ ] Doors
 - [X] Moving Walls
 - [ ] GADs (TODO)
 - [ ] Obstacles
-  - [x] Flamethrowers
-  - [x] Fireball shooters
-  - [x] Rotating Blades
+  - [X] Flamethrowers
+  - [X] Fireball shooters
+  - [X] Rotating Blades
   - [ ] Crushers
+  - [ ] Spikes
 
 
 ## Quirks / Known Issues / Fooken Raws
