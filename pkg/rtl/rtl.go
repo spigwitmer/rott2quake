@@ -543,13 +543,13 @@ func (r *RTLMapData) determineMovingWalls() {
 					infoVal := r.ActorGrid[y][x].InfoValue
 					if infoVal > 0 {
 						// touchplate triggered wall
-						log.Printf("touchplate triggered wall at (%d,%d) has touchplate at (%d,%d)", x, y, touchplateX, touchplateY)
 						touchplateX := int((infoVal >> 8) & 0xff)
 						touchplateY := int(infoVal & 0xff)
 						r.AddTouchplateTrigger(&r.ActorGrid[y][x], touchplateX, touchplateY, TOUCH_WallPush)
+						//log.Printf("touchplate triggered wall at (%d,%d) has touchplate at (%d,%d)", x, y, touchplateX, touchplateY)
 					} else {
 						// pushwall
-						log.Printf("pushwall at (%d,%d)", x, y)
+						//log.Printf("pushwall at (%d,%d)", x, y)
 					}
 				}
 			}

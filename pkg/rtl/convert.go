@@ -357,16 +357,18 @@ func CreateRegularWall(rtlmap *RTLMapData, x, y int, scale float64, qm *quakemap
 		// buttons later
 		return
 	}
+
+	x1 := float64(x) * gridSizeX
+	y1 := float64(y) * -gridSizeY
+	z1 := floorDepth
+	x2 := float64(x+1) * gridSizeX
+	y2 := float64(y+1) * -gridSizeY
+	z2 := floorDepth + float64(rtlmap.FloorHeight())*gridSizeZ
+
 	// plain ol' column
-	wallColumn := quakemap.BasicCuboid(
-		float64(x)*gridSizeX,    // x1
-		float64(y)*-gridSizeY,   // y1
-		floorDepth,              // z1
-		float64(x+1)*gridSizeX,  // x2
-		float64(y+1)*-gridSizeY, // y2
-		floorDepth+float64(rtlmap.FloorHeight())*gridSizeZ, // z2
-		texName,
-		scale, true) // scale
+	wallColumn := quakemap.BasicCuboid(x1, y1, z1,
+		x2, y2, z2,
+		texName, scale, true)
 
 	if actor.MapFlags&WALLFLAGS_Moving != 0 {
 		// implement moving walls as func_trains
@@ -374,7 +376,7 @@ func CreateRegularWall(rtlmap *RTLMapData, x, y int, scale float64, qm *quakemap
 		// TODO: push activated walls
 
 		var lastPathCorner, currentPathCorner *quakemap.Entity
-		pathType, wallPath, numNodes := rtlmap.DetermineWallPath(&actor)
+		pathType, wallPath, numNodes := rtlmap.DetermineWallPath(&actor, (infoVal > 0 || spriteVal < 256))
 		moveWallInfo = MoveWallSpriteIDs[spriteVal]
 		initialCorner = quakemap.NewEntity(0, "path_corner", qm)
 		cornerZ := floorDepth
@@ -413,7 +415,7 @@ func CreateRegularWall(rtlmap *RTLMapData, x, y int, scale float64, qm *quakemap
 
 	// make static walls part of the worldspawn,
 	// everything else a separate entity
-	if spriteVal == 0 && infoVal == 0 {
+	if spriteVal == 0 && infoVal == 0 && !actor.Damage {
 		qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, wallColumn)
 	} else {
 		entity := quakemap.NewEntity(0, entityType, qm)
@@ -425,10 +427,24 @@ func CreateRegularWall(rtlmap *RTLMapData, x, y int, scale float64, qm *quakemap
 			entity.OriginY = initialCorner.OriginY
 			entity.OriginZ = initialCorner.OriginZ
 			entity.AdditionalKeys["target"] = initialCorner.AdditionalKeys["targetname"]
-			entity.AdditionalKeys["targetname"] = fmt.Sprintf("movewallpath_%d_%d_wall", actor.X, actor.Y)
+			if infoVal > 0 {
+				// only apply targetname if there's a touchplate trigger
+				entity.AdditionalKeys["targetname"] = fmt.Sprintf("movewallpath_%d_%d_wall", actor.X, actor.Y)
+			}
 			entity.AdditionalKeys["speed"] = fmt.Sprintf("%d", moveWallInfo.Speed*64)
 		}
 		qm.Entities = append(qm.Entities, entity)
+
+		if entityType == "func_wall" && actor.Damage {
+			// add trigger_hurt over wall to mimic a damaging wall
+			hurtEntity := quakemap.NewEntity(0, "trigger_hurt", qm)
+			hurtEntity.Brushes = append(hurtEntity.Brushes, quakemap.BasicCuboid(x1, y1, z1,
+				x2, y2, z2,
+				texName, scale, true))
+			hurtEntity.AdditionalKeys["_x"] = fmt.Sprintf("%d", actor.X)
+			hurtEntity.AdditionalKeys["_y"] = fmt.Sprintf("%d", actor.Y)
+			qm.Entities = append(qm.Entities, hurtEntity)
+		}
 	}
 }
 

@@ -2,6 +2,7 @@ package rtl
 
 import (
 	"fmt"
+	"log"
 )
 
 type WallPathType int
@@ -82,13 +83,10 @@ type PathNode struct {
 	Next      *PathNode
 }
 
-func (r *RTLMapData) DetermineWallPath(actor *ActorInfo) (WallPathType, *PathNode, int) {
+func (r *RTLMapData) DetermineWallPath(actor *ActorInfo, pushWall bool) (WallPathType, *PathNode, int) {
 	var nodes []*PathNode
 	markedNodes := make(map[string]*PathNode)
 
-	/*if actor.Type != WALL_Regular && actor.Type != WALL_AnimatedWall {
-		return PATH_Unknown, nil, 0
-	}*/
 	addNode := func(X int, Y int, direction WallDirection) {
 		p := PathNode{X: X, Y: Y, Direction: direction, Next: nil}
 		markerTag := fmt.Sprintf("%d-%d", X, Y)
@@ -101,34 +99,39 @@ func (r *RTLMapData) DetermineWallPath(actor *ActorInfo) (WallPathType, *PathNod
 	curX, curY := actor.X, actor.Y
 	deltaX, deltaY := 0, 0
 	pathType := PATH_Unknown
+	delta := 1
+	if pushWall {
+		delta = 2
+	}
 	if moveWallInfo, ok := MoveWallSpriteIDs[actor.SpriteValue]; ok {
 		curDirection := moveWallInfo.InitialDirection
 		for pathType == PATH_Unknown {
+			//log.Printf("PATH (%d,%d): (%d,%d)", actor.X, actor.Y, curX, curY)
 			switch curDirection {
 			case DIR_East:
-				deltaX = 1
+				deltaX = delta
 				deltaY = 0
 			case DIR_Northeast:
-				deltaX = 1
-				deltaY = -1
+				deltaX = delta
+				deltaY = -delta
 			case DIR_North:
 				deltaX = 0
-				deltaY = -1
+				deltaY = -delta
 			case DIR_Northwest:
-				deltaX = -1
-				deltaY = -1
+				deltaX = -delta
+				deltaY = -delta
 			case DIR_West:
-				deltaX = -1
+				deltaX = -delta
 				deltaY = 0
 			case DIR_Southwest:
-				deltaX = -1
-				deltaY = 1
+				deltaX = -delta
+				deltaY = delta
 			case DIR_South:
 				deltaX = 0
-				deltaY = 1
+				deltaY = delta
 			case DIR_Southeast:
-				deltaX = 1
-				deltaY = 1
+				deltaX = delta
+				deltaY = delta
 			default:
 				panic("Unknown direction")
 			}
@@ -137,6 +140,8 @@ func (r *RTLMapData) DetermineWallPath(actor *ActorInfo) (WallPathType, *PathNod
 			if curX > 127 || curX < 0 || curY > 127 || curY < 0 {
 				// I'M FREE!!
 				pathType = PATH_Terminal
+				addNode(curX, curY, DIR_Unknown)
+				log.Printf("wall starting at (%d,%d) IS FREE!! (%d,%d)", actor.X, actor.Y, curX, curY)
 				continue
 			}
 
@@ -145,14 +150,6 @@ func (r *RTLMapData) DetermineWallPath(actor *ActorInfo) (WallPathType, *PathNod
 			if prevNode, ok := markedNodes[markerTag]; ok {
 				nodes[len(nodes)-1].Next = prevNode
 				pathType = PATH_Perpetual
-				continue
-			}
-
-			// ran into static wall?
-			if (r.ActorGrid[curY][curX].Type == WALL_Regular || r.ActorGrid[curY][curX].Type == WALL_AnimatedWall) &&
-				r.ActorGrid[curY][curX].MapFlags&WALLFLAGS_Moving == 0 {
-				addNode(curX-deltaX, curY-deltaY, DIR_Unknown)
-				pathType = PATH_Terminal
 				continue
 			}
 
@@ -166,6 +163,10 @@ func (r *RTLMapData) DetermineWallPath(actor *ActorInfo) (WallPathType, *PathNod
 				default:
 					panic(fmt.Sprintf("weird direction: %d", spriteVal-72))
 				}
+			} else if pushWall {
+				addNode(curX, curY, DIR_Unknown)
+				pathType = PATH_Terminal
+				continue
 			}
 		}
 	}
