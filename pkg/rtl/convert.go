@@ -607,13 +607,19 @@ func CreateDoorEntities(rtlmap *RTLMapData, scale float64, dusk bool, qm *quakem
 	}
 	keyMap := make(map[DoorLock]string)
 
+	var timedTriggerEntity *quakemap.Entity
+
 	for doornum, door := range rtlmap.GetDoors() {
 		doorEntity := quakemap.NewEntity(0, "func_door", qm)
+		timeBeforeOpen := 0
 		for _, doorTile := range door.Tiles {
 			if doorTile.Type != WALL_Door {
 				panic(fmt.Sprintf("(%d,%d) not WALL_Door type!", doorTile.X, doorTile.Y))
 			}
 			texInfo := GetDoorTextures(doorTile.Tile)
+			if doorTile.InfoValue > 0 {
+				timeBeforeOpen = int(doorTile.InfoValue>>8) * 60
+			}
 			var x1, y1, x2, y2, abovex1, abovey1, abovex2, abovey2 float64
 			var z1 float64 = floorDepth
 			var z2 float64 = floorDepth + gridSizeZ
@@ -708,6 +714,34 @@ func CreateDoorEntities(rtlmap *RTLMapData, scale float64, dusk bool, qm *quakem
 			doorEntity.AdditionalKeys["angle"] = "-1"
 		}
 		doorEntity.AdditionalKeys["speed"] = "290"
+
+		if timeBeforeOpen > 0 {
+			// timed door, only open after a delayed trigger
+			entityName := fmt.Sprintf("door_%d_%d", door.Tiles[0].X, door.Tiles[0].Y)
+			doorEntity.AdditionalKeys["targetname"] = entityName
+			doorEntity.AdditionalKeys["wait"] = "-1"
+			triggerEntity := quakemap.NewEntity(0, "trigger_relay", qm)
+			triggerEntity.AdditionalKeys["target"] = entityName
+			triggerEntity.AdditionalKeys["targetname"] = "timed_delay_trigger"
+			triggerEntity.AdditionalKeys["delay"] = fmt.Sprintf("%d", timeBeforeOpen)
+			triggerEntity.AdditionalKeys["message"] = "Time-delay door opens."
+			triggerEntity.OriginX = float64(door.Tiles[0].X)*gridSizeX + (gridSizeX / 2)
+			triggerEntity.OriginY = float64(door.Tiles[0].Y)*-gridSizeY - (gridSizeY / 2.0)
+			triggerEntity.OriginZ = floorDepth + (gridSizeZ / 2)
+			qm.Entities = append(qm.Entities, triggerEntity)
+
+			if timedTriggerEntity == nil {
+				timedTriggerEntity := quakemap.NewEntity(0, "trigger_once", qm)
+				timedTriggerEntity.AdditionalKeys["target"] = "timed_delay_trigger"
+				timedTriggerEntity.Brushes = append(timedTriggerEntity.Brushes, quakemap.BasicCuboid(
+					float64(rtlmap.SpawnX)*gridSizeX, float64(rtlmap.SpawnY)*-gridSizeY, floorDepth,
+					float64(rtlmap.SpawnX+1)*gridSizeX, float64(rtlmap.SpawnY+1)*-gridSizeY, floorDepth+gridSizeZ,
+					"__TB_empty", scale, false,
+				))
+				qm.Entities = append(qm.Entities, timedTriggerEntity)
+			}
+		}
+
 		qm.Entities = append(qm.Entities, doorEntity)
 	}
 }
