@@ -509,6 +509,10 @@ func (r *RTLMapData) renderWallGrid() {
 			} else if tileId > 89 || (tileId > 32 && tileId < 36) || tileId == 0 {
 				r.ActorGrid[y][x].Tile = 0
 				r.ActorGrid[y][x].Type = ACTOR_None
+			} else if tileId > 0 && tileId <= 89 {
+				r.ActorGrid[y][x].Tile = tileId
+				r.ActorGrid[y][x].MapFlags |= WALLFLAGS_Static
+				r.ActorGrid[y][x].Type = WALL_Regular
 			}
 
 			if r.ActorGrid[y][x].Tile > 1024 {
