@@ -23,6 +23,9 @@ var (
 )
 
 func ClassNameForMaskedWall(w *MaskedWallInfo, position string) string {
+	if w.IsSwitch && position == "above" {
+		return "func_button"
+	}
 	passable := false  // can we walk through without any other action?
 	shootable := false // can we pass through it after we shoot it?
 	if position == "above" && w.Flags&MWF_AbovePassable > 0 {
@@ -296,13 +299,47 @@ func CreateThinWall(rtlmap *RTLMapData, x, y int, scale float64, qm *quakemap.Qu
 	}
 }
 
+func CreateTrigger(rtlmap *RTLMapData, actor *ActorInfo, scale float64, qm *quakemap.QuakeMap) {
+	switch actor.Type {
+	case WALL_MaskedWall:
+		// rendered in CreateMaskedWall
+	case WALL_Regular:
+		CreateWallSwitchTrigger(rtlmap, actor, scale, qm)
+	default:
+		CreateTouchplate(rtlmap, actor, scale, qm)
+	}
+}
+
+func CreateWallSwitchTrigger(rtlmap *RTLMapData, actor *ActorInfo, scale float64, qm *quakemap.QuakeMap) {
+	var gridSizeX float64 = 64.0 * scale
+	var gridSizeY float64 = 64.0 * scale
+	var gridSizeZ float64 = 64.0 * scale
+	var floorDepth float64 = 64.0 * scale
+
+	x1 := float64(actor.X) * gridSizeX
+	y1 := float64(actor.Y) * -gridSizeY
+	z1 := floorDepth
+	x2 := float64(actor.X+1) * gridSizeX
+	y2 := float64(actor.Y+1) * -gridSizeY
+	z2 := floorDepth + float64(rtlmap.FloorHeight())*gridSizeZ
+
+	// build column that overlaps the wall
+	wallColumnBrush := quakemap.BasicCuboid(x1, y1, z1,
+		x2, y2, z2,
+		"__TB_empty", scale, true)
+	triggerEntity := quakemap.NewEntity(0, "trigger_multiple", qm)
+	triggerEntity.AdditionalKeys["target"] = fmt.Sprintf("trigger_%d_%d_relay", actor.X, actor.Y)
+	triggerEntity.Brushes = append(triggerEntity.Brushes, wallColumnBrush)
+	qm.Entities = append(qm.Entities, triggerEntity)
+}
+
 func CreateTouchplate(rtlmap *RTLMapData, actor *ActorInfo, scale float64, qm *quakemap.QuakeMap) {
 	var gridSizeX float64 = 64.0 * scale
 	var gridSizeY float64 = 64.0 * scale
 	var gridSizeZ float64 = 64.0 * scale
 	var floorDepth float64 = 64.0 * scale
 
-	relayTargetName := fmt.Sprintf("touchplate_%d_%d_relay", actor.X, actor.Y)
+	relayTargetName := fmt.Sprintf("trigger_%d_%d_relay", actor.X, actor.Y)
 
 	triggerEntity := quakemap.NewEntity(0, "trigger_once", qm)
 	triggerEntity.AdditionalKeys["target"] = relayTargetName
@@ -312,29 +349,6 @@ func CreateTouchplate(rtlmap *RTLMapData, actor *ActorInfo, scale float64, qm *q
 			float64(actor.X+1)*gridSizeX, float64(actor.Y+1)*-gridSizeY, floorDepth+gridSizeZ,
 			"__TB_empty", scale, false))
 	qm.Entities = append(qm.Entities, triggerEntity)
-
-	// place relays above the trigger zone on top of one another
-	relayOriginX := (float64(actor.X) + 0.5) * gridSizeX
-	relayOriginY := (float64(actor.Y) + 0.5) * -gridSizeY
-	relayOriginZbase := floorDepth + (gridSizeZ * 1.5)
-	for i, triggerInfo := range actor.TouchplateTriggers {
-		var relayTarget string
-
-		relayEntity := quakemap.NewEntity(0, "trigger_relay", qm)
-		relayEntity.OriginX = relayOriginX
-		relayEntity.OriginY = relayOriginY
-		relayEntity.OriginZ = relayOriginZbase + (float64(i)*0.5)*gridSizeZ
-		relayEntity.AdditionalKeys["targetname"] = relayTargetName
-		switch triggerInfo.Action {
-		case TOUCH_WallPush:
-			relayTarget = fmt.Sprintf("movewallpath_%d_%d_wall", triggerInfo.Actor.X, triggerInfo.Actor.Y)
-		default:
-			log.Panicf("Unknown trigger target type at (%d,%d)", triggerInfo.Actor.X, triggerInfo.Actor.Y)
-		}
-
-		relayEntity.AdditionalKeys["target"] = relayTarget
-		qm.Entities = append(qm.Entities, relayEntity)
-	}
 }
 
 func CreateRegularWall(rtlmap *RTLMapData, x, y int, scale float64, qm *quakemap.QuakeMap) {
@@ -427,9 +441,23 @@ func CreateRegularWall(rtlmap *RTLMapData, x, y int, scale float64, qm *quakemap
 			entity.OriginY = initialCorner.OriginY
 			entity.OriginZ = initialCorner.OriginZ
 			entity.AdditionalKeys["target"] = initialCorner.AdditionalKeys["targetname"]
+
+			wallTargetName := fmt.Sprintf("movewallpath_%d_%d_wall", actor.X, actor.Y)
+
 			if infoVal > 0 {
-				// apply targetname to match touchplate trigger
-				entity.AdditionalKeys["targetname"] = fmt.Sprintf("movewallpath_%d_%d_wall", actor.X, actor.Y)
+				entity.AdditionalKeys["targetname"] = wallTargetName
+
+				triggerX := int(infoVal>>8) & 0xff
+				triggerY := int(infoVal) & 0xff
+
+				// create trigger_relay to match the touchplate/switch
+				relayEntity := quakemap.NewEntity(0, "trigger_relay", qm)
+				relayEntity.OriginX = (float64(actor.X) + 0.5) * gridSizeX
+				relayEntity.OriginY = (float64(actor.Y) + 0.5) * -gridSizeY
+				relayEntity.OriginZ = floorDepth + (float64(rtlmap.FloorHeight()+1))*gridSizeZ
+				relayEntity.AdditionalKeys["targetname"] = fmt.Sprintf("trigger_%d_%d_relay", triggerX, triggerY)
+				relayEntity.AdditionalKeys["target"] = wallTargetName
+				qm.Entities = append(qm.Entities, relayEntity)
 			} else if spriteVal < 256 {
 				// add pushwall trigger_once entity within the wall
 				pushWallTriggerEntity := quakemap.NewEntity(0, "trigger_once", qm)
@@ -438,7 +466,7 @@ func CreateRegularWall(rtlmap *RTLMapData, x, y int, scale float64, qm *quakemap
 				pushWallTriggerEntity.AdditionalKeys["_x"] = fmt.Sprintf("%d", actor.X)
 				pushWallTriggerEntity.AdditionalKeys["_y"] = fmt.Sprintf("%d", actor.Y)
 				pushWallTriggerEntity.AdditionalKeys["message"] = "Push Wall Activated."
-				pushWallTriggerEntity.AdditionalKeys["target"] = fmt.Sprintf("movewallpath_%d_%d_wall", actor.X, actor.Y)
+				pushWallTriggerEntity.AdditionalKeys["target"] = wallTargetName
 				pushWallTriggerEntity.AdditionalKeys["targetname"] = fmt.Sprintf("movewallpath_%d_%d_push", actor.X, actor.Y)
 				qm.Entities = append(qm.Entities, pushWallTriggerEntity)
 				entity.AdditionalKeys["targetname"] = fmt.Sprintf("movewallpath_%d_%d_wall", actor.X, actor.Y)
@@ -556,6 +584,10 @@ func CreateMaskedWall(rtlmap *RTLMapData, x, y int, scale float64, qm *quakemap.
 				scale, false)
 			aboveEntity := quakemap.NewEntity(0, aboveClassName, qm)
 			aboveEntity.Brushes = append(aboveEntity.Brushes, aboveColumn)
+			if maskedWallInfo.IsSwitch {
+				aboveEntity.AdditionalKeys["target"] = fmt.Sprintf("trigger_%d_%d", wallInfo.X, wallInfo.Y)
+				aboveEntity.AdditionalKeys["lip"] = fmt.Sprintf("%.02f", 64.0*scale)
+			}
 			qm.Entities = append(qm.Entities, aboveEntity)
 		}
 
@@ -833,9 +865,9 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 				}
 			}
 
-			if len(wallInfo.TouchplateTriggers) > 0 {
-				log.Printf("Creating touchplate at (%d,%d)", wallInfo.X, wallInfo.Y)
-				CreateTouchplate(rtlmap, &wallInfo, scale, qm)
+			if len(wallInfo.MapTriggers) > 0 {
+				log.Printf("Creating triggers at (%d,%d)", wallInfo.X, wallInfo.Y)
+				CreateTrigger(rtlmap, &wallInfo, scale, qm)
 			}
 
 		}

@@ -69,23 +69,23 @@ const (
 )
 
 type ActorInfo struct {
-	X                  int
-	Y                  int
-	WallValue          uint16
-	SpriteValue        uint16
-	InfoValue          uint16
-	Tile               uint16 // matches up to lump name (WALL1, WALL2, etc.)
-	Type               ActorType
-	MapFlags           uint32
-	Damage             bool
-	AnimWallID         int // see anim.go
-	MaskedWallID       int // see maskedwall.go
-	PlatformID         int // see maskedwall.go
-	AreaID             int // see area.go
-	ThinWallDirection  WallDirection
-	Item               *ItemInfo
-	HeightOffset       int
-	TouchplateTriggers []TouchplateTrigger
+	X                 int
+	Y                 int
+	WallValue         uint16
+	SpriteValue       uint16
+	InfoValue         uint16
+	Tile              uint16 // matches up to lump name (WALL1, WALL2, etc.)
+	Type              ActorType
+	MapFlags          uint32
+	Damage            bool
+	AnimWallID        int // see anim.go
+	MaskedWallID      int // see maskedwall.go
+	PlatformID        int // see maskedwall.go
+	AreaID            int // see area.go
+	ThinWallDirection WallDirection
+	Item              *ItemInfo
+	HeightOffset      int
+	MapTriggers       []MapTrigger
 }
 
 type DoorInfo struct {
@@ -549,7 +549,7 @@ func (r *RTLMapData) determineMovingWalls() {
 						// touchplate triggered wall
 						touchplateX := int((infoVal >> 8) & 0xff)
 						touchplateY := int(infoVal & 0xff)
-						r.AddTouchplateTrigger(&r.ActorGrid[y][x], touchplateX, touchplateY, TOUCH_WallPush)
+						r.AddTrigger(&r.ActorGrid[y][x], touchplateX, touchplateY, TRIGGER_WallPush)
 						//log.Printf("touchplate triggered wall at (%d,%d) has touchplate at (%d,%d)", x, y, touchplateX, touchplateY)
 					} else {
 						// pushwall
