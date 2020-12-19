@@ -129,9 +129,9 @@ func LinkElevators(rtlmap *RTLMapData, textureWad string,
 			floor1ButtonX2 = floor1ButtonX1 + gridSizeX
 			if elev1.Switch.Y > elev1.Floor.Y {
 				floor1ButtonY1 -= gridSizeY
-				button1Angle = "270"
-			} else {
 				button1Angle = "90"
+			} else {
+				button1Angle = "270"
 			}
 			floor1ButtonY2 = floor1ButtonY1 - 1
 		}
@@ -152,9 +152,9 @@ func LinkElevators(rtlmap *RTLMapData, textureWad string,
 			floor2ButtonX2 = floor2ButtonX1 + gridSizeX
 			if elev2.Switch.Y > elev2.Floor.Y {
 				floor2ButtonY1 -= gridSizeY
-				button2Angle = "270"
-			} else {
 				button2Angle = "90"
+			} else {
+				button2Angle = "270"
 			}
 			floor2ButtonY2 = floor2ButtonY1 - 1
 		}
@@ -182,7 +182,7 @@ func LinkElevators(rtlmap *RTLMapData, textureWad string,
 		floor1DestEntity := quakemap.NewEntity(0, "info_teleport_destination", qm)
 		floor1DestEntity.OriginX = float64(elev2.Floor.X)*gridSizeX + (gridSizeX / 2)
 		floor1DestEntity.OriginY = float64(elev2.Floor.Y)*-gridSizeY - (gridSizeY / 2)
-		floor1DestEntity.OriginZ = floorDepth + (gridSizeZ / 2)
+		floor1DestEntity.OriginZ = floorDepth
 		floor1DestEntity.AdditionalKeys["targetname"] = fmt.Sprintf("elev_%d_1", linkCode)
 		floor1DestEntity.AdditionalKeys["angle"] = button2Angle
 		qm.Entities = append(qm.Entities, floor1DestEntity)
@@ -210,7 +210,7 @@ func LinkElevators(rtlmap *RTLMapData, textureWad string,
 		floor2DestEntity := quakemap.NewEntity(0, "info_teleport_destination", qm)
 		floor2DestEntity.OriginX = float64(elev1.Floor.X)*gridSizeX + (gridSizeX / 2)
 		floor2DestEntity.OriginY = float64(elev1.Floor.Y)*-gridSizeY - (gridSizeY / 2)
-		floor2DestEntity.OriginZ = floorDepth + (gridSizeZ / 2)
+		floor2DestEntity.OriginZ = floorDepth
 		floor2DestEntity.AdditionalKeys["targetname"] = fmt.Sprintf("elev_%d_2", linkCode)
 		floor2DestEntity.AdditionalKeys["angle"] = button1Angle
 		qm.Entities = append(qm.Entities, floor2DestEntity)
