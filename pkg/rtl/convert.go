@@ -329,6 +329,7 @@ func CreateWallSwitchTrigger(rtlmap *RTLMapData, actor *ActorInfo, scale float64
 		"__TB_empty", scale, true)
 	triggerEntity := quakemap.NewEntity(0, "trigger_multiple", qm)
 	triggerEntity.AdditionalKeys["target"] = fmt.Sprintf("trigger_%d_%d_relay", actor.X, actor.Y)
+	triggerEntity.AdditionalKeys["message"] = "Switch Triggered."
 	triggerEntity.Brushes = append(triggerEntity.Brushes, wallColumnBrush)
 	qm.Entities = append(qm.Entities, triggerEntity)
 }
