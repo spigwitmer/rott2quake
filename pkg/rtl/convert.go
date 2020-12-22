@@ -600,9 +600,6 @@ func CreateMaskedWall(rtlmap *RTLMapData, x, y int, scale float64, qm *quakemap.
 							xScaleFactor = -1.0
 						}
 					}
-					// XXX
-					log.Printf("(%d,%d) --> (%d,%d): xScaleFactor: %.01f",
-						x, y, adjacentActor.X, adjacentActor.Y, xScaleFactor)
 					return true
 				}
 			}
@@ -616,7 +613,6 @@ func CreateMaskedWall(rtlmap *RTLMapData, x, y int, scale float64, qm *quakemap.
 			y2 = float64(y+1) * -gridSizeY
 
 			if maskedWallInfo.Flags&MWF_Multi != 0 {
-				log.Printf("(%d,%d): is MW_Multi", x, y) // XXX
 				if y > 0 {
 					for ay := y - 1; ay >= 0 && checkAdjacentMultiWall(x, ay, false); ay-- {
 					}
