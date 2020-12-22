@@ -722,6 +722,24 @@ func CreateDoorEntities(rtlmap *RTLMapData, scale float64, dusk bool, qm *quakem
 	for doornum, door := range rtlmap.GetDoors() {
 		doorEntity := quakemap.NewEntity(0, "func_door", qm)
 		timeBeforeOpen := 0
+		flipTextures := false
+		if door.Direction == WALLDIR_NorthSouth {
+			if door.Tiles[0].Y > door.Tiles[len(door.Tiles)-1].Y &&
+				door.Tiles[0].Tile > door.Tiles[len(door.Tiles)-1].Tile {
+				flipTextures = true
+			} else if door.Tiles[0].Y < door.Tiles[len(door.Tiles)-1].Y &&
+				door.Tiles[0].Tile < door.Tiles[len(door.Tiles)-1].Tile {
+				flipTextures = true
+			}
+		} else {
+			if door.Tiles[0].X > door.Tiles[len(door.Tiles)-1].X &&
+				door.Tiles[0].Tile < door.Tiles[len(door.Tiles)-1].Tile {
+				flipTextures = true
+			} else if door.Tiles[0].X < door.Tiles[len(door.Tiles)-1].X &&
+				door.Tiles[0].Tile > door.Tiles[len(door.Tiles)-1].Tile {
+				flipTextures = true
+			}
+		}
 		for _, doorTile := range door.Tiles {
 			if doorTile.Type != WALL_Door {
 				panic(fmt.Sprintf("(%d,%d) not WALL_Door type!", doorTile.X, doorTile.Y))
@@ -754,9 +772,14 @@ func CreateDoorEntities(rtlmap *RTLMapData, scale float64, dusk bool, qm *quakem
 				abovex1 = x1
 				abovex2 = x2
 			}
-			doorBrush := quakemap.BasicCuboid(x1, y1, z1, x2, y2, z2,
-				texInfo.BaseTexture,
-				scale, false)
+			cuboidParams := quakemap.BasicCuboidParams(texInfo.BaseTexture, scale, false)
+			if flipTextures {
+				cuboidParams.North.TexScaleX *= -1.0
+				cuboidParams.South.TexScaleX *= -1.0
+				cuboidParams.East.TexScaleX *= -1.0
+				cuboidParams.West.TexScaleX *= -1.0
+			}
+			doorBrush := quakemap.BuildCuboidBrush(x1, y1, z1, x2, y2, z2, cuboidParams)
 			doorEntity.Brushes = append(doorEntity.Brushes, doorBrush)
 			AddDefaultEntityKeys(doorEntity, &doorTile)
 			aboveBrush := quakemap.BasicCuboid(abovex1, abovey1, z2,
