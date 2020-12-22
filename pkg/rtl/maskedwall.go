@@ -1,10 +1,24 @@
 package rtl
 
-// TODO: platforms
+import (
+	"strings"
+)
+
+type MaskedWallFlags uint16
+
+func (m *MaskedWallFlags) String() string {
+	var flagNames []string
+	for flagVal, flagName := range FlagNames {
+		if *m&flagVal != 0 {
+			flagNames = append(flagNames, flagName)
+		}
+	}
+	return strings.Join(flagNames, "|")
+}
 
 type MaskedWallInfo struct {
 	// wall properties
-	Flags uint16
+	Flags MaskedWallFlags
 	// lump names for each wall component
 	Side, Middle, Above, Bottom string
 	// is it a switch?
@@ -12,7 +26,7 @@ type MaskedWallInfo struct {
 }
 
 const (
-	MWF_Shootable = uint16(1) << iota
+	MWF_Shootable MaskedWallFlags = MaskedWallFlags(1) << iota
 	MWF_Blocking
 	MWF_Multi
 	MWF_BlockingChanges
@@ -26,6 +40,22 @@ const (
 	MWF_BottomFlipping
 	MWF_TopFlipping
 )
+
+var FlagNames = map[MaskedWallFlags]string{
+	MWF_Shootable:       "MWF_Shootable",
+	MWF_Blocking:        "MWF_Blocking",
+	MWF_Multi:           "MWF_Multi",
+	MWF_BlockingChanges: "MWF_BlockingChanges",
+	MWF_AbovePassable:   "MWF_AbovePassable",
+	MWF_NonDogBlocking:  "MWF_NonDogBlocking",
+	MWF_WeaponBlocking:  "MWF_WeaponBlocking",
+	MWF_BottomPassable:  "MWF_BottomPassable",
+	MWF_MiddlePassable:  "MWF_MiddlePassable",
+	MWF_ABP:             "MWF_ABP",
+	MWF_SwitchOn:        "MWF_SwitchOn",
+	MWF_BottomFlipping:  "MWF_BottomFlipping",
+	MWF_TopFlipping:     "MWF_TopFlipping",
+}
 
 const (
 	MW_HiSwitchOff         = uint16(157)

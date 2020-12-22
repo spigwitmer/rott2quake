@@ -49,6 +49,19 @@ func ClassNameForMaskedWall(w *MaskedWallInfo, position string) string {
 	return "func_detail"
 }
 
+func AddDefaultEntityKeys(entity *quakemap.Entity, actor *ActorInfo) {
+	entity.AdditionalKeys["_r2q_x"] = fmt.Sprintf("%d", actor.X)
+	entity.AdditionalKeys["_r2q_y"] = fmt.Sprintf("%d", actor.Y)
+	entity.AdditionalKeys["_r2q_wallval"] = fmt.Sprintf("%d", actor.WallValue)
+	entity.AdditionalKeys["_r2q_spriteval"] = fmt.Sprintf("%d", actor.SpriteValue)
+	entity.AdditionalKeys["_r2q_infoval"] = fmt.Sprintf("%d", actor.InfoValue)
+	entity.AdditionalKeys["_r2q_tile"] = fmt.Sprintf("%d", actor.Tile)
+	if actor.Type == WALL_MaskedWall {
+		maskedWallInfo := MaskedWalls[actor.Tile]
+		entity.AdditionalKeys["_r2q_mw_flags"] = maskedWallInfo.Flags.String()
+	}
+}
+
 type ElevatorNode struct {
 	Switch ActorInfo
 	Floor  ActorInfo
@@ -168,6 +181,7 @@ func LinkElevators(rtlmap *RTLMapData, textureWad string,
 			floor1ButtonX2, floor1ButtonY2, float64(rtlmap.FloorHeight()+1)*gridSizeZ,
 			"ELEV5", scale, false)
 		floor1Entity.Brushes = append(floor1Entity.Brushes, floor1Brush)
+		AddDefaultEntityKeys(floor1Entity, &elev1.Switch)
 		qm.Entities = append(qm.Entities, floor1Entity)
 
 		floor1TriggerEntity := quakemap.NewEntity(0, "trigger_teleport", qm)
@@ -196,6 +210,7 @@ func LinkElevators(rtlmap *RTLMapData, textureWad string,
 			floor2ButtonX2, floor2ButtonY2, float64(rtlmap.FloorHeight()+1)*gridSizeZ,
 			"ELEV5", scale, false)
 		floor2Entity.Brushes = append(floor2Entity.Brushes, floor2Brush)
+		AddDefaultEntityKeys(floor2Entity, &elev2.Switch)
 		qm.Entities = append(qm.Entities, floor2Entity)
 
 		floor2TriggerEntity := quakemap.NewEntity(0, "trigger_teleport", qm)
@@ -331,6 +346,7 @@ func CreateWallSwitchTrigger(rtlmap *RTLMapData, actor *ActorInfo, scale float64
 	triggerEntity.AdditionalKeys["target"] = fmt.Sprintf("trigger_%d_%d_relay", actor.X, actor.Y)
 	triggerEntity.AdditionalKeys["message"] = "Switch Triggered."
 	triggerEntity.Brushes = append(triggerEntity.Brushes, wallColumnBrush)
+	AddDefaultEntityKeys(triggerEntity, actor)
 	qm.Entities = append(qm.Entities, triggerEntity)
 }
 
@@ -349,6 +365,7 @@ func CreateTouchplate(rtlmap *RTLMapData, actor *ActorInfo, scale float64, qm *q
 		quakemap.BasicCuboid(float64(actor.X)*gridSizeX, float64(actor.Y)*-gridSizeY, floorDepth,
 			float64(actor.X+1)*gridSizeX, float64(actor.Y+1)*-gridSizeY, floorDepth+gridSizeZ,
 			"__TB_empty", scale, false))
+	AddDefaultEntityKeys(triggerEntity, actor)
 	qm.Entities = append(qm.Entities, triggerEntity)
 }
 
@@ -383,7 +400,7 @@ func CreateRegularWall(rtlmap *RTLMapData, x, y int, scale float64, qm *quakemap
 	// plain ol' column
 	wallColumn := quakemap.BasicCuboid(x1, y1, z1,
 		x2, y2, z2,
-		texName, scale, true)
+		texName, scale, false)
 
 	if actor.MapFlags&WALLFLAGS_Moving != 0 {
 		// implement moving walls as func_trains
@@ -437,6 +454,7 @@ func CreateRegularWall(rtlmap *RTLMapData, x, y int, scale float64, qm *quakemap
 		entity.Brushes = []quakemap.Brush{wallColumn}
 		entity.AdditionalKeys["_x"] = fmt.Sprintf("%d", actor.X)
 		entity.AdditionalKeys["_y"] = fmt.Sprintf("%d", actor.Y)
+		AddDefaultEntityKeys(entity, &actor)
 		if initialCorner != nil {
 			entity.OriginX = initialCorner.OriginX
 			entity.OriginY = initialCorner.OriginY
@@ -484,6 +502,7 @@ func CreateRegularWall(rtlmap *RTLMapData, x, y int, scale float64, qm *quakemap
 				texName, scale, true))
 			hurtEntity.AdditionalKeys["_x"] = fmt.Sprintf("%d", actor.X)
 			hurtEntity.AdditionalKeys["_y"] = fmt.Sprintf("%d", actor.Y)
+			AddDefaultEntityKeys(hurtEntity, &actor)
 			qm.Entities = append(qm.Entities, hurtEntity)
 		}
 	}
@@ -563,16 +582,66 @@ func CreateMaskedWall(rtlmap *RTLMapData, x, y int, scale float64, qm *quakemap.
 		wallDirection, _, _ := rtlmap.ThinWallDirection(x, y)
 		var x1, y1, x2, y2 float64
 
+		xScaleFactor := 1.0
+
+		// see if it's part of a MW_Multi masked wall setup and
+		// needs to be flipped around
+		checkAdjacentMultiWall := func(ax, ay int, checkGreater bool) bool {
+			adjacentActor := rtlmap.ActorGrid[ay][ax]
+			if adjacentActor.Type == WALL_MaskedWall {
+				adjacentWallInfo := MaskedWalls[adjacentActor.Tile]
+				if adjacentWallInfo.Flags&MWF_Multi != 0 {
+					if checkGreater {
+						if adjacentActor.Tile > wallInfo.Tile {
+							xScaleFactor = -1.0
+						}
+					} else {
+						if adjacentActor.Tile < wallInfo.Tile {
+							xScaleFactor = -1.0
+						}
+					}
+					// XXX
+					log.Printf("(%d,%d) --> (%d,%d): xScaleFactor: %.01f",
+						x, y, adjacentActor.X, adjacentActor.Y, xScaleFactor)
+					return true
+				}
+			}
+			return false
+		}
+
 		if wallDirection == WALLDIR_NorthSouth {
 			x1 = float64(x)*gridSizeX + (gridSizeX / 2)
 			x2 = float64(x)*gridSizeX + (gridSizeX / 2) + 1
 			y1 = float64(y) * -gridSizeY
 			y2 = float64(y+1) * -gridSizeY
+
+			if maskedWallInfo.Flags&MWF_Multi != 0 {
+				log.Printf("(%d,%d): is MW_Multi", x, y) // XXX
+				if y > 0 {
+					for ay := y - 1; ay >= 0 && checkAdjacentMultiWall(x, ay, false); ay-- {
+					}
+				}
+				if y < 127 {
+					for ay := y + 1; ay <= 127 && checkAdjacentMultiWall(x, ay, true); ay++ {
+					}
+				}
+			}
 		} else {
 			x1 = float64(x) * gridSizeX
 			x2 = float64(x+1) * gridSizeX
 			y1 = float64(y)*-gridSizeY - (gridSizeY / 2.0)
 			y2 = float64(y)*-gridSizeY - (gridSizeY / 2.0) + 1
+
+			if maskedWallInfo.Flags&MWF_Multi != 0 {
+				if x > 0 {
+					for ax := x - 1; ax >= 0 && checkAdjacentMultiWall(ax, y, true); ax-- {
+					}
+				}
+				if x < 127 {
+					for ax := x + 1; ax <= 127 && checkAdjacentMultiWall(ax, y, false); ax++ {
+					}
+				}
+			}
 		}
 
 		// above as separate entity
@@ -580,15 +649,19 @@ func CreateMaskedWall(rtlmap *RTLMapData, x, y int, scale float64, qm *quakemap.
 			var abovez1 float64 = floorDepth + float64(rtlmap.FloorHeight()-1)*gridSizeZ
 			var abovez2 float64 = floorDepth + float64(rtlmap.FloorHeight())*gridSizeZ
 			aboveClassName := ClassNameForMaskedWall(&maskedWallInfo, "above")
-			aboveColumn := quakemap.BasicCuboid(x1, y1, abovez1, x2, y2, abovez2,
-				"{"+maskedWallInfo.Above,
-				scale, false)
+			cuboidParams := quakemap.BasicCuboidParams("{"+maskedWallInfo.Above, scale, false)
+			cuboidParams.North.TexScaleX *= xScaleFactor
+			cuboidParams.South.TexScaleX *= xScaleFactor
+			cuboidParams.East.TexScaleX *= xScaleFactor
+			cuboidParams.West.TexScaleX *= xScaleFactor
+			aboveColumn := quakemap.BuildCuboidBrush(x1, y1, abovez1, x2, y2, abovez2, cuboidParams)
 			aboveEntity := quakemap.NewEntity(0, aboveClassName, qm)
 			aboveEntity.Brushes = append(aboveEntity.Brushes, aboveColumn)
 			if maskedWallInfo.IsSwitch {
 				aboveEntity.AdditionalKeys["target"] = fmt.Sprintf("trigger_%d_%d", wallInfo.X, wallInfo.Y)
 				aboveEntity.AdditionalKeys["lip"] = fmt.Sprintf("%.02f", 64.0*scale)
 			}
+			AddDefaultEntityKeys(aboveEntity, &wallInfo)
 			qm.Entities = append(qm.Entities, aboveEntity)
 		}
 
@@ -597,11 +670,15 @@ func CreateMaskedWall(rtlmap *RTLMapData, x, y int, scale float64, qm *quakemap.
 			var middlez1 float64 = floorDepth + gridSizeZ
 			var middlez2 float64 = floorDepth + float64(rtlmap.FloorHeight()-1)*gridSizeZ
 			middleClassName := ClassNameForMaskedWall(&maskedWallInfo, "middle")
-			mwColumn := quakemap.BasicCuboid(x1, y1, middlez1, x2, y2, middlez2,
-				"{"+maskedWallInfo.Middle,
-				scale, false)
+			cuboidParams := quakemap.BasicCuboidParams("{"+maskedWallInfo.Middle, scale, false)
+			cuboidParams.North.TexScaleX *= xScaleFactor
+			cuboidParams.South.TexScaleX *= xScaleFactor
+			cuboidParams.East.TexScaleX *= xScaleFactor
+			cuboidParams.West.TexScaleX *= xScaleFactor
+			mwColumn := quakemap.BuildCuboidBrush(x1, y1, middlez1, x2, y2, middlez2, cuboidParams)
 			middleEntity := quakemap.NewEntity(0, middleClassName, qm)
 			middleEntity.Brushes = append(middleEntity.Brushes, mwColumn)
+			AddDefaultEntityKeys(middleEntity, &wallInfo)
 			qm.Entities = append(qm.Entities, middleEntity)
 		}
 
@@ -611,11 +688,15 @@ func CreateMaskedWall(rtlmap *RTLMapData, x, y int, scale float64, qm *quakemap.
 			var z1 float64 = floorDepth
 			var z2 float64 = floorDepth + gridSizeZ
 			className := ClassNameForMaskedWall(&maskedWallInfo, "bottom")
-			column := quakemap.BasicCuboid(x1, y1, z1, x2, y2, z2,
-				"{"+maskedWallInfo.Bottom,
-				scale, false)
+			cuboidParams := quakemap.BasicCuboidParams("{"+maskedWallInfo.Bottom, scale, false)
+			cuboidParams.North.TexScaleX *= xScaleFactor
+			cuboidParams.South.TexScaleX *= xScaleFactor
+			cuboidParams.East.TexScaleX *= xScaleFactor
+			cuboidParams.West.TexScaleX *= xScaleFactor
+			column := quakemap.BuildCuboidBrush(x1, y1, z1, x2, y2, z2, cuboidParams)
 			bottomEntity := quakemap.NewEntity(0, className, qm)
 			bottomEntity.Brushes = append(bottomEntity.Brushes, column)
+			AddDefaultEntityKeys(bottomEntity, &wallInfo)
 			qm.Entities = append(qm.Entities, bottomEntity)
 		}
 
@@ -681,6 +762,7 @@ func CreateDoorEntities(rtlmap *RTLMapData, scale float64, dusk bool, qm *quakem
 				texInfo.BaseTexture,
 				scale, false)
 			doorEntity.Brushes = append(doorEntity.Brushes, doorBrush)
+			AddDefaultEntityKeys(doorEntity, &doorTile)
 			aboveBrush := quakemap.BasicCuboid(abovex1, abovey1, z2,
 				abovex2, abovey2, floorDepth+float64(rtlmap.FloorHeight())*gridSizeZ,
 				texInfo.AltTexture,
@@ -688,8 +770,8 @@ func CreateDoorEntities(rtlmap *RTLMapData, scale float64, dusk bool, qm *quakem
 			qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, aboveBrush)
 		}
 
-		doorEntity.AdditionalKeys["grid_start_x"] = fmt.Sprintf("%d", door.Tiles[0].X)
-		doorEntity.AdditionalKeys["grid_start_y"] = fmt.Sprintf("%d", door.Tiles[0].Y)
+		doorEntity.AdditionalKeys["_r2q_grid_start_x"] = fmt.Sprintf("%d", door.Tiles[0].X)
+		doorEntity.AdditionalKeys["_r2q_grid_start_y"] = fmt.Sprintf("%d", door.Tiles[0].Y)
 
 		if door.Lock != LOCK_Unlocked && door.Lock != LOCK_Trigger {
 			if dusk {
@@ -727,7 +809,7 @@ func CreateDoorEntities(rtlmap *RTLMapData, scale float64, dusk bool, qm *quakem
 
 		}
 
-		doorEntity.AdditionalKeys["_doornum"] = fmt.Sprintf("%d", doornum)
+		doorEntity.AdditionalKeys["_r2q_doornum"] = fmt.Sprintf("%d", doornum)
 		// move upward when open
 		if door.Tiles[0].Tile == 0x66 { // but move elevator door sideways
 			elevTileX, elevTileY := door.Tiles[0].X, door.Tiles[0].Y
