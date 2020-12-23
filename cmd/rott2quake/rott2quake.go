@@ -50,10 +50,10 @@ func dumpLumpDataToFile(archive lumps.ArchiveReader, entry lumps.ArchiveEntry, d
 	switch dataType {
 	case "wall":
 		// assumes 64x64 (standard mandated by ROTT)
-		_, err = wad.DumpFlatDataToFile(destfhnd, lumpReader, archive, 64, 64)
+		_, err = wad.DumpFlatDataToFile(destfhnd, lumpReader, archive, 64, 64, false)
 	case "sky":
 		// assumes 256x200 (standard mandated by ROTT)
-		_, err = wad.DumpFlatDataToFile(destfhnd, lumpReader, archive, 256, 200)
+		_, err = wad.DumpFlatDataToFile(destfhnd, lumpReader, archive, 256, 200, false)
 	case "midi":
 		_, err = dumpRawLumpDataToFile(destfhnd, lumpReader)
 	case "patch":
@@ -112,7 +112,7 @@ func dumpLumpDataToFile(archive lumps.ArchiveReader, entry lumps.ArchiveEntry, d
 			if err != nil {
 				log.Fatalf("Could not get %s lump data: %v\n", entry.Name(), err)
 			}
-			img, err := wad.GetImageFromFlatData(rawLumpReader, archive, 256, 200)
+			img, err := wad.GetImageFromFlatData(rawLumpReader, archive, 256, 200, false)
 			if err != nil {
 				log.Fatalf("Could not get flat data image: %v\n", err)
 			}
@@ -208,7 +208,7 @@ func dumpLumpDataToFile(archive lumps.ArchiveReader, entry lumps.ArchiveEntry, d
 				if err != nil {
 					log.Fatalf("Could not get %s lump data: %v\n", entry.Name(), err)
 				}
-				img, err := wad.GetImageFromFlatData(rawLumpReader, archive, 64, 64)
+				img, err := wad.GetImageFromFlatData(rawLumpReader, archive, 64, 64, false)
 				if err != nil {
 					log.Fatalf("Could not get wall data image: %v\n", err)
 				}
@@ -223,7 +223,7 @@ func dumpLumpDataToFile(archive lumps.ArchiveReader, entry lumps.ArchiveEntry, d
 				if err != nil {
 					log.Fatalf("Could not get %s lump data: %v\n", entry.Name(), err)
 				}
-				img, err := wad.GetImageFromFlatData(rawLumpReader, archive, 64, 64)
+				img, err := wad.GetImageFromFlatData(rawLumpReader, archive, 64, 64, false)
 				if err != nil {
 					log.Fatalf("Could not get flat data image: %v\n", err)
 				}

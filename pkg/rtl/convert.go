@@ -369,7 +369,41 @@ func CreateTouchplate(rtlmap *RTLMapData, actor *ActorInfo, scale float64, qm *q
 	qm.Entities = append(qm.Entities, triggerEntity)
 }
 
+func CreateExit(rtlmap *RTLMapData, x, y int, scale float64, qm *quakemap.QuakeMap) {
+	var gridSizeX float64 = 64.0 * scale
+	var gridSizeY float64 = 64.0 * scale
+	var gridSizeZ float64 = 64.0 * scale
+	var floorDepth float64 = 64.0 * scale
+
+	x1 := float64(x) * gridSizeX
+	y1 := float64(y) * -gridSizeY
+	x2 := float64(x+1) * gridSizeX
+	y2 := float64(y+1) * -gridSizeY
+
+	gatez1 := floorDepth
+	gatez2 := floorDepth + gridSizeZ
+	wallz1 := gatez2 + 1
+	wallz2 := floorDepth + float64(rtlmap.FloorHeight())*gridSizeZ
+
+	gateColumn := quakemap.BasicCuboid(x1, y1, gatez1,
+		x2, y2, gatez2,
+		"EXIT", scale, false)
+	wallColumn := quakemap.BasicCuboid(x1, y1, wallz1,
+		x2, y2, wallz2,
+		"WALL22", scale, false)
+	qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, gateColumn, wallColumn)
+}
+
 func CreateRegularWall(rtlmap *RTLMapData, x, y int, scale float64, qm *quakemap.QuakeMap) {
+	switch rtlmap.WallPlane[y][x] {
+	case 0x2f:
+		CreateExit(rtlmap, x, y, scale, qm)
+	default:
+		CreateRegularWallSingleTexture(rtlmap, x, y, scale, qm)
+	}
+}
+
+func CreateRegularWallSingleTexture(rtlmap *RTLMapData, x, y int, scale float64, qm *quakemap.QuakeMap) {
 	var gridSizeX float64 = 64.0 * scale
 	var gridSizeY float64 = 64.0 * scale
 	var gridSizeZ float64 = 64.0 * scale

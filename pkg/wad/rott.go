@@ -427,6 +427,7 @@ var TypeOneOffs = map[string][2]string{
 	"HSWITCH6": [2]string{"patch", "masked"},
 	"HSWITCH7": [2]string{"patch", "masked"},
 	"HSWTCH9":  [2]string{"patch", "masked"},
+	"EXIT":     [2]string{"wall", "wall"},
 	"PAL":      [2]string{"raw", "misc"},
 	"LICENSE":  [2]string{"raw", "misc"},
 	"IMFREE":   [2]string{"lbm", "misc"},
