@@ -880,6 +880,29 @@ func CreateDoorEntities(rtlmap *RTLMapData, scale float64, dusk bool, qm *quakem
 	}
 }
 
+func AddExitPoints(rtlmap *RTLMapData, scale float64, dusk bool, qm *quakemap.QuakeMap) {
+	var gridSizeX float64 = 64.0 * scale
+	var gridSizeY float64 = 64.0 * scale
+	var gridSizeZ float64 = 64.0 * scale
+	var floorDepth float64 = 64.0 * scale
+
+	for _, point := range rtlmap.ExitPoints {
+		log.Printf("Adding map%03d exit point at (%d,%d)", point.DestMap, point.X, point.Y)
+		brush := quakemap.BasicCuboid(
+			(float64(point.X)+0.25)*gridSizeX,
+			(float64(point.Y)+0.25)*-gridSizeY,
+			floorDepth,
+			(float64(point.X)+0.75)*gridSizeX,
+			(float64(point.Y)+0.75)*-gridSizeY,
+			floorDepth+gridSizeZ,
+			"__TB_empty", scale, false)
+		entity := quakemap.NewEntity(0, "trigger_changelevel", qm)
+		entity.AdditionalKeys["map"] = fmt.Sprintf("map%03d", point.DestMap)
+		entity.Brushes = append(entity.Brushes, brush)
+		qm.Entities = append(qm.Entities, entity)
+	}
+}
+
 func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale float64, dusk bool) *quakemap.QuakeMap {
 
 	// worldspawn:
@@ -977,6 +1000,7 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 
 	CreateDoorEntities(rtlmap, scale, dusk, qm)
 	LinkElevators(rtlmap, textureWad, floorDepth, gridSizeX, gridSizeY, gridSizeZ, scale, dusk, qm)
+	AddExitPoints(rtlmap, scale, dusk, qm)
 
 	// 2. TODO: clip brushes around floor extending height
 	return qm

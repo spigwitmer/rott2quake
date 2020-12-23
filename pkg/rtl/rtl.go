@@ -95,6 +95,10 @@ type DoorInfo struct {
 	Tiles     []*ActorInfo // tiles making up the door
 }
 
+type ExitPoint struct {
+	X, Y, DestMap int
+}
+
 func (actor *ActorInfo) IsWall() bool {
 	switch actor.Type {
 	case WALL_Regular,
@@ -198,6 +202,7 @@ type RTLMapData struct {
 	InfoPlane   [128][128]uint16
 	ActorGrid   [128][128]ActorInfo
 	Doors       []Door
+	ExitPoints  []ExitPoint
 
 	// derived from wall plane
 	FloorNumber    int // 0xb4 - 0xc3
@@ -344,6 +349,7 @@ func NewRTL(rfile io.ReadSeeker) (*RTL, error) {
 		r.MapData[i].determineMovingWalls()
 		r.MapData[i].renderSpriteGrid()
 		r.MapData[i].determineActorHeights()
+		r.MapData[i].determineExits()
 
 		r.MapData[i].FloorNumber = int(r.MapData[i].WallPlane[0][0])
 		r.MapData[i].CeilingNumber = int(r.MapData[i].WallPlane[0][1])
@@ -556,6 +562,23 @@ func (r *RTLMapData) determineMovingWalls() {
 						//log.Printf("pushwall at (%d,%d)", x, y)
 					}
 				}
+			}
+		}
+	}
+}
+
+func (r *RTLMapData) determineExits() {
+	for y := 0; y < 128; y++ {
+		for x := 0; x < 128; x++ {
+			// rt_ted.c:1531
+			exitMarker := int(r.ActorGrid[y][x].InfoValue >> 8)
+			mapNumber := int(r.ActorGrid[y][x].InfoValue & 0x00ff)
+			if exitMarker == 0xe2 || exitMarker == 0xe4 {
+				r.ExitPoints = append(r.ExitPoints, ExitPoint{
+					X:       x,
+					Y:       y,
+					DestMap: mapNumber + 1,
+				})
 			}
 		}
 	}
