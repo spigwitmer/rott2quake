@@ -221,6 +221,13 @@ func (actor *ActorInfo) WallTileToTextureName(html bool) string {
 		} else {
 			return "+0" + strings.ToLower(animWallInfo.StartingLump)
 		}
+	} else if html && actor.Type == WALL_MaskedWall {
+		maskedWallInfo := MaskedWalls[actor.Tile]
+		if maskedWallInfo.IsSwitch {
+			return maskedWallInfo.Above
+		} else {
+			return maskedWallInfo.Bottom
+		}
 	} else if actor.Type == WALL_Elevator {
 		return fmt.Sprintf("ELEV%d", tileId-71)
 	} else {
@@ -813,6 +820,8 @@ func (r *RTLMapData) DumpMapToHtmlFile(w io.Writer) error {
 				img = "elev/" + img
 			case WALL_Door:
 				img = "doors/" + img
+			case WALL_MaskedWall:
+				img = "masked/" + img
 			}
 			cellData = append(cellData, CellData{
 				Wall:   r.WallPlane[y][x],
