@@ -40,6 +40,39 @@ type RTLMapHeader struct {
 // enemies, etc.
 type ActorType int
 
+func (a *ActorType) String() string {
+	switch *a {
+	case ACTOR_None:
+		return "ACTOR_None"
+	case WALL_Regular:
+		return "WALL_Regular"
+	case WALL_ThinWall:
+		return "WALL_ThinWall"
+	case WALL_Elevator:
+		return "WALL_Elevator"
+	case WALL_AnimatedWall:
+		return "WALL_AnimatedWall"
+	case WALL_MaskedWall:
+		return "WALL_MaskedWall"
+	case WALL_Platform:
+		return "WALL_Platform"
+	case WALL_Window:
+		return "WALL_Window"
+	case WALL_PushWall:
+		return "WALL_PushWall"
+	case WALL_Switch:
+		return "WALL_Switch"
+	case WALL_Door:
+		return "WALL_Door"
+	case SPR_GAD:
+		return "SPR_GAD"
+	case SPR_Static:
+		return "SPR_Static"
+	default:
+		return "unknown"
+	}
+}
+
 const (
 	ACTOR_None ActorType = iota
 	WALL_Regular
@@ -701,6 +734,7 @@ type CellData struct {
 	Wall   uint16
 	Sprite uint16
 	Info   uint16
+	Type   string
 	X      int
 	Y      int
 	Img    string
@@ -712,7 +746,7 @@ type RowData struct {
 func (r *RTLMapData) DumpMapToHtmlFile(w io.Writer) error {
 	tmpl := `
 {{define "mapcell"}}<td class="mapcell" id="cell-{{ .X }}-{{ .Y }}" {{ if ne .Img "" }}style="background: url(imgs/{{ .Img }}.png)"{{end}}>
-<div>(X:{{ .X }},Y:{{ .Y }})</div>
+<div>(X:{{ .X }},Y:{{ .Y }}) {{ .Type }}</div>
 <div>W: {{ printf "%04x" .Wall }}</div>
 <div>S: {{ printf "%04x" .Sprite }}</div>
 <div>I: {{ printf "%04x" .Info }}</div>
@@ -784,6 +818,7 @@ func (r *RTLMapData) DumpMapToHtmlFile(w io.Writer) error {
 				Wall:   r.WallPlane[y][x],
 				Sprite: r.SpritePlane[y][x],
 				Info:   r.InfoPlane[y][x],
+				Type:   wallInfo.Type.String(),
 				X:      x,
 				Y:      y,
 				Img:    img,
