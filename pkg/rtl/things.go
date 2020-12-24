@@ -24,47 +24,47 @@ var Items = map[uint16]ItemInfo{
 
 	// bat
 	0x2e: ItemInfo{
-		0, 0x2e, "", "weapon_sword", nil,
+		0, 0x2e, "weapon_nailgun", "weapon_sword", nil,
 	},
 	// knife
 	0x2f: ItemInfo{
-		0, 0x2f, "", "weapon_crossbow", nil,
+		0, 0x2f, "weapon_nailgun", "weapon_crossbow", nil,
 	},
 	// double-pistol
 	0x30: ItemInfo{
-		0, 0x30, "", "weapon_pistol", nil,
+		0, 0x30, "weapon_supershotgun", "weapon_pistol", nil,
 	},
 	// mp40
 	0x31: ItemInfo{
-		0, 0x31, "", "weapon_mg", nil,
+		0, 0x31, "weapon_nailgun", "weapon_mg", nil,
 	},
 	// bazooka
 	0x32: ItemInfo{
-		0, 0x32, "", "weapon_supershotgun", nil,
+		0, 0x32, "weapon_rocketlauncher", "weapon_supershotgun", nil,
 	},
 	// firebomb
 	0x33: ItemInfo{
-		0, 0x33, "", "weapon_riveter", nil,
+		0, 0x33, "weapon_rocketlauncher", "weapon_riveter", nil,
 	},
 	// heatseaker
 	0x34: ItemInfo{
-		0, 0x34, "", "weapon_rifle", nil,
+		0, 0x34, "weapon_lightning", "weapon_rifle", nil,
 	},
 	// drunk missle
 	0x35: ItemInfo{
-		0, 0x35, "", "weapon_mortar", nil,
+		0, 0x35, "weapon_grenadelauncher", "weapon_mortar", nil,
 	},
 	// flamewall
 	0x36: ItemInfo{
-		0, 0x36, "", "weapon_shotgun", nil,
+		0, 0x36, "weapon_lightning", "weapon_shotgun", nil,
 	},
 	// split missle
 	0x37: ItemInfo{
-		0, 0x37, "", "weapon_supershotgun", nil,
+		0, 0x37, "weapon_supershotgun", "weapon_supershotgun", nil,
 	},
 	// dark staff
 	0x38: ItemInfo{
-		0, 0x38, "", "weapon_riveter", nil,
+		0, 0x38, "weapon_lightning", "weapon_riveter", nil,
 	},
 
 	// powerups
