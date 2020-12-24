@@ -347,7 +347,7 @@ func CreateWallSwitchTrigger(rtlmap *RTLMapData, actor *ActorInfo, scale float64
 		x2, y2, z2,
 		"__TB_empty", scale, true)
 	triggerEntity := quakemap.NewEntity(0, "trigger_multiple", qm)
-	triggerEntity.AdditionalKeys["target"] = fmt.Sprintf("trigger_%d_%d_relay", actor.X, actor.Y)
+	triggerEntity.AdditionalKeys["target"] = fmt.Sprintf("trigger_%d_%d", actor.X, actor.Y)
 	triggerEntity.AdditionalKeys["message"] = "Switch Triggered."
 	triggerEntity.Brushes = append(triggerEntity.Brushes, wallColumnBrush)
 	AddDefaultEntityKeys(triggerEntity, actor)
@@ -360,7 +360,7 @@ func CreateTouchplate(rtlmap *RTLMapData, actor *ActorInfo, scale float64, qm *q
 	var gridSizeZ float64 = 64.0 * scale
 	var floorDepth float64 = 64.0 * scale
 
-	relayTargetName := fmt.Sprintf("trigger_%d_%d_relay", actor.X, actor.Y)
+	relayTargetName := fmt.Sprintf("trigger_%d_%d", actor.X, actor.Y)
 
 	triggerEntity := quakemap.NewEntity(0, "trigger_once", qm)
 	triggerEntity.AdditionalKeys["target"] = relayTargetName
@@ -441,10 +441,6 @@ func CreateRegularWallSingleTexture(rtlmap *RTLMapData, x, y int, scale float64,
 		texName, scale, false)
 
 	if actor.MapFlags&WALLFLAGS_Moving != 0 {
-		// implement moving walls as func_trains
-		// TODO: switchplate activated walls
-		// TODO: push activated walls
-
 		var lastPathCorner, currentPathCorner *quakemap.Entity
 		pathType, wallPath, numNodes := rtlmap.DetermineWallPath(&actor, (infoVal > 0 || spriteVal < 256))
 		moveWallInfo = MoveWallSpriteIDs[spriteVal]
@@ -512,7 +508,7 @@ func CreateRegularWallSingleTexture(rtlmap *RTLMapData, x, y int, scale float64,
 				relayEntity.OriginX = (float64(actor.X) + 0.5) * gridSizeX
 				relayEntity.OriginY = (float64(actor.Y) + 0.5) * -gridSizeY
 				relayEntity.OriginZ = floorDepth + (float64(rtlmap.FloorHeight()+1))*gridSizeZ
-				relayEntity.AdditionalKeys["targetname"] = fmt.Sprintf("trigger_%d_%d_relay", triggerX, triggerY)
+				relayEntity.AdditionalKeys["targetname"] = fmt.Sprintf("trigger_%d_%d", triggerX, triggerY)
 				relayEntity.AdditionalKeys["target"] = wallTargetName
 				qm.Entities = append(qm.Entities, relayEntity)
 			} else if spriteVal < 256 {
@@ -775,12 +771,12 @@ func CreateDoorEntities(rtlmap *RTLMapData, scale float64, dusk bool, qm *quakem
 	var floorDepth float64 = 64.0 * scale
 
 	// determine which keys to use
-	whichKey := 0
+	keyCount := 0
 	availKeys := []string{"item_key1", "item_key2"}
 	if dusk {
 		availKeys = []string{"key_red_key", "key_blue_key", "key_yellow_key"}
 	}
-	keyMap := make(map[DoorLock]string)
+	keyMap := make(map[DoorLock]int)
 
 	var timedTriggerEntity *quakemap.Entity
 
@@ -858,18 +854,18 @@ func CreateDoorEntities(rtlmap *RTLMapData, scale float64, dusk bool, qm *quakem
 		doorEntity.AdditionalKeys["_r2q_grid_start_y"] = fmt.Sprintf("%d", door.Tiles[0].Y)
 
 		if door.Lock != LOCK_Unlocked && door.Lock != LOCK_Trigger {
-			if dusk {
-				doorEntity.AdditionalKeys["key"] = fmt.Sprintf("%d", whichKey+1)
-			} else {
-				doorEntity.AdditionalKeys["spawnflags"] = fmt.Sprintf("%d", whichKey+1)
-			}
-
 			if _, ok := keyMap[door.Lock]; !ok {
 				// place keys on the map
+				keyToUse := keyCount % len(availKeys)
+				log.Printf("Using key entity %s as %s", availKeys[keyToUse], door.Lock.KeyName())
+				if keyCount == len(availKeys) {
+					log.Printf("More than %d keys used, this map may not be playable (or fun)", len(availKeys))
+				}
+
 				for y := 0; y < 128; y++ {
 					for x := 0; x < 128; x++ {
-						if rtlmap.ActorGrid[y][x].Type == ACTOR_None && rtlmap.SpritePlane[y][x] == uint16(door.Lock+0x1c) {
-							entity := quakemap.NewEntity(0, availKeys[whichKey], qm)
+						if rtlmap.ActorGrid[y][x].Type != WALL_Door && rtlmap.SpritePlane[y][x] == uint16(door.Lock+0x1c) {
+							entity := quakemap.NewEntity(0, availKeys[keyToUse], qm)
 							entity.OriginX = float64(x)*gridSizeX + (gridSizeX / 2)
 							entity.OriginY = float64(y)*-gridSizeY - (gridSizeY / 2.0)
 							entity.OriginZ = floorDepth + (gridSizeZ / 2)
@@ -884,13 +880,15 @@ func CreateDoorEntities(rtlmap *RTLMapData, scale float64, dusk bool, qm *quakem
 					}
 				}
 
-				keyMap[door.Lock] = availKeys[whichKey]
-				whichKey = (whichKey + 1) % len(availKeys)
-				if whichKey == 0 {
-					log.Printf("More than %d keys used, this map may not be playable (or fun)", len(availKeys))
-				}
+				keyMap[door.Lock] = keyToUse
+				keyCount += 1
 			}
 
+			if dusk {
+				doorEntity.AdditionalKeys["key"] = fmt.Sprintf("%d", keyMap[door.Lock]+1)
+			} else {
+				doorEntity.SpawnFlags |= (2 - (keyMap[door.Lock])) * 8
+			}
 		}
 
 		doorEntity.AdditionalKeys["_r2q_doornum"] = fmt.Sprintf("%d", doornum)

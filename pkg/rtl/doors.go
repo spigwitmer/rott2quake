@@ -103,7 +103,10 @@ func (r *RTLMapData) GetDoors() []Door {
 				mapTileToDoor[mapKey] = &newDoor
 				directionKnown := false
 
-				// add keys
+				// add keys (sprite val takes precedence)
+				if r.WallPlane[y][x] >= 94 && r.WallPlane[y][x] <= 97 {
+					newDoor.Lock = DoorLock(int(r.WallPlane[y][x] - 93))
+				}
 				if r.SpritePlane[y][x] >= 0x1d && r.SpritePlane[y][x] <= 0x20 {
 					newDoor.Lock = DoorLock(int(r.SpritePlane[y][x] - 0x1c))
 				}
