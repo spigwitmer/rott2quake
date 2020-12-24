@@ -230,6 +230,8 @@ func (actor *ActorInfo) WallTileToTextureName(html bool) string {
 		}
 	} else if actor.Type == WALL_Elevator {
 		return fmt.Sprintf("ELEV%d", tileId-71)
+	} else if html && actor.Type == WALL_Platform {
+		return "HSWITCH8"
 	} else {
 		return ""
 	}
@@ -547,11 +549,13 @@ func (r *RTLMapData) renderWallGrid() {
 			} else if _, ismasked := MaskedWalls[tileId]; ismasked {
 				r.ActorGrid[y][x].Tile = tileId
 				r.ActorGrid[y][x].Type = WALL_MaskedWall
-			} else if (tileId == 0 || (tileId >= AreaTileMin && tileId <= (AreaTileMin+NumAreas))) && infoVal > 0 {
+			} else if tileId == 0 || (tileId >= AreaTileMin && tileId <= (AreaTileMin+NumAreas)) {
 				// platform
-				r.ActorGrid[y][x].Type = WALL_Platform
-				r.ActorGrid[y][x].PlatformID = int(infoVal)
-				r.ActorGrid[y][x].Tile = tileId
+				if infoVal == 1 || (infoVal >= 4 && infoVal <= 9) {
+					r.ActorGrid[y][x].Type = WALL_Platform
+					r.ActorGrid[y][x].PlatformID = int(infoVal)
+					r.ActorGrid[y][x].Tile = tileId
+				}
 			} else if tileId > 89 || (tileId > 32 && tileId < 36) || tileId == 0 {
 				r.ActorGrid[y][x].Tile = 0
 				r.ActorGrid[y][x].Type = ACTOR_None
@@ -820,7 +824,7 @@ func (r *RTLMapData) DumpMapToHtmlFile(w io.Writer) error {
 				img = "elev/" + img
 			case WALL_Door:
 				img = "doors/" + img
-			case WALL_MaskedWall:
+			case WALL_MaskedWall, WALL_Platform:
 				img = "masked/" + img
 			}
 			cellData = append(cellData, CellData{
