@@ -518,7 +518,6 @@ func CreateRegularWallSingleTexture(rtlmap *RTLMapData, x, y int, scale float64,
 					quakemap.BasicCuboid(x1, y1, z1, x2, y2, z2, "__TB_empty", scale, true))
 				pushWallTriggerEntity.AdditionalKeys["_x"] = fmt.Sprintf("%d", actor.X)
 				pushWallTriggerEntity.AdditionalKeys["_y"] = fmt.Sprintf("%d", actor.Y)
-				pushWallTriggerEntity.AdditionalKeys["message"] = "Push Wall Activated."
 				pushWallTriggerEntity.AdditionalKeys["target"] = wallTargetName
 				pushWallTriggerEntity.AdditionalKeys["targetname"] = fmt.Sprintf("movewallpath_%d_%d_push", actor.X, actor.Y)
 				qm.Entities = append(qm.Entities, pushWallTriggerEntity)
