@@ -12,6 +12,10 @@ import (
 // Trenchbroom, Y increases northward, so Y axis values are
 // inverted.
 
+const (
+	PushWallTriggerMargin float64 = 0.15
+)
+
 var (
 	exitLumps = []string{
 		"EXIT",
@@ -512,10 +516,38 @@ func CreateRegularWallSingleTexture(rtlmap *RTLMapData, x, y int, scale float64,
 				relayEntity.AdditionalKeys["target"] = wallTargetName
 				qm.Entities = append(qm.Entities, relayEntity)
 			} else if spriteVal < 256 {
+				var tx1, ty1, tx2, ty2 float64
+
+				// only allow pushing from the opposite direction it
+				// moves toward when triggered
+				switch actor.SpriteValue {
+				case 300, uint16(DIR_East) + uint16(ICONARROWS):
+					tx1 = (float64(actor.X) * gridSizeX) - 1
+					tx2 = tx1 + 1.0
+					ty1 = (float64(actor.Y) + PushWallTriggerMargin) * -gridSizeY
+					ty2 = (float64(actor.Y+1) - PushWallTriggerMargin) * -gridSizeY
+				case 318, uint16(DIR_North) + uint16(ICONARROWS):
+					tx1 = (float64(actor.X) + PushWallTriggerMargin) * gridSizeX
+					tx2 = (float64(actor.X+1) - PushWallTriggerMargin) * gridSizeX
+					ty1 = (float64(actor.Y+1) * -gridSizeY) + 1
+					ty2 = ty1 - 1.0
+				case 336, uint16(DIR_West) + uint16(ICONARROWS):
+					tx1 = (float64(actor.X+1) * gridSizeX) - 1
+					tx2 = tx1 + 1.0
+					ty1 = (float64(actor.Y) + PushWallTriggerMargin) * -gridSizeY
+					ty2 = (float64(actor.Y+1) - PushWallTriggerMargin) * -gridSizeY
+				case 354, uint16(DIR_South) + uint16(ICONARROWS):
+					tx1 = (float64(actor.X) + PushWallTriggerMargin) * gridSizeX
+					tx2 = (float64(actor.X+1) - PushWallTriggerMargin) * gridSizeX
+					ty1 = (float64(actor.Y) * -gridSizeY) + 1
+					ty2 = ty1 - 1.0
+				default:
+					panic("yes you're stuck implementing diagonal pushwall triggers")
+				}
 				// add pushwall trigger_once entity within the wall
 				pushWallTriggerEntity := quakemap.NewEntity(0, "trigger_once", qm)
 				pushWallTriggerEntity.Brushes = append(pushWallTriggerEntity.Brushes,
-					quakemap.BasicCuboid(x1, y1, z1, x2, y2, z2, "__TB_empty", scale, true))
+					quakemap.BasicCuboid(tx1, ty1, z1, tx2, ty2, z2, "__TB_empty", scale, true))
 				pushWallTriggerEntity.AdditionalKeys["_x"] = fmt.Sprintf("%d", actor.X)
 				pushWallTriggerEntity.AdditionalKeys["_y"] = fmt.Sprintf("%d", actor.Y)
 				pushWallTriggerEntity.AdditionalKeys["target"] = wallTargetName

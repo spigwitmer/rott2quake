@@ -23,6 +23,10 @@ dump-darkwar-to-wad2: rott2quake
 dump-maps-dusk: rott2quake
 	./dump_maps_dusk.sh
 
+.PHONY: dump-maps
+dump-maps: rott2quake
+	./dump_maps.sh
+
 .PHONY: gofmt
 gofmt: $(SOURCES)
 	gofmt -w $(SOURCES)
