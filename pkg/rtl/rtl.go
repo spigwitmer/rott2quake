@@ -117,7 +117,6 @@ type ActorInfo struct {
 	AreaID            int // see area.go
 	ThinWallDirection WallDirection
 	Item              *ItemInfo
-	HeightOffset      int
 	MapTriggers       []MapTrigger
 }
 
@@ -298,6 +297,21 @@ func (r *RTLMapData) CeilingHeight() int {
 	}
 }
 
+// ZOffset -- see rt_stat.c:1091
+func (r *RTLMapData) ZOffset(offsetVal uint16, scale float64) float64 {
+	if offsetVal&0xff00 != 0xb000 {
+		return 0.0
+	}
+	offsetVal = (offsetVal & 0xff)
+	z := offsetVal >> 4
+	zf := offsetVal & 0x000f
+	if z == 0xf {
+		return float64(zf*4) * scale
+	} else {
+		return (64.0 + float64(z)*64 + float64(zf)*4) * scale
+	}
+}
+
 // determine which direction thin walls should face
 func (r *RTLMapData) ThinWallDirection(x, y int) (WallDirection, int, int) {
 	var adjacentCountX, adjacentCountY int
@@ -386,12 +400,6 @@ func NewRTL(rfile io.ReadSeeker) (*RTL, error) {
 		if err := r.MapData[i].decompressInfoPlane(); err != nil {
 			return nil, err
 		}
-		r.MapData[i].renderWallGrid()
-		r.MapData[i].determineThinWallsAndDirections()
-		r.MapData[i].determineMovingWalls()
-		r.MapData[i].renderSpriteGrid()
-		r.MapData[i].determineActorHeights()
-		r.MapData[i].determineExits()
 
 		r.MapData[i].FloorNumber = int(r.MapData[i].WallPlane[0][0])
 		r.MapData[i].CeilingNumber = int(r.MapData[i].WallPlane[0][1])
@@ -403,6 +411,13 @@ func NewRTL(rfile io.ReadSeeker) (*RTL, error) {
 		r.MapData[i].Fog = int(r.MapData[i].SpritePlane[0][2])
 		r.MapData[i].IllumWalls = int(r.MapData[i].SpritePlane[0][3])
 
+		r.MapData[i].renderWallGrid()
+		r.MapData[i].determineThinWallsAndDirections()
+		r.MapData[i].determineMovingWalls()
+		r.MapData[i].renderSpriteGrid()
+		r.MapData[i].determineExits()
+		r.MapData[i].determineGADs()
+
 		for j := 0; j < 128; j++ {
 			if r.MapData[i].InfoPlane[0][j]&0xFF00 == 0xBA00 {
 				r.MapData[i].SongNumber = int(r.MapData[i].InfoPlane[0][j]) & 0xFF
@@ -412,25 +427,6 @@ func NewRTL(rfile io.ReadSeeker) (*RTL, error) {
 	}
 
 	return &r, nil
-}
-
-func (r *RTLMapData) determineActorHeights() {
-	for y := 0; y < 128; y++ {
-		for x := 0; x < 128; x++ {
-			actor := &r.ActorGrid[y][x]
-
-			switch actor.Type {
-			case SPR_GAD:
-				if actor.InfoValue > 0 {
-					actor.HeightOffset = ZOffset(actor.InfoValue)
-				}
-			}
-
-			if actor.Item != nil && actor.InfoValue > 0 {
-				actor.HeightOffset = ZOffset(actor.InfoValue)
-			}
-		}
-	}
 }
 
 func (r *RTLMapData) renderSpriteGrid() {

@@ -14,6 +14,26 @@ type Plane struct {
 	Xscale, Yscale   float64
 }
 
+func (p *Plane) Clone() Plane {
+	var notp Plane
+	notp.X1 = p.X1
+	notp.X2 = p.X2
+	notp.X3 = p.X3
+	notp.Y1 = p.Y1
+	notp.Y2 = p.Y2
+	notp.Y3 = p.Y3
+	notp.Z1 = p.Z1
+	notp.Z2 = p.Z2
+	notp.Z3 = p.Z3
+	notp.Texture = p.Texture
+	notp.Xoffset = p.Xoffset
+	notp.Yoffset = p.Yoffset
+	notp.Rotation = p.Rotation
+	notp.Xscale = p.Xscale
+	notp.Yscale = p.Yscale
+	return notp
+}
+
 func (p *Plane) Render() string {
 	texture := p.Texture
 	if texture == "" {
@@ -32,6 +52,14 @@ func (p *Plane) Render() string {
 
 type Brush struct {
 	Planes []Plane
+}
+
+func (b *Brush) Clone() Brush {
+	var notb Brush
+	for _, plane := range b.Planes {
+		notb.Planes = append(notb.Planes, plane.Clone())
+	}
+	return notb
 }
 
 func (b *Brush) AddPlane(
@@ -59,6 +87,20 @@ func (b *Brush) AddPlane(
 		Yscale:   yScale,
 	}
 	b.Planes = append(b.Planes, plane)
+}
+
+func (b *Brush) Transform(x, y, z float64) {
+	for i, _ := range b.Planes {
+		b.Planes[i].X1 += x
+		b.Planes[i].X2 += x
+		b.Planes[i].X3 += x
+		b.Planes[i].Y1 += y
+		b.Planes[i].Y2 += y
+		b.Planes[i].Y3 += y
+		b.Planes[i].Z1 += z
+		b.Planes[i].Z2 += z
+		b.Planes[i].Z3 += z
+	}
 }
 
 func (b *Brush) Render() string {

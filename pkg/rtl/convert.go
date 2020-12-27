@@ -56,9 +56,9 @@ func ClassNameForMaskedWall(w *MaskedWallInfo, position string) string {
 func AddDefaultEntityKeys(entity *quakemap.Entity, actor *ActorInfo) {
 	entity.AdditionalKeys["_r2q_x"] = fmt.Sprintf("%d", actor.X)
 	entity.AdditionalKeys["_r2q_y"] = fmt.Sprintf("%d", actor.Y)
-	entity.AdditionalKeys["_r2q_wallval"] = fmt.Sprintf("%d", actor.WallValue)
-	entity.AdditionalKeys["_r2q_spriteval"] = fmt.Sprintf("%d", actor.SpriteValue)
-	entity.AdditionalKeys["_r2q_infoval"] = fmt.Sprintf("%d", actor.InfoValue)
+	entity.AdditionalKeys["_r2q_wallval"] = fmt.Sprintf("%d (%04x)", actor.WallValue, actor.WallValue)
+	entity.AdditionalKeys["_r2q_spriteval"] = fmt.Sprintf("%d (%04x)", actor.SpriteValue, actor.SpriteValue)
+	entity.AdditionalKeys["_r2q_infoval"] = fmt.Sprintf("%d (%04x)", actor.InfoValue, actor.InfoValue)
 	entity.AdditionalKeys["_r2q_tile"] = fmt.Sprintf("%d", actor.Tile)
 	if actor.Type == WALL_MaskedWall {
 		maskedWallInfo := MaskedWalls[actor.Tile]
@@ -234,6 +234,36 @@ func LinkElevators(rtlmap *RTLMapData, textureWad string,
 		floor2DestEntity.AdditionalKeys["angle"] = button1Angle
 		qm.Entities = append(qm.Entities, floor2DestEntity)
 	}
+}
+
+func CreateGAD(rtlmap *RTLMapData, actor *ActorInfo, scale float64, qm *quakemap.QuakeMap) {
+	var gridSizeX float64 = 64.0 * scale
+	var gridSizeY float64 = 64.0 * scale
+	var floorDepth float64 = 64.0 * scale
+
+	gadBrush := quakemap.GADBrush.Clone()
+	dX := float64(actor.X)*gridSizeX + (gridSizeX / 2.0)
+	dY := float64(actor.Y)*-gridSizeY - (gridSizeY / 2.0)
+	dZ := floorDepth + rtlmap.ZOffset(actor.InfoValue, scale)
+	gadBrush.Transform(dX, dY, dZ)
+	entityClassname := "func_detail"
+
+	switch actor.SpriteValue {
+	case MovingGADEast, MovingGADNorth, MovingGADWest, MovingGADSouth:
+		// TODO
+		//entityClassname = "func_train"
+		// calculate trackpath
+	case ElevatingGAD:
+		// TODO
+		//entityClassname = "func_train"
+		// build single-column trackpath
+	}
+
+	GADEntity := quakemap.NewEntity(0, entityClassname, qm)
+	GADEntity.Brushes = []quakemap.Brush{gadBrush}
+	AddDefaultEntityKeys(GADEntity, actor)
+	GADEntity.AdditionalKeys["_r2q_zoffset"] = fmt.Sprintf("%.02f", rtlmap.ZOffset(actor.InfoValue, scale))
+	qm.Entities = append(qm.Entities, GADEntity)
 }
 
 func CreateThinWall(rtlmap *RTLMapData, x, y int, scale float64, qm *quakemap.QuakeMap) {
@@ -1031,6 +1061,8 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 				CreatePlatform(rtlmap, x, y, scale, qm)
 			case WALL_MaskedWall:
 				CreateMaskedWall(rtlmap, x, y, scale, qm)
+			case SPR_GAD:
+				CreateGAD(rtlmap, &wallInfo, scale, qm)
 			}
 
 			if itemInfo != nil {
@@ -1044,10 +1076,25 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 					entity := quakemap.NewEntity(0, entityName, qm)
 					entity.OriginX = float64(x)*gridSizeX + (gridSizeX / 2.0)
 					entity.OriginY = float64(y)*-gridSizeY - (gridSizeY / 2.0)
-					if wallInfo.HeightOffset != 0 {
-						entity.OriginZ = floorDepth + (gridSizeZ / 2) + ((float64(rtlmap.FloorHeight()-1) * gridSizeZ) + float64(wallInfo.HeightOffset)*(scale/64.0))
-					} else {
-						entity.OriginZ = floorDepth + (gridSizeZ / 2)
+					switch {
+					case wallInfo.InfoValue&0xff00 == 0xb000:
+						entity.OriginZ = floorDepth + (gridSizeZ / 2.0) + rtlmap.ZOffset(wallInfo.InfoValue, scale)
+					case wallInfo.Type == WALL_Platform:
+						// rt_door.c:243
+						var itemZOffset float64
+						switch wallInfo.InfoValue {
+						case 1, 8, 9:
+							itemZOffset = float64(rtlmap.FloorHeight()-1) * gridSizeZ
+						case 4, 7:
+							itemZOffset = 0.0
+						case 5, 6:
+							itemZOffset = -gridSizeZ
+						}
+						entity.OriginZ = floorDepth + (gridSizeZ / 2.0) + itemZOffset
+					case wallInfo.InfoValue == 11, wallInfo.InfoValue == 12:
+						entity.OriginZ = floorDepth - 65.0 - float64(wallInfo.InfoValue-11)
+					default:
+						entity.OriginZ = floorDepth + (gridSizeZ / 2.0)
 					}
 					qm.Entities = append(qm.Entities, entity)
 				}
