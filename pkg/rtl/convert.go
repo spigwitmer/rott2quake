@@ -247,6 +247,7 @@ func CreateGAD(rtlmap *RTLMapData, actor *ActorInfo, scale float64, qm *quakemap
 	dZ := floorDepth + rtlmap.ZOffset(actor.InfoValue, scale)
 	gadBrush.Transform(dX, dY, dZ)
 	entityClassname := "func_detail"
+	entityKeys := make(map[string]string)
 
 	switch actor.SpriteValue {
 	case MovingGADEast, MovingGADNorth, MovingGADWest, MovingGADSouth:
@@ -254,15 +255,39 @@ func CreateGAD(rtlmap *RTLMapData, actor *ActorInfo, scale float64, qm *quakemap
 		//entityClassname = "func_train"
 		// calculate trackpath
 	case ElevatingGAD:
-		// TODO
-		//entityClassname = "func_train"
 		// build single-column trackpath
+		entityClassname = "func_train"
+		upperPathEntityName := fmt.Sprintf("gad_%d_%d_upper", actor.X, actor.Y)
+		lowerPathEntityName := fmt.Sprintf("gad_%d_%d_lower", actor.X, actor.Y)
+
+		upperPathEntity := quakemap.NewEntity(0, "path_corner", qm)
+		upperPathEntity.OriginX = dX - gadBrush.Width()/2.0
+		upperPathEntity.OriginY = dY - gadBrush.Length()/2.0
+		upperPathEntity.OriginZ = dZ
+		upperPathEntity.AdditionalKeys["target"] = lowerPathEntityName
+		upperPathEntity.AdditionalKeys["targetname"] = upperPathEntityName
+		upperPathEntity.AdditionalKeys["wait"] = "1"
+
+		lowerPathEntity := quakemap.NewEntity(0, "path_corner", qm)
+		lowerPathEntity.OriginX = dX - gadBrush.Width()/2.0
+		lowerPathEntity.OriginY = dY - gadBrush.Length()/2.0
+		lowerPathEntity.OriginZ = floorDepth
+		lowerPathEntity.AdditionalKeys["target"] = upperPathEntityName
+		lowerPathEntity.AdditionalKeys["targetname"] = lowerPathEntityName
+		lowerPathEntity.AdditionalKeys["wait"] = "1"
+		entityKeys["target"] = upperPathEntityName
+		entityKeys["speed"] = fmt.Sprintf("%.02f", 150.0*scale)
+
+		qm.Entities = append(qm.Entities, upperPathEntity, lowerPathEntity)
 	}
 
 	GADEntity := quakemap.NewEntity(0, entityClassname, qm)
 	GADEntity.Brushes = []quakemap.Brush{gadBrush}
 	AddDefaultEntityKeys(GADEntity, actor)
 	GADEntity.AdditionalKeys["_r2q_zoffset"] = fmt.Sprintf("%.02f", rtlmap.ZOffset(actor.InfoValue, scale))
+	for k, v := range entityKeys {
+		GADEntity.AdditionalKeys[k] = v
+	}
 	qm.Entities = append(qm.Entities, GADEntity)
 }
 
