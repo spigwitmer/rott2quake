@@ -306,9 +306,9 @@ func (r *RTLMapData) ZOffset(offsetVal uint16, scale float64) float64 {
 	z := offsetVal >> 4
 	zf := offsetVal & 0x000f
 	if z == 0xf {
-		return float64(zf*4) * scale
+		return (float64(zf*4) * scale) - (10.0 * scale)
 	} else {
-		return (64.0 + float64(z)*64 + float64(zf)*4) * scale
+		return ((64.0 + float64(z)*64 + float64(zf)*4) * scale) - (10.0 * scale)
 	}
 }
 

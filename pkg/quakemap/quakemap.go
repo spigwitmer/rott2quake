@@ -3,6 +3,7 @@ package quakemap
 import (
 	"fmt"
 	"math"
+	"strings"
 )
 
 type Plane struct {
@@ -204,7 +205,7 @@ func (e *Entity) Render() string {
 
 	switch e.ClassName {
 	case "worldspawn":
-		output += fmt.Sprintf("\"wad\" \"%s\"\n", e.Map.Wad)
+		output += fmt.Sprintf("\"wad\" \"%s\"\n", strings.Join(e.Map.Wads, ";"))
 	}
 
 	if len(e.Brushes) > 0 {
@@ -218,7 +219,7 @@ func (e *Entity) Render() string {
 }
 
 type QuakeMap struct {
-	Wad             string
+	Wads            []string
 	WorldSpawn      *Entity
 	InfoPlayerStart *Entity
 	Entities        []*Entity

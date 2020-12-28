@@ -1021,7 +1021,7 @@ func AddExitPoints(rtlmap *RTLMapData, scale float64, dusk bool, qm *quakemap.Qu
 	}
 }
 
-func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale float64, dusk bool) *quakemap.QuakeMap {
+func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale float64, dusk bool, additionalWads []string) *quakemap.QuakeMap {
 
 	// worldspawn:
 	// 1. build 128x128 floor
@@ -1048,7 +1048,8 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 
 	qm := quakemap.NewQuakeMap(playerStartX, playerStartY, floorDepth+32)
 	qm.InfoPlayerStart.Angle = playerAngle
-	qm.Wad = textureWad
+	additionalWads = append(additionalWads, textureWad)
+	qm.Wads = additionalWads
 
 	floorBrush := quakemap.BasicCuboid(
 		0, 0, 0,

@@ -2,6 +2,8 @@ SOURCES := $(wildcard cmd/*/*.go pkg/*/*.go)
 GOPRIVATE := '*'
 export GOPRIVATE
 
+additionalWadsParam := $(foreach wadPath,$(ADDITIONAL_WADS),-add-wad $(wadPath))
+
 TARGETS = rott2quake dump-palette
 
 all: rott2quake dump-palette
@@ -21,11 +23,11 @@ dump-darkwar-to-wad2: rott2quake
 
 .PHONY: dump-maps-dusk
 dump-maps-dusk: rott2quake
-	./dump_maps_dusk.sh
+	./dump_maps_dusk.sh r2q-data/DARKWAR.RTL map-data $(additionalWadsParam)
 
 .PHONY: dump-maps
 dump-maps: rott2quake
-	./dump_maps.sh
+	./dump_maps.sh r2q-data/DARKWAR.RTL map-data $(additionalWadsParam)
 
 .PHONY: gofmt
 gofmt: $(SOURCES)

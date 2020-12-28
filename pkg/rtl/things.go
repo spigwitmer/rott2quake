@@ -90,7 +90,7 @@ var Items = map[uint16]ItemInfo{
 	},
 	// fireball shooter
 	0x0b: ItemInfo{
-		0x0b, 0, "trap_spikeshoote", "object_fireball_shooter", AddFireballShooter,
+		0x0b, 0, "trap_spikeshooter", "object_fireball_shooter", AddFireballShooter,
 	},
 }
 
