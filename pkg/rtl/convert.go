@@ -497,7 +497,7 @@ func CreateRegularWallSingleTexture(rtlmap *RTLMapData, x, y int, scale float64,
 
 	if actor.MapFlags&WALLFLAGS_Moving != 0 {
 		var lastPathCorner, currentPathCorner *quakemap.Entity
-		pathType, wallPath, numNodes := rtlmap.DetermineWallPath(&actor, (infoVal > 0 || spriteVal < 256))
+		pathType, wallPath, numNodes := rtlmap.DetermineWallPath(&actor, (spriteVal < 256))
 		moveWallInfo = MoveWallSpriteIDs[spriteVal]
 		initialCorner = quakemap.NewEntity(0, "path_corner", qm)
 		cornerZ := floorDepth
