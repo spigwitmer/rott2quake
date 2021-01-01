@@ -90,7 +90,7 @@ var Items = map[uint16]ItemInfo{
 	},
 	// fireball shooter
 	0x0b: ItemInfo{
-		0x0b, 0, "trap_spikeshooter", "object_fireball_shooter", AddFireballShooter,
+		0x0b, 0, "trap_shooter", "object_fireball_shooter", AddFireballShooter,
 	},
 }
 
@@ -154,79 +154,27 @@ func AddFireballShooter(x int, y int, gridSizeX float64, gridSizeY float64, grid
 	if dusk {
 		entityName = item.DuskEntityName
 	}
+	actor := r.ActorGrid[y][x]
 
-	// direction the fireball should go depends on a tile of id 0x0c that's aligned
-	// by the x or y axis
+	var xoffset, yoffset, angle float64
 
-	// traverse in each direction until the location of an 0x0c tile is
-	// found. Default to west.
-	angle := float64(360.0)
-	var targetWallTile uint16 = 0x0c
-	var curSteps int = 0
-	var xoffset, yoffset float64
-
-	// north
-	if y > 0 {
-		for j := y - 1; j >= 0; j-- {
-			if r.ActorGrid[j][x].Type == WALL_Regular {
-				if r.ActorGrid[j][x].Tile == targetWallTile {
-					if y-j > curSteps {
-						curSteps = y - j
-						angle = 90.0
-						xoffset = 0
-						yoffset = (gridSizeY / 2.0)
-					}
-				}
-				break
-			}
-		}
-	}
-	// south
-	if y < 127 {
-		for j := y + 1; j < 128; j++ {
-			if r.ActorGrid[j][x].Type == WALL_Regular {
-				if r.ActorGrid[j][x].Tile == targetWallTile {
-					if j-y > curSteps {
-						curSteps = j - y
-						angle = 270.0
-						xoffset = 0
-						yoffset = -(gridSizeY / 2.0)
-					}
-				}
-				break
-			}
-		}
-	}
-	// west
-	if x > 0 {
-		for i := x - 1; i >= 0; i-- {
-			if r.ActorGrid[y][i].Type == WALL_Regular {
-				if r.ActorGrid[y][i].Tile == targetWallTile {
-					if x-i > curSteps {
-						curSteps = x - i
-						angle = 0.0
-						xoffset = -(gridSizeX / 2)
-						yoffset = 0
-					}
-				}
-				break
-			}
-		}
-	}
-	// east
-	if x < 127 {
-		for i := x + 1; i < 128; i++ {
-			if r.ActorGrid[y][i].Type == WALL_Regular {
-				if r.ActorGrid[y][i].Tile == targetWallTile {
-					if i-x > curSteps {
-						angle = 180.0
-						xoffset = (gridSizeX / 2)
-						yoffset = 0
-					}
-				}
-				break
-			}
-		}
+	switch WallDirection((actor.SpriteValue - 0x8c) * 2) {
+	case DIR_East:
+		angle = 0.0
+		xoffset = (gridSizeX / 2.0)
+		yoffset = 0.0
+	case DIR_North:
+		angle = 90.0
+		xoffset = 0.0
+		yoffset = (gridSizeY / 2.0)
+	case DIR_West:
+		angle = 180.0
+		xoffset = -(gridSizeX / 2.0)
+		yoffset = 0.0
+	case DIR_South:
+		angle = 270.0
+		xoffset = 0.0
+		yoffset = -(gridSizeY / 2.0)
 	}
 
 	entity := quakemap.NewEntity(0, entityName, q)
