@@ -182,5 +182,6 @@ func AddFireballShooter(x int, y int, gridSizeX float64, gridSizeY float64, grid
 	entity.OriginY = float64(y)*-gridSizeY - (gridSizeY / 2) + yoffset
 	entity.OriginZ = gridSizeZ * 1.5
 	entity.AdditionalKeys["angle"] = fmt.Sprintf("%02f", angle)
+	entity.AdditionalKeys["damage"] = "30"
 	q.Entities = append(q.Entities, entity)
 }

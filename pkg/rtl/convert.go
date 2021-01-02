@@ -241,11 +241,16 @@ func CreateGAD(rtlmap *RTLMapData, actor *ActorInfo, scale float64, qm *quakemap
 	var gridSizeY float64 = 64.0 * scale
 	var floorDepth float64 = 64.0 * scale
 
-	gadBrush := quakemap.GADBrush.Clone()
 	dX := float64(actor.X)*gridSizeX + (gridSizeX / 2.0)
 	dY := float64(actor.Y)*-gridSizeY - (gridSizeY / 2.0)
 	dZ := floorDepth + rtlmap.ZOffset(actor.InfoValue, scale)
-	gadBrush.Transform(dX, dY, dZ)
+
+	var gadBrushes []quakemap.Brush
+	for _, brush := range quakemap.GADBrushes {
+		newBrush := brush.Clone()
+		newBrush.Transform(dX, dY, dZ)
+		gadBrushes = append(gadBrushes, newBrush)
+	}
 	entityClassname := "func_detail"
 	entityKeys := make(map[string]string)
 
@@ -261,16 +266,16 @@ func CreateGAD(rtlmap *RTLMapData, actor *ActorInfo, scale float64, qm *quakemap
 		lowerPathEntityName := fmt.Sprintf("gad_%d_%d_lower", actor.X, actor.Y)
 
 		upperPathEntity := quakemap.NewEntity(0, "path_corner", qm)
-		upperPathEntity.OriginX = dX - gadBrush.Width()/2.0
-		upperPathEntity.OriginY = dY - gadBrush.Length()/2.0
+		upperPathEntity.OriginX = dX - gadBrushes[1].Width()/2.0
+		upperPathEntity.OriginY = dY - gadBrushes[1].Length()/2.0
 		upperPathEntity.OriginZ = dZ
 		upperPathEntity.AdditionalKeys["target"] = lowerPathEntityName
 		upperPathEntity.AdditionalKeys["targetname"] = upperPathEntityName
 		upperPathEntity.AdditionalKeys["wait"] = "1"
 
 		lowerPathEntity := quakemap.NewEntity(0, "path_corner", qm)
-		lowerPathEntity.OriginX = dX - gadBrush.Width()/2.0
-		lowerPathEntity.OriginY = dY - gadBrush.Length()/2.0
+		lowerPathEntity.OriginX = dX - gadBrushes[1].Width()/2.0
+		lowerPathEntity.OriginY = dY - gadBrushes[1].Length()/2.0
 		lowerPathEntity.OriginZ = floorDepth
 		lowerPathEntity.AdditionalKeys["target"] = upperPathEntityName
 		lowerPathEntity.AdditionalKeys["targetname"] = lowerPathEntityName
@@ -282,7 +287,7 @@ func CreateGAD(rtlmap *RTLMapData, actor *ActorInfo, scale float64, qm *quakemap
 	}
 
 	GADEntity := quakemap.NewEntity(0, entityClassname, qm)
-	GADEntity.Brushes = []quakemap.Brush{gadBrush}
+	GADEntity.Brushes = gadBrushes
 	AddDefaultEntityKeys(GADEntity, actor)
 	GADEntity.AdditionalKeys["_r2q_zoffset"] = fmt.Sprintf("%.02f", rtlmap.ZOffset(actor.InfoValue, scale))
 	for k, v := range entityKeys {
@@ -505,6 +510,7 @@ func CreateRegularWallSingleTexture(rtlmap *RTLMapData, x, y int, scale float64,
 		initialCorner.OriginY = (float64(y) + 1) * -gridSizeY
 		initialCorner.OriginZ = cornerZ
 		initialCorner.AdditionalKeys["targetname"] = fmt.Sprintf("movewallpath_%d_%d_init", actor.X, actor.Y)
+		initialCorner.AdditionalKeys["wait"] = "0.00001"
 		lastPathCorner = initialCorner
 		qm.Entities = append(qm.Entities, lastPathCorner)
 
@@ -518,6 +524,7 @@ func CreateRegularWallSingleTexture(rtlmap *RTLMapData, x, y int, scale float64,
 			targetName := fmt.Sprintf("movewallpath_%d_%d_%d", actor.X, actor.Y, i)
 			nodeToTargetNames[currentNode] = targetName
 			currentPathCorner.AdditionalKeys["targetname"] = targetName
+			currentPathCorner.AdditionalKeys["wait"] = "0.00001"
 			lastPathCorner.AdditionalKeys["target"] = targetName
 			qm.Entities = append(qm.Entities, currentPathCorner)
 			currentNode = currentNode.Next

@@ -188,7 +188,7 @@ if __name__ == '__main__':
     map_tokenizer = IgnoreCommentsTokenizer(parsed.source_file.readline)
     map_parser = QuakeMapParser(map_tokenizer)
     worldspawn = map_parser.parse_entity().brushes
-    print('[]Brush: {')
+    print('[]Brush {')
     for brush in worldspawn:
         print('    Brush{Planes: []Plane{')
         for plane in brush.planes:
@@ -202,5 +202,5 @@ if __name__ == '__main__':
 				plane.xscale, plane.yscale
 			)
             print(planestr)
-        print('    },')
+        print('    }},')
     print('}')
