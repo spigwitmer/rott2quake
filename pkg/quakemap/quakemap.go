@@ -139,7 +139,7 @@ func (b *Brush) AddPlane(
 	b.Planes = append(b.Planes, plane)
 }
 
-func (b *Brush) Transform(x, y, z float64) {
+func (b *Brush) Translate(x, y, z float64) {
 	for i, _ := range b.Planes {
 		b.Planes[i].X1 += x
 		b.Planes[i].X2 += x

@@ -248,7 +248,7 @@ func CreateGAD(rtlmap *RTLMapData, actor *ActorInfo, scale float64, qm *quakemap
 	var gadBrushes []quakemap.Brush
 	for _, brush := range quakemap.GADBrushes {
 		newBrush := brush.Clone()
-		newBrush.Transform(dX, dY, dZ)
+		newBrush.Translate(dX, dY, dZ)
 		gadBrushes = append(gadBrushes, newBrush)
 	}
 	entityClassname := "func_detail"
