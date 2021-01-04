@@ -52,6 +52,7 @@ var (
 
 	// rt_ted.c:2984
 	MoveWallSpriteIDs = map[uint16]MoveWallInfo{
+		// pushwalls
 		uint16(DIR_East) + uint16(ICONARROWS):      MoveWallInfo{2.0, DIR_East},
 		uint16(DIR_North) + uint16(ICONARROWS):     MoveWallInfo{2.0, DIR_North},
 		uint16(DIR_West) + uint16(ICONARROWS):      MoveWallInfo{2.0, DIR_West},
@@ -60,14 +61,24 @@ var (
 		uint16(DIR_Northwest) + uint16(ICONARROWS): MoveWallInfo{2.0, DIR_Northwest},
 		uint16(DIR_Southwest) + uint16(ICONARROWS): MoveWallInfo{2.0, DIR_Southwest},
 		uint16(DIR_Southeast) + uint16(ICONARROWS): MoveWallInfo{2.0, DIR_Southeast},
+
+		// movewalls
 		300: MoveWallInfo{2.0, DIR_East},
 		318: MoveWallInfo{2.0, DIR_North},
 		336: MoveWallInfo{2.0, DIR_West},
 		354: MoveWallInfo{2.0, DIR_South},
+
+		// turbo movewalls
 		256: MoveWallInfo{4.0, DIR_East},
 		257: MoveWallInfo{4.0, DIR_North},
 		258: MoveWallInfo{4.0, DIR_West},
 		259: MoveWallInfo{4.0, DIR_South},
+
+		// GADs
+		MovingGADEast:  MoveWallInfo{4.0, DIR_East},
+		MovingGADNorth: MoveWallInfo{4.0, DIR_North},
+		MovingGADWest:  MoveWallInfo{4.0, DIR_West},
+		MovingGADSouth: MoveWallInfo{4.0, DIR_South},
 	}
 )
 
@@ -141,7 +152,14 @@ func (r *RTLMapData) DetermineWallPath(actor *ActorInfo, pushWall bool) (WallPat
 				// I'M FREE!!
 				pathType = PATH_Terminal
 				addNode(curX, curY, DIR_Unknown)
-				log.Printf("wall starting at (%d,%d) IS FREE!! (%d,%d)", actor.X, actor.Y, curX, curY)
+				switch actor.Type {
+				case WALL_Regular:
+					log.Printf("wall starting at (%d,%d) IS FREE!! (%d,%d)", actor.X, actor.Y, curX, curY)
+				case SPR_GAD:
+					log.Printf("GAD starting at (%d,%d) IS FREE!! (%d,%d)", actor.X, actor.Y, curX, curY)
+				default:
+					log.Printf("object starting at (%d,%d) IS FREE!! (%d,%d)", actor.X, actor.Y, curX, curY)
+				}
 				continue
 			}
 
@@ -154,14 +172,23 @@ func (r *RTLMapData) DetermineWallPath(actor *ActorInfo, pushWall bool) (WallPat
 			}
 
 			spriteVal := r.ActorGrid[curY][curX].SpriteValue
-			if spriteVal >= 72 && spriteVal <= 79 {
+			if actor.IsWall() && (spriteVal >= 72 && spriteVal <= 79) {
 				switch WallDirection(spriteVal - 72) {
 				case DIR_East, DIR_North, DIR_West, DIR_South,
 					DIR_Northeast, DIR_Northwest, DIR_Southwest, DIR_Southeast:
 					curDirection = WallDirection(spriteVal - 72)
 					addNode(curX, curY, curDirection)
 				default:
-					panic(fmt.Sprintf("weird direction: %d", spriteVal-72))
+					panic(fmt.Sprintf("(%d,%d) weird direction: %d", curX, curY, spriteVal-72))
+				}
+			} else if actor.Type == SPR_GAD {
+				switch WallDirection(spriteVal - 72) {
+				case DIR_East, DIR_North, DIR_West, DIR_South,
+					DIR_Northeast, DIR_Northwest, DIR_Southwest, DIR_Southeast:
+					curDirection = WallDirection(spriteVal - 72)
+					addNode(curX, curY, curDirection)
+				default:
+					continue
 				}
 			} else if pushWall {
 				addNode(curX, curY, DIR_Unknown)

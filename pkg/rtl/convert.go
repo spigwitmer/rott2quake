@@ -256,9 +256,43 @@ func CreateGAD(rtlmap *RTLMapData, actor *ActorInfo, scale float64, qm *quakemap
 
 	switch actor.SpriteValue {
 	case MovingGADEast, MovingGADNorth, MovingGADWest, MovingGADSouth:
-		// TODO
-		//entityClassname = "func_train"
-		// calculate trackpath
+		// build trackpath
+		entityClassname = "func_train"
+
+		var lastPathCorner, currentPathCorner *quakemap.Entity
+		pathType, gadPath, numNodes := rtlmap.DetermineWallPath(actor, false)
+
+		if pathType != PATH_Perpetual {
+			log.Panicf("GAD at (%d,%d) not perpetual?", actor.X, actor.Y)
+		}
+		initialCorner := quakemap.NewEntity(0, "path_corner", qm)
+		initialCorner.OriginX = dX - gadBrushes[1].Width()/2.0
+		initialCorner.OriginY = dY - gadBrushes[1].Length()/2.0
+		initialCorner.OriginZ = dZ
+		initialCorner.AdditionalKeys["targetname"] = fmt.Sprintf("gadpath_%d_%d_init", actor.X, actor.Y)
+		initialCorner.AdditionalKeys["wait"] = "0.00001"
+		lastPathCorner = initialCorner
+		qm.Entities = append(qm.Entities, lastPathCorner)
+		entityKeys["target"] = initialCorner.AdditionalKeys["targetname"]
+		entityKeys["speed"] = fmt.Sprintf("%d", 2.0*64.0)
+
+		currentNode := gadPath
+		nodeToTargetNames := make(map[*PathNode]string)
+		for i := 0; i < numNodes; i++ {
+			currentPathCorner = quakemap.NewEntity(0, "path_corner", qm)
+			currentPathCorner.OriginZ = dZ
+			currentPathCorner.OriginX = (float64(currentNode.X))*gridSizeX + (gridSizeX / 2.0) - gadBrushes[1].Width()/2.0
+			currentPathCorner.OriginY = (float64(currentNode.Y))*-gridSizeY - (gridSizeY / 2.0) - gadBrushes[1].Length()/2.0
+			targetName := fmt.Sprintf("gadpath_%d_%d_%d", actor.X, actor.Y, i)
+			nodeToTargetNames[currentNode] = targetName
+			currentPathCorner.AdditionalKeys["targetname"] = targetName
+			currentPathCorner.AdditionalKeys["wait"] = "0.00001"
+			lastPathCorner.AdditionalKeys["target"] = targetName
+			qm.Entities = append(qm.Entities, currentPathCorner)
+			currentNode = currentNode.Next
+			lastPathCorner = currentPathCorner
+		}
+		currentPathCorner.AdditionalKeys["target"] = nodeToTargetNames[currentNode]
 	case ElevatingGAD:
 		// build single-column trackpath
 		entityClassname = "func_train"
