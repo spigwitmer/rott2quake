@@ -74,7 +74,7 @@ Quake:
   - [X] Pushwalls
   - [ ] Doors
 - [X] Moving Walls
-- [ ] GADs (TODO)
+- [X] GADs
 - [ ] Obstacles
   - [X] Flamethrowers
   - [X] Fireball shooters
