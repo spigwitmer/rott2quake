@@ -24,11 +24,12 @@ var AnimatedWalls = []AnimatedWallInfo{
 	{3, 6, "ANIMYOU"},  //anim you do not belong
 	{3, 6, "ANIMBW"},   //anim brown water
 	{3, 6, "ANIMBP"},   //anim brown piston
-	{3, 6, "ANIMCHN"},  //anim chain
-	{3, 6, "ANIMFW"},   //anim firewall
-	{3, 6, "ANIMLAT"},  //anim little blips
-	{3, 6, "ANIMST"},   //anim light streams left
-	{3, 6, "ANIMRP"},   //anim light streams right
+	{3, 6, "ANIMBP"},   //anim brown piston
+	//{3, 6, "ANIMCHN"},  //anim chain (not actually used)
+	{3, 6, "ANIMFW"},  //anim firewall
+	{3, 6, "ANIMLAT"}, //anim little blips
+	{3, 6, "ANIMST"},  //anim light streams left
+	{3, 6, "ANIMRP"},  //anim light streams right
 }
 
 // returns whether the lump is an animated wall frame + the frame number
