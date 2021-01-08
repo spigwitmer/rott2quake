@@ -75,10 +75,10 @@ var (
 		259: MoveWallInfo{4.0, DIR_South},
 
 		// GADs
-		MovingGADEast:  MoveWallInfo{4.0, DIR_East},
-		MovingGADNorth: MoveWallInfo{4.0, DIR_North},
-		MovingGADWest:  MoveWallInfo{4.0, DIR_West},
-		MovingGADSouth: MoveWallInfo{4.0, DIR_South},
+		MovingGADEast:  MoveWallInfo{2.0, DIR_East},
+		MovingGADNorth: MoveWallInfo{2.0, DIR_North},
+		MovingGADWest:  MoveWallInfo{2.0, DIR_West},
+		MovingGADSouth: MoveWallInfo{2.0, DIR_South},
 	}
 )
 
@@ -117,7 +117,6 @@ func (r *RTLMapData) DetermineWallPath(actor *ActorInfo, pushWall bool) (WallPat
 	if moveWallInfo, ok := MoveWallSpriteIDs[actor.SpriteValue]; ok {
 		curDirection := moveWallInfo.InitialDirection
 		for pathType == PATH_Unknown {
-			//log.Printf("PATH (%d,%d): (%d,%d)", actor.X, actor.Y, curX, curY)
 			switch curDirection {
 			case DIR_East:
 				deltaX = delta

@@ -14,6 +14,8 @@ import (
 
 const (
 	PushWallTriggerMargin float64 = 0.15
+	MovingObjectBaseSpeed         = 55.0
+	ElevatingGADBaseSpeed         = 150.0
 )
 
 var (
@@ -258,6 +260,7 @@ func CreateGAD(rtlmap *RTLMapData, actor *ActorInfo, scale float64, qm *quakemap
 	case MovingGADEast, MovingGADNorth, MovingGADWest, MovingGADSouth:
 		// build trackpath
 		entityClassname = "func_train"
+		moveInfo := MoveWallSpriteIDs[actor.SpriteValue]
 
 		var lastPathCorner, currentPathCorner *quakemap.Entity
 		pathType, gadPath, numNodes := rtlmap.DetermineWallPath(actor, false)
@@ -274,7 +277,7 @@ func CreateGAD(rtlmap *RTLMapData, actor *ActorInfo, scale float64, qm *quakemap
 		lastPathCorner = initialCorner
 		qm.Entities = append(qm.Entities, lastPathCorner)
 		entityKeys["target"] = initialCorner.AdditionalKeys["targetname"]
-		entityKeys["speed"] = fmt.Sprintf("%d", 2.0*64.0)
+		entityKeys["speed"] = fmt.Sprintf("%.02f", float64(moveInfo.Speed)*MovingObjectBaseSpeed*scale)
 
 		currentNode := gadPath
 		nodeToTargetNames := make(map[*PathNode]string)
@@ -315,7 +318,7 @@ func CreateGAD(rtlmap *RTLMapData, actor *ActorInfo, scale float64, qm *quakemap
 		lowerPathEntity.AdditionalKeys["targetname"] = lowerPathEntityName
 		lowerPathEntity.AdditionalKeys["wait"] = "1"
 		entityKeys["target"] = upperPathEntityName
-		entityKeys["speed"] = fmt.Sprintf("%.02f", 150.0*scale)
+		entityKeys["speed"] = fmt.Sprintf("%.02f", ElevatingGADBaseSpeed*scale)
 
 		qm.Entities = append(qm.Entities, upperPathEntity, lowerPathEntity)
 	}
@@ -647,7 +650,7 @@ func CreateRegularWallSingleTexture(rtlmap *RTLMapData, x, y int, scale float64,
 				qm.Entities = append(qm.Entities, pushWallTriggerEntity)
 				entity.AdditionalKeys["targetname"] = fmt.Sprintf("movewallpath_%d_%d_wall", actor.X, actor.Y)
 			}
-			entity.AdditionalKeys["speed"] = fmt.Sprintf("%d", moveWallInfo.Speed*64)
+			entity.AdditionalKeys["speed"] = fmt.Sprintf("%.02f", float64(moveWallInfo.Speed)*MovingObjectBaseSpeed*scale)
 		}
 		qm.Entities = append(qm.Entities, entity)
 
@@ -1006,7 +1009,7 @@ func CreateDoorEntities(rtlmap *RTLMapData, scale float64, dusk bool, qm *quakem
 		} else {
 			doorEntity.AdditionalKeys["angle"] = "-1"
 		}
-		doorEntity.AdditionalKeys["speed"] = "290"
+		doorEntity.AdditionalKeys["speed"] = "290.0"
 
 		if timeBeforeOpen > 0 {
 			// timed door, only open after a delayed trigger
