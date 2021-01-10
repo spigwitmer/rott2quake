@@ -28,8 +28,8 @@ func BasicCuboidParams(texture string, scale float64, wrapTexture bool) CuboidPa
 	applyParams(&params.Bottom, texture, scale)
 
 	if wrapTexture {
-		applyParams(&params.North, texture, -scale)
-		applyParams(&params.West, texture, -scale)
+		params.North.TexScaleX = -scale
+		params.West.TexScaleX = -scale
 	}
 
 	return params

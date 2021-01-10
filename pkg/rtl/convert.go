@@ -516,6 +516,7 @@ func CreateRegularWallSingleTexture(rtlmap *RTLMapData, x, y int, scale float64,
 	texName := actor.WallTileToTextureName(false)
 	var initialCorner *quakemap.Entity
 	var moveWallInfo MoveWallInfo
+	var wallColumn quakemap.Brush
 
 	entityType := "func_wall"
 
@@ -532,10 +533,18 @@ func CreateRegularWallSingleTexture(rtlmap *RTLMapData, x, y int, scale float64,
 	y2 := float64(y+1) * -gridSizeY
 	z2 := floorDepth + float64(rtlmap.FloorHeight())*gridSizeZ
 
-	// plain ol' column
-	wallColumn := quakemap.BasicCuboid(x1, y1, z1,
-		x2, y2, z2,
-		texName, scale, false)
+	switch actor.Tile {
+	case 0xe5:
+		// "YOU DO NOT BELONG HERE"
+		wallColumn = quakemap.BasicCuboid(x1, y1, z1,
+			x2, y2, z2,
+			texName, scale, true)
+	default:
+		// plain ol' column
+		wallColumn = quakemap.BasicCuboid(x1, y1, z1,
+			x2, y2, z2,
+			texName, scale, false)
+	}
 
 	if actor.MapFlags&WALLFLAGS_Moving != 0 {
 		var lastPathCorner, currentPathCorner *quakemap.Entity
