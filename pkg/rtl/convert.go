@@ -62,6 +62,7 @@ func AddDefaultEntityKeys(entity *quakemap.Entity, actor *ActorInfo) {
 	entity.AdditionalKeys["_r2q_spriteval"] = fmt.Sprintf("%d (%04x)", actor.SpriteValue, actor.SpriteValue)
 	entity.AdditionalKeys["_r2q_infoval"] = fmt.Sprintf("%d (%04x)", actor.InfoValue, actor.InfoValue)
 	entity.AdditionalKeys["_r2q_tile"] = fmt.Sprintf("%d", actor.Tile)
+	entity.AdditionalKeys["_r2q_type"] = actor.Type.String()
 	if actor.Type == WALL_MaskedWall {
 		maskedWallInfo := MaskedWalls[actor.Tile]
 		entity.AdditionalKeys["_r2q_mw_flags"] = maskedWallInfo.Flags.String()
@@ -333,6 +334,95 @@ func CreateGAD(rtlmap *RTLMapData, actor *ActorInfo, scale float64, qm *quakemap
 	qm.Entities = append(qm.Entities, GADEntity)
 }
 
+func ClipHeight(rtlmap *RTLMapData, actor *ActorInfo, scale float64) float64 {
+	switch actor.Type {
+	case WALL_Platform:
+		switch actor.InfoValue {
+		case 1, 8, 9:
+			return scale*64.0 + float64(rtlmap.FloorHeight()-1)*(scale*64.0)
+		case 5, 6:
+			return (scale * 64.0) * 2.0
+		default:
+			return 0.0
+		}
+	case SPR_GAD:
+		return (scale * 64.0) + rtlmap.ZOffset(actor.InfoValue, scale)
+	default:
+		return 0.0
+	}
+}
+
+func AddThinWallClipTextures(rtlmap *RTLMapData, actor *ActorInfo, scale float64, qm *quakemap.QuakeMap) {
+	var gridSizeX float64 = 64.0 * scale
+	var gridSizeY float64 = 64.0 * scale
+
+	wallDirection, _, _ := rtlmap.ThinWallDirection(actor.X, actor.Y)
+
+	// add clip textures to prevent the player from falling in
+	// between the face of a thin wall and another object
+	if wallDirection == WALLDIR_NorthSouth {
+		westClipZ := ClipHeight(rtlmap, &rtlmap.ActorGrid[actor.Y][actor.X-1], scale)
+		if westClipZ > 0.0 {
+			// clip tile to west
+			clipBrush := quakemap.BasicCuboid(
+				float64(actor.X)*gridSizeX,
+				float64(actor.Y)*-gridSizeY,
+				westClipZ,
+				(float64(actor.X)+0.5)*gridSizeX,
+				float64(actor.Y+1)*-gridSizeY,
+				westClipZ-1,
+				"clip", scale, false,
+			)
+			qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, clipBrush)
+		}
+
+		eastClipZ := ClipHeight(rtlmap, &rtlmap.ActorGrid[actor.Y][actor.X+1], scale)
+		if eastClipZ > 0.0 {
+			// clip tile to east
+			clipBrush := quakemap.BasicCuboid(
+				(float64(actor.X)+0.5)*gridSizeX,
+				float64(actor.Y)*-gridSizeY,
+				eastClipZ,
+				float64(actor.X+1)*gridSizeX,
+				float64(actor.Y+1)*-gridSizeY,
+				eastClipZ-1,
+				"clip", scale, false,
+			)
+			qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, clipBrush)
+		}
+	} else {
+		northClipZ := ClipHeight(rtlmap, &rtlmap.ActorGrid[actor.Y-1][actor.X], scale)
+		if northClipZ > 0.0 {
+			// clip tile to north
+			clipBrush := quakemap.BasicCuboid(
+				float64(actor.X)*gridSizeX,
+				float64(actor.Y)*-gridSizeY,
+				northClipZ,
+				float64(actor.X+1)*gridSizeX,
+				(float64(actor.Y)+0.5)*-gridSizeY,
+				northClipZ-1,
+				"clip", scale, false,
+			)
+			qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, clipBrush)
+		}
+
+		southClipZ := ClipHeight(rtlmap, &rtlmap.ActorGrid[actor.Y+1][actor.X], scale)
+		if southClipZ > 0.0 {
+			// clip tile to south
+			clipBrush := quakemap.BasicCuboid(
+				float64(actor.X)*gridSizeX,
+				(float64(actor.Y)+0.5)*-gridSizeY,
+				southClipZ,
+				float64(actor.X+1)*gridSizeX,
+				float64(actor.Y+1)*-gridSizeY,
+				southClipZ-1,
+				"clip", scale, false,
+			)
+			qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, clipBrush)
+		}
+	}
+}
+
 func CreateThinWall(rtlmap *RTLMapData, x, y int, scale float64, qm *quakemap.QuakeMap) {
 	var x1, y1, x2, y2 float64
 	var gridSizeX float64 = 64.0 * scale
@@ -412,6 +502,8 @@ func CreateThinWall(rtlmap *RTLMapData, x, y int, scale float64, qm *quakemap.Qu
 				texName, scale, false)
 			qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, wallColumn)
 		}
+
+		AddThinWallClipTextures(rtlmap, &actor, scale, qm)
 	}
 }
 
@@ -707,6 +799,7 @@ func CreatePlatform(rtlmap *RTLMapData, x, y int, scale float64, qm *quakemap.Qu
 				scale, false)
 			aboveEntity := quakemap.NewEntity(0, aboveClassName, qm)
 			aboveEntity.Brushes = append(aboveEntity.Brushes, aboveColumn)
+			AddDefaultEntityKeys(aboveEntity, &actor)
 			qm.Entities = append(qm.Entities, aboveEntity)
 		}
 
@@ -731,6 +824,7 @@ func CreatePlatform(rtlmap *RTLMapData, x, y int, scale float64, qm *quakemap.Qu
 				scale, false)
 			bottomEntity := quakemap.NewEntity(0, className, qm)
 			bottomEntity.Brushes = append(bottomEntity.Brushes, column)
+			AddDefaultEntityKeys(bottomEntity, &actor)
 			qm.Entities = append(qm.Entities, bottomEntity)
 		}
 	}
@@ -833,7 +927,7 @@ func CreateMaskedWall(rtlmap *RTLMapData, x, y int, scale float64, qm *quakemap.
 		// middle
 		if maskedWallInfo.Middle != "" && floorHeight > 2 {
 			var middlez1 float64 = floorDepth + gridSizeZ
-			var middlez2 float64 = floorDepth + float64(rtlmap.FloorHeight()-1)*gridSizeZ
+			var middlez2 float64 = floorDepth + float64(floorHeight-1)*gridSizeZ
 			middleClassName := ClassNameForMaskedWall(&maskedWallInfo, "middle")
 			cuboidParams := quakemap.BasicCuboidParams("{"+maskedWallInfo.Middle, scale, false)
 			cuboidParams.North.TexScaleX *= xScaleFactor
@@ -866,6 +960,8 @@ func CreateMaskedWall(rtlmap *RTLMapData, x, y int, scale float64, qm *quakemap.
 		}
 
 		// TODO: sides
+
+		AddThinWallClipTextures(rtlmap, &wallInfo, scale, qm)
 
 	} else {
 		panic(fmt.Sprintf("Masked wall at %d,%d has non-existent ID (%d)", x, y, wallInfo.MaskedWallID))
