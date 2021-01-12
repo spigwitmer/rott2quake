@@ -84,6 +84,26 @@ var Items = map[uint16]ItemInfo{
 	0xae: ItemInfo{
 		0, 0xae, "", "object_blades", AddSpinningBlades,
 	},
+	// columns
+	0xf8: ItemInfo{
+		0, 0x141, "func_detail", "func_detail", AddColumn,
+	},
+	0xf9: ItemInfo{
+		0, 0x141, "func_detail", "func_detail", AddColumn,
+	},
+	0xfa: ItemInfo{
+		0, 0x141, "func_detail", "func_detail", AddColumn,
+	},
+	0xfb: ItemInfo{
+		0, 0x141, "func_detail", "func_detail", AddColumn,
+	},
+	// push columns
+	0x141: ItemInfo{
+		0, 0x141, "func_train", "func_train", AddColumn,
+	},
+	0x165: ItemInfo{
+		0, 0x141, "func_train", "func_train", AddColumn,
+	},
 	// flamethrowers
 	0x186: ItemInfo{
 		0, 0x186, "", "object_anomaly_fire", AddFlamethrower,
@@ -92,6 +112,32 @@ var Items = map[uint16]ItemInfo{
 	0x0b: ItemInfo{
 		0x0b, 0, "trap_shooter", "object_fireball_shooter", AddFireballShooter,
 	},
+}
+
+// adds column or push column
+func AddColumn(x int, y int, gridSizeX float64, gridSizeY float64, gridSizeZ float64,
+	item *ItemInfo, r *RTLMapData, q *quakemap.QuakeMap, dusk bool) {
+
+	entity := quakemap.NewEntity(0, "func_detail", q)
+	for _, brush := range quakemap.PushColumnBrushes {
+		newBrush := brush.Clone()
+		// NOTE: this assumes that the .map file created for it
+		// has it centered at the origin
+		newBrush.Scale(0.0, 0.0, 0.0, (gridSizeX / 64.0))
+		entity.Brushes = append(entity.Brushes, newBrush)
+	}
+
+	entityHeight := entity.Height()
+	for i, _ := range entity.Brushes {
+		entity.Brushes[i].Translate(
+			(float64(x)+0.5)*gridSizeX,
+			(float64(y)+0.5)*-gridSizeY,
+			gridSizeZ+(entityHeight/2.0))
+	}
+
+	// TODO: trigger_once for pushcolumns
+
+	q.Entities = append(q.Entities, entity)
 }
 
 // adds trampolines right on the floor

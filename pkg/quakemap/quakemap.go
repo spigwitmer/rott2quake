@@ -112,6 +112,45 @@ func (b *Brush) Length() float64 {
 	return vertMax - vertMin
 }
 
+// determine how much of the Z axis the brush takes
+func (b *Brush) Height() float64 {
+	var vertMax, vertMin float64
+
+	vertMax = math.Inf(-1)
+	vertMin = math.Inf(1)
+
+	setMinOrMax := func(val float64) {
+		if val > vertMax {
+			vertMax = val
+		} else if val < vertMin {
+			vertMin = val
+		}
+	}
+
+	for _, plane := range b.Planes {
+		setMinOrMax(plane.Z1)
+		setMinOrMax(plane.Z2)
+		setMinOrMax(plane.Z3)
+	}
+
+	return vertMax - vertMin
+}
+
+// scale the plane vertices with (cx, cy, cz) as the focal point
+func (b *Brush) Scale(cx, cy, cz, scale float64) {
+	doScale := func(sx, sy, sz *float64) {
+		*sx = (*sx - cx) * scale
+		*sy = (*sy - cy) * scale
+		*sz = (*sz - cz) * scale
+	}
+
+	for i, _ := range b.Planes {
+		doScale(&b.Planes[i].X1, &b.Planes[i].Y1, &b.Planes[i].Z1)
+		doScale(&b.Planes[i].X2, &b.Planes[i].Y2, &b.Planes[i].Z2)
+		doScale(&b.Planes[i].X3, &b.Planes[i].Y3, &b.Planes[i].Z3)
+	}
+}
+
 func (b *Brush) AddPlane(
 	x1, y1, z1, x2, y2, z2, x3, y3, z3 float64,
 	texture string,
@@ -183,6 +222,31 @@ func NewEntity(spawnFlags int, className string, qm *QuakeMap) *Entity {
 	e.AdditionalKeys = make(map[string]string)
 	e.Map = qm
 	return &e
+}
+
+func (e *Entity) Height() float64 {
+	var vertMax, vertMin float64
+
+	vertMax = math.Inf(-1)
+	vertMin = math.Inf(1)
+
+	setMinOrMax := func(val float64) {
+		if val > vertMax {
+			vertMax = val
+		} else if val < vertMin {
+			vertMin = val
+		}
+	}
+
+	for _, brush := range e.Brushes {
+		for _, plane := range brush.Planes {
+			setMinOrMax(plane.Z1)
+			setMinOrMax(plane.Z2)
+			setMinOrMax(plane.Z3)
+		}
+	}
+
+	return vertMax - vertMin
 }
 
 func (e *Entity) Render() string {
