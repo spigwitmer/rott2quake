@@ -1212,6 +1212,7 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 		qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, ceilBrush)
 	}
 
+	// spawn walls, items, static entities
 	for y := 0; y < 128; y++ {
 		for x := 0; x < 128; x++ {
 			wallInfo := rtlmap.ActorGrid[y][x]
@@ -1267,11 +1268,17 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 				}
 			}
 
-			if len(wallInfo.MapTriggers) > 0 {
-				log.Printf("Creating triggers at (%d,%d)", wallInfo.X, wallInfo.Y)
-				CreateTrigger(rtlmap, &wallInfo, scale, qm)
-			}
+		}
+	}
 
+	// spawn touchplate triggers
+	for y := 0; y < 128; y++ {
+		for x := 0; x < 128; x++ {
+			actor := &rtlmap.ActorGrid[y][x]
+			if len(actor.MapTriggers) > 0 {
+				log.Printf("Creating triggers at (%d,%d)", actor.X, actor.Y)
+				CreateTrigger(rtlmap, actor, scale, qm)
+			}
 		}
 	}
 

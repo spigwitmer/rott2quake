@@ -118,13 +118,63 @@ var Items = map[uint16]ItemInfo{
 func AddColumn(x int, y int, gridSizeX float64, gridSizeY float64, gridSizeZ float64,
 	item *ItemInfo, r *RTLMapData, q *quakemap.QuakeMap, dusk bool) {
 
-	entity := quakemap.NewEntity(0, "func_detail", q)
+	actor := &r.ActorGrid[y][x]
+	entityType := "func_detail"
+
+	var touchx1, touchy1, touchx2, touchy2 float64
+	touchdx := 0
+	touchdy := 0
+	pushTrigger := false
+
+	touchz1 := gridSizeZ
+	touchz2 := gridSizeZ * 2
+
+	switch actor.SpriteValue {
+	// rt_ted.c:3805
+	case 303, 304, 305, // pushes east
+		321, 322, 323, // pushes north
+		339, 340, 341, // pushes west
+		357, 358, 359: // pushes south
+		entityType = "func_train"
+		pushTrigger = true
+	}
+
+	entity := quakemap.NewEntity(0, entityType, q)
+	AddDefaultEntityKeys(entity, actor)
 	for _, brush := range quakemap.PushColumnBrushes {
 		newBrush := brush.Clone()
 		// NOTE: this assumes that the .map file created for it
 		// has it centered at the origin
 		newBrush.Scale(0.0, 0.0, 0.0, (gridSizeX / 64.0))
 		entity.Brushes = append(entity.Brushes, newBrush)
+	}
+
+	// build trigger_once right at the edge of the column
+	switch actor.SpriteValue {
+	case 303, 304, 305:
+		touchx1 = float64(x)*gridSizeX + (gridSizeX-entity.Width())/2.0
+		touchx2 = touchx1 + 1
+		touchy1 = float64(y) * -gridSizeY
+		touchy2 = touchy1 - gridSizeY
+		touchdx = 1
+	case 321, 322, 323:
+		touchy1 = float64(y)*-gridSizeY - (gridSizeY+entity.Length())/2.0
+		touchy2 = touchy1 - 1
+		touchx1 = float64(x) * gridSizeX
+		touchx2 = touchx1 + gridSizeX
+		touchdy = -1
+	case 339, 340, 341:
+		touchx1 = float64(x)*gridSizeX + (gridSizeX+entity.Width())/2.0
+		touchx2 = touchx1 + 1
+		touchy1 = float64(y) * -gridSizeY
+		touchy2 = touchy1 - gridSizeY
+		touchdx = -1
+	case 357, 358, 359:
+		touchy1 = float64(y)*-gridSizeY - (gridSizeY-entity.Length())/2.0
+		touchy2 = touchy1 - 1
+		touchx1 = float64(x) * gridSizeX
+		touchx2 = touchx1 + gridSizeX
+		touchdy = 1
 	}
 
 	entityHeight := entity.Height()
@@ -135,7 +185,66 @@ func AddColumn(x int, y int, gridSizeX float64, gridSizeY float64, gridSizeZ flo
 			gridSizeZ+(entityHeight/2.0))
 	}
 
-	// TODO: trigger_once for pushcolumns
+	if pushTrigger {
+		var touchplateX, touchplateY int
+		tgtColumn := fmt.Sprintf("column_%d_%d", x, y)
+		tgtPathStart := fmt.Sprintf("column_%d_%d_corner_start", x, y)
+		tgtPathEnd := fmt.Sprintf("column_%d_%d_corner_end", x, y)
+		tgtRelay := fmt.Sprintf("trigger_%d_%d", x, y)
+		if actor.InfoValue > 0 {
+			touchplateX = int((actor.InfoValue >> 8) & 0xff)
+			touchplateY = int(actor.InfoValue & 0xff)
+			tgtRelay = fmt.Sprintf("trigger_%d_%d", touchplateX, touchplateY)
+		}
+
+		entity.AdditionalKeys["targetname"] = tgtColumn
+		entity.AdditionalKeys["target"] = tgtPathStart
+
+		initialCorner := quakemap.NewEntity(0, "path_corner", q)
+		initialCorner.OriginX = float64(x)*gridSizeX + (gridSizeX-entity.Width())/2.0
+		initialCorner.OriginY = float64(y+1)*-gridSizeY + (gridSizeY-entity.Length())/2.0
+		initialCorner.OriginZ = gridSizeZ
+		initialCorner.AdditionalKeys["targetname"] = tgtPathStart
+		initialCorner.AdditionalKeys["target"] = tgtPathEnd
+		q.Entities = append(q.Entities, initialCorner)
+
+		// only move 1 unit instead of 2 if there's a wall
+		if !r.ActorGrid[y+(touchdy*2)][x+(touchdx*2)].IsWall() {
+			touchdx *= 2
+			touchdy *= 2
+		}
+
+		endCorner := quakemap.NewEntity(0, "path_corner", q)
+		endCorner.OriginX = initialCorner.OriginX + (float64(touchdx) * gridSizeX)
+		endCorner.OriginY = initialCorner.OriginY - (float64(touchdy) * gridSizeY)
+		endCorner.OriginZ = gridSizeZ
+		endCorner.AdditionalKeys["targetname"] = tgtPathEnd
+		endCorner.AdditionalKeys["target"] = "idontexist"
+		endCorner.AdditionalKeys["wait"] = "-1"
+		q.Entities = append(q.Entities, endCorner)
+
+		pushEntityRelay := quakemap.NewEntity(0, "trigger_relay", q)
+		pushEntityRelay.OriginX = (float64(x) + 0.5) * gridSizeZ
+		pushEntityRelay.OriginY = (float64(y) + 0.5) * -gridSizeY
+		pushEntityRelay.OriginZ = gridSizeZ * 2.5
+		pushEntityRelay.AdditionalKeys["targetname"] = tgtRelay
+		pushEntityRelay.AdditionalKeys["target"] = tgtColumn
+		q.Entities = append(q.Entities, pushEntityRelay)
+
+		if actor.InfoValue == 0 {
+			pushEntity := quakemap.NewEntity(0, "trigger_once", q)
+			pushEntity.Brushes = append(pushEntity.Brushes, quakemap.BasicCuboid(
+				touchx1, touchy1, touchz1,
+				touchx2, touchy2, touchz2,
+				"clip", (gridSizeX/64.0), false,
+			))
+			pushEntity.AdditionalKeys["target"] = tgtRelay
+			q.Entities = append(q.Entities, pushEntity)
+		} else {
+			r.AddTrigger(actor, touchplateX, touchplateY, TRIGGER_WallPush)
+		}
+
+	}
 
 	q.Entities = append(q.Entities, entity)
 }

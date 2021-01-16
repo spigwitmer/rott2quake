@@ -224,6 +224,62 @@ func NewEntity(spawnFlags int, className string, qm *QuakeMap) *Entity {
 	return &e
 }
 
+func (e *Entity) Translate(dx, dy, dz float64) {
+	for i, _ := range e.Brushes {
+		e.Brushes[i].Translate(dx, dy, dz)
+	}
+}
+
+func (e *Entity) Width() float64 {
+	var vertMax, vertMin float64
+
+	vertMax = math.Inf(-1)
+	vertMin = math.Inf(1)
+
+	setMinOrMax := func(val float64) {
+		if val > vertMax {
+			vertMax = val
+		} else if val < vertMin {
+			vertMin = val
+		}
+	}
+
+	for _, brush := range e.Brushes {
+		for _, plane := range brush.Planes {
+			setMinOrMax(plane.X1)
+			setMinOrMax(plane.X2)
+			setMinOrMax(plane.X3)
+		}
+	}
+
+	return vertMax - vertMin
+}
+
+func (e *Entity) Length() float64 {
+	var vertMax, vertMin float64
+
+	vertMax = math.Inf(-1)
+	vertMin = math.Inf(1)
+
+	setMinOrMax := func(val float64) {
+		if val > vertMax {
+			vertMax = val
+		} else if val < vertMin {
+			vertMin = val
+		}
+	}
+
+	for _, brush := range e.Brushes {
+		for _, plane := range brush.Planes {
+			setMinOrMax(plane.Y1)
+			setMinOrMax(plane.Y2)
+			setMinOrMax(plane.Y3)
+		}
+	}
+
+	return vertMax - vertMin
+}
+
 func (e *Entity) Height() float64 {
 	var vertMax, vertMin float64
 
