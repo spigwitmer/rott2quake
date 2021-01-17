@@ -67,7 +67,7 @@ var Items = map[uint16]ItemInfo{
 	},
 	// dark staff
 	0x38: ItemInfo{
-		0, 0x38, "weapon_lightning", "weapon_riveter", 0, 0, false, nil,
+		0, 0x38, "weapon_lightning", "prop_soap", 0, 0, false, nil,
 	},
 
 	// powerups
