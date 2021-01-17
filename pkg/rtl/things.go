@@ -12,10 +12,13 @@ type EntityAdderCallback func(x int, y int, gridSizeX float64, gridSizeY float64
 	item *ItemInfo, r *RTLMapData, q *quakemap.QuakeMap, dusk bool)
 
 type ItemInfo struct {
-	TileId          uint16              // is it represented by a tile (can be 0)
-	SpriteId        uint16              // is it represented by a sprite (can be 0)
-	QuakeEntityName string              // replacement Quake entity name
-	DuskEntityName  string              // replacement Dusk entity name
+	TileId          uint16 // is it represented by a tile (can be 0)
+	SpriteId        uint16 // is it represented by a sprite (can be 0)
+	QuakeEntityName string // replacement Quake entity name
+	DuskEntityName  string // replacement Dusk entity name
+	QuakeHeight     float64
+	DuskHeight      float64
+	PlaceOnFloor    bool
 	AddCallback     EntityAdderCallback // callback function (takes precedence over replacement entity names)
 }
 
@@ -24,93 +27,104 @@ var Items = map[uint16]ItemInfo{
 
 	// bat
 	0x2e: ItemInfo{
-		0, 0x2e, "weapon_nailgun", "weapon_sword", nil,
+		0, 0x2e, "weapon_nailgun", "weapon_sword", 0, 0, false, nil,
 	},
 	// knife
 	0x2f: ItemInfo{
-		0, 0x2f, "weapon_nailgun", "weapon_crossbow", nil,
+		0, 0x2f, "weapon_nailgun", "weapon_crossbow", 0, 0, false, nil,
 	},
 	// double-pistol
 	0x30: ItemInfo{
-		0, 0x30, "weapon_supershotgun", "weapon_pistol", nil,
+		0, 0x30, "weapon_supershotgun", "weapon_pistol", 0, 0, false, nil,
 	},
 	// mp40
 	0x31: ItemInfo{
-		0, 0x31, "weapon_nailgun", "weapon_mg", nil,
+		0, 0x31, "weapon_nailgun", "weapon_mg", 0, 0, false, nil,
 	},
 	// bazooka
 	0x32: ItemInfo{
-		0, 0x32, "weapon_rocketlauncher", "weapon_supershotgun", nil,
+		0, 0x32, "weapon_rocketlauncher", "weapon_supershotgun", 0, 0, false, nil,
 	},
 	// firebomb
 	0x33: ItemInfo{
-		0, 0x33, "weapon_rocketlauncher", "weapon_riveter", nil,
+		0, 0x33, "weapon_rocketlauncher", "weapon_riveter", 0, 0, false, nil,
 	},
 	// heatseaker
 	0x34: ItemInfo{
-		0, 0x34, "weapon_lightning", "weapon_rifle", nil,
+		0, 0x34, "weapon_lightning", "weapon_rifle", 0, 0, false, nil,
 	},
 	// drunk missle
 	0x35: ItemInfo{
-		0, 0x35, "weapon_grenadelauncher", "weapon_mortar", nil,
+		0, 0x35, "weapon_grenadelauncher", "weapon_mortar", 0, 0, false, nil,
 	},
 	// flamewall
 	0x36: ItemInfo{
-		0, 0x36, "weapon_lightning", "weapon_shotgun", nil,
+		0, 0x36, "weapon_lightning", "weapon_shotgun", 0, 0, false, nil,
 	},
 	// split missle
 	0x37: ItemInfo{
-		0, 0x37, "weapon_supershotgun", "weapon_supershotgun", nil,
+		0, 0x37, "weapon_supershotgun", "weapon_supershotgun", 0, 0, false, nil,
 	},
 	// dark staff
 	0x38: ItemInfo{
-		0, 0x38, "weapon_lightning", "weapon_riveter", nil,
+		0, 0x38, "weapon_lightning", "weapon_riveter", 0, 0, false, nil,
 	},
 
 	// powerups
 
 	// armor
 	0x10e: ItemInfo{
-		0, 0x10e, "item_armor2", "item_armor2", nil,
+		0, 0x10e, "item_armor2", "item_armor2", 0, 0, false, nil,
 	},
 
 	// misc
 
 	// trampolines
 	0xc1: ItemInfo{
-		0, 0x5a, "object_jump_pad", "object_jump_pad", AddTrampoline,
+		0, 0x5a, "object_jump_pad", "object_jump_pad", 0, 0, false, AddTrampoline,
 	},
 	// rotating blades
 	0xae: ItemInfo{
-		0, 0xae, "", "object_blades", AddSpinningBlades,
+		0, 0xae, "", "object_blades", 0, 0, false, AddSpinningBlades,
 	},
 	// columns
 	0xf8: ItemInfo{
-		0, 0x141, "func_detail", "func_detail", AddColumn,
+		0, 0x141, "func_detail", "func_detail", 0, 0, false, AddColumn,
 	},
 	0xf9: ItemInfo{
-		0, 0x141, "func_detail", "func_detail", AddColumn,
+		0, 0x141, "func_detail", "func_detail", 0, 0, false, AddColumn,
 	},
 	0xfa: ItemInfo{
-		0, 0x141, "func_detail", "func_detail", AddColumn,
+		0, 0x141, "func_detail", "func_detail", 0, 0, false, AddColumn,
 	},
 	0xfb: ItemInfo{
-		0, 0x141, "func_detail", "func_detail", AddColumn,
+		0, 0x141, "func_detail", "func_detail", 0, 0, false, AddColumn,
 	},
 	// push columns
 	0x141: ItemInfo{
-		0, 0x141, "func_train", "func_train", AddColumn,
+		0, 0x141, "func_train", "func_train", 0, 0, false, AddColumn,
 	},
 	0x165: ItemInfo{
-		0, 0x141, "func_train", "func_train", AddColumn,
+		0, 0x141, "func_train", "func_train", 0, 0, false, AddColumn,
+	},
+	// exploding barrels
+	0x10d: ItemInfo{
+		0, 0x10d, "misc_explobox", "misc_explobox", 64, 64, true, nil,
+	},
+	0x3e: ItemInfo{
+		0, 0x10d, "misc_explobox", "misc_explobox", 64, 64, true, nil,
+	},
+	// exploding box
+	0x3d: ItemInfo{
+		0, 0x10d, "misc_explobox2", "misc_explobox2", 32, 32, true, nil,
 	},
 	// flamethrowers
 	0x186: ItemInfo{
-		0, 0x186, "", "object_anomaly_fire", AddFlamethrower,
+		0, 0x186, "", "object_anomaly_fire", 0, 0, false, AddFlamethrower,
 	},
 	// fireball shooter
 	0x0b: ItemInfo{
-		0x0b, 0, "trap_shooter", "object_fireball_shooter", AddFireballShooter,
+		0x0b, 0, "trap_shooter", "object_fireball_shooter", 0, 0, false, AddFireballShooter,
 	},
 }
 

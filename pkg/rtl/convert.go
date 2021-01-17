@@ -1260,9 +1260,15 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 						case 5, 6:
 							itemZOffset = -gridSizeZ
 						}
-						entity.OriginZ = floorDepth + (gridSizeZ / 2.0) + itemZOffset
+						entity.OriginZ = floorDepth + itemZOffset
+						if !itemInfo.PlaceOnFloor {
+							// center it just above the platform
+							entity.OriginZ += (gridSizeZ / 2.0)
+						}
 					case wallInfo.InfoValue == 11, wallInfo.InfoValue == 12:
 						entity.OriginZ = floorDepth - 65.0 - float64(wallInfo.InfoValue-11)
+					case itemInfo.PlaceOnFloor == true:
+						entity.OriginZ = floorDepth
 					default:
 						entity.OriginZ = floorDepth + (gridSizeZ / 2.0)
 					}
