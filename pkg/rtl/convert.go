@@ -1243,6 +1243,11 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 					if dusk {
 						entityName = itemInfo.DuskEntityName
 					}
+
+					if entityName == "" {
+						continue
+					}
+
 					entity := quakemap.NewEntity(0, entityName, qm)
 					entity.OriginX = float64(x)*gridSizeX + (gridSizeX / 2.0)
 					entity.OriginY = float64(y)*-gridSizeY - (gridSizeY / 2.0)

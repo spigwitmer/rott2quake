@@ -70,7 +70,31 @@ var Items = map[uint16]ItemInfo{
 		0, 0x38, "weapon_lightning", "prop_soap", 0, 0, false, nil,
 	},
 
+	// pickups
+
+	// silver ankh coin
+	0x39: ItemInfo{
+		0, 0x39, "", "pickup_coin", 0, 0, false, AddAnkhCoin,
+	},
+	// gold ankh coin
+	0x3a: ItemInfo{
+		0, 0x3a, "", "pickup_coin", 0, 0, false, AddAnkhCoin,
+	},
+	// reeded gold ankh coin
+	0x3b: ItemInfo{
+		0, 0x3b, "", "pickup_coin", 0, 0, false, AddAnkhCoin,
+	},
+
 	// powerups
+
+	// elasto mode (nothing similar to it in Quake)
+	0x104: ItemInfo{
+		0, 0x104, "item_artifact_invisibility", "prop_bottle", 0, 0, false, nil,
+	},
+	// shrooms mode (also nothing similar to it in Quake)
+	0x105: ItemInfo{
+		0, 0x104, "item_artifact_invisibility", "prop_bottle", 0, 0, false, nil,
+	},
 
 	// armor
 	0x10e: ItemInfo{
@@ -109,14 +133,18 @@ var Items = map[uint16]ItemInfo{
 	},
 	// exploding barrels
 	0x10d: ItemInfo{
-		0, 0x10d, "misc_explobox", "misc_explobox", 64, 64, true, nil,
+		0, 0x10d, "misc_explobox", "prop_barrel_exploding_2", 64, 46, true, nil,
 	},
 	0x3e: ItemInfo{
-		0, 0x10d, "misc_explobox", "misc_explobox", 64, 64, true, nil,
+		0, 0x10d, "misc_explobox", "prop_barrel_exploding_2", 64, 46, true, nil,
 	},
 	// exploding box
 	0x3d: ItemInfo{
 		0, 0x10d, "misc_explobox2", "misc_explobox2", 32, 32, true, nil,
+	},
+	// light post
+	0x3f: ItemInfo{
+		0, 0x3f, "", "object_light_post_1", 0, 72, true, nil,
 	},
 	// flamethrowers
 	0x186: ItemInfo{
@@ -126,6 +154,52 @@ var Items = map[uint16]ItemInfo{
 	0x0b: ItemInfo{
 		0x0b, 0, "trap_shooter", "object_fireball_shooter", 0, 0, false, AddFireballShooter,
 	},
+}
+
+func (r *RTLMapData) PlatformItemHeight(infoVal uint16) int {
+	switch infoVal {
+	case 0, 4, 7, 8:
+		return 0
+	case 1, 9:
+		return r.FloorHeight() - 1
+	case 5, 6:
+		return 1
+	default:
+		panic("invalid platform height")
+	}
+}
+
+// adds ankh coins
+func AddAnkhCoin(x int, y int, gridSizeX float64, gridSizeY float64, gridSizeZ float64,
+	item *ItemInfo, r *RTLMapData, q *quakemap.QuakeMap, dusk bool) {
+
+	actor := r.ActorGrid[y][x]
+	entityName := item.QuakeEntityName
+	if dusk {
+		entityName = item.DuskEntityName
+	}
+	/* XXX
+	if !dusk {
+		return
+	}
+	*/
+
+	entity := quakemap.NewEntity(0, entityName, q)
+	AddDefaultEntityKeys(entity, &actor)
+	entity.OriginX = (float64(x) + 0.5) * gridSizeX
+	entity.OriginY = (float64(y) + 0.5) * -gridSizeY
+	switch {
+	default:
+		entity.OriginZ = (float64(r.PlatformItemHeight(actor.InfoValue)) + 1.5) * gridSizeZ
+	case actor.InfoValue&0xb000 == 0xb000:
+		entity.OriginZ = r.ZOffset(actor.InfoValue, (gridSizeX / 64.0))
+
+	case actor.InfoValue == 0x0b: // rt_ted.c:6993
+		fallthrough
+	case actor.InfoValue == 0x0c:
+		entity.OriginZ = (float64(r.FloorHeight()+1) * gridSizeZ) - ((float64(actor.ItemHeight+32) * gridSizeZ) / 64.0)
+	}
+	q.Entities = append(q.Entities, entity)
 }
 
 // adds column or push column

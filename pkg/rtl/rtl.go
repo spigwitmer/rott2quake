@@ -117,6 +117,7 @@ type ActorInfo struct {
 	AreaID            int // see area.go
 	ThinWallDirection WallDirection
 	Item              *ItemInfo
+	ItemHeight        int
 	MapTriggers       []MapTrigger
 }
 
@@ -278,12 +279,13 @@ func (r *RTLMapData) CeilingTexture() string {
 }
 
 func (r *RTLMapData) FloorHeight() int {
-	if r.Height >= 90 && r.Height <= 98 {
+	if r.Height >= 90 && r.Height <= 97 {
 		return r.Height - 89
 	} else if r.Height >= 450 && r.Height <= 457 {
 		return r.Height - 441
 	} else {
-		panic("Map has invalid height")
+		log.Panicf("Map %s has invalid floor height: %d", r.MapName(), r.Height)
+		return -1
 	}
 }
 
@@ -293,7 +295,8 @@ func (r *RTLMapData) CeilingHeight() int {
 	} else if r.Height >= 450 && r.Height <= 457 {
 		return r.Height - 441
 	} else {
-		panic("Map has invalid height")
+		log.Panicf("Map %s has invalid ceiling height: %d", r.MapName(), r.Height)
+		panic("Map has invalid ceiling height")
 	}
 }
 
@@ -417,6 +420,9 @@ func NewRTL(rfile io.ReadSeeker) (*RTL, error) {
 		r.MapData[i].renderSpriteGrid()
 		r.MapData[i].determineExits()
 		r.MapData[i].determineGADs()
+		if r.MapData[i].MapName() != "" {
+			r.MapData[i].processUndefinedHeights()
+		}
 
 		for j := 0; j < 128; j++ {
 			if r.MapData[i].InfoPlane[0][j]&0xFF00 == 0xBA00 {
@@ -434,6 +440,7 @@ func (r *RTLMapData) renderSpriteGrid() {
 		for x := 0; x < 128; x++ {
 			spriteValue := r.SpritePlane[y][x]
 			wallValue := r.WallPlane[y][x]
+			infoValue := r.InfoPlane[y][x]
 
 			// spawn location
 			if spriteValue >= 19 && spriteValue <= 22 {
@@ -450,6 +457,14 @@ func (r *RTLMapData) renderSpriteGrid() {
 			if wallValue == 0x0b { // fireball shooter
 				itemInfo, _ := Items[0x0b]
 				r.ActorGrid[y][x].Item = &itemInfo
+			}
+
+			switch infoValue {
+			// rt_stat.c:1251
+			case 0x0b:
+				r.ActorGrid[y][x].ItemHeight = -65
+			case 0x0c:
+				r.ActorGrid[y][x].ItemHeight = -66
 			}
 		}
 	}
@@ -576,6 +591,64 @@ func (r *RTLMapData) determineThinWallsAndDirections() {
 				case 1, 4, 5, 6, 7, 8, 9:
 					r.ActorGrid[y][x].Type = WALL_ThinWall
 					r.ActorGrid[y][x].ThinWallDirection, _, _ = r.ThinWallDirection(x, y)
+				}
+			}
+		}
+	}
+}
+
+func (r *RTLMapData) processUndefinedHeights() {
+	floorHeight := r.FloorHeight()
+	maxHeight := ((floorHeight << 6) - 32)
+	log.Printf("maxHeight: %d", maxHeight)
+	for y := 0; y < 128; y++ {
+		for x := 0; x < 128; x++ {
+			heightCode := r.ActorGrid[y][x].ItemHeight
+			switch heightCode {
+			case 0:
+				continue
+			case -65, -66:
+				dx := 0
+				dy := 0
+				count := 0
+				if r.ActorGrid[y][x+1].ItemHeight == heightCode {
+					dx = 1
+				} else if r.ActorGrid[y+1][x].ItemHeight == heightCode {
+					dy = 1
+				} else {
+					log.Panicf("(%d,%d) cannot determine undefined height", x, y)
+				}
+				for ; r.ActorGrid[y+dy*count][x+dx*count].ItemHeight == heightCode; count++ {
+				}
+				switch heightCode {
+				case -65:
+					// rt_ted.c:7011
+					// TODO: figure out the busted math behind this?
+					c := int32(maxHeight+20) << 8
+					hc := int32(count+1) << 7
+					a := int32(c<<8) / (hc * hc)
+					//log.Printf("(%d,%d) c=%d hc=%d a=%d", x, y, c, hc, a)
+					for i := 0; i < count; i++ {
+						xx := int32(-hc) + int32((i+1)<<8)
+						h := int32((int32(c) - (int32((a * (xx * xx)) >> 8))) >> 8)
+						r.ActorGrid[y+int(dy*i)][x+int(dx*i)].ItemHeight = maxHeight - int(h)
+						log.Printf("(%d,%d) new ItemHeight: %d, h=%d", x+(dx*i), y+(dy*i), maxHeight-int(h), int(h))
+					}
+				case -66:
+					// TODO: figure out the busted math behind this?
+					hc := ((maxHeight + 20) << 16) / (count + 1)
+					h := hc << 1
+					//log.Printf("(%d,%d) hc=%d, h=%d", x, y, hc, h)
+					springStart := (r.ActorGrid[y-dy][x-dx].InfoValue == 0xc1)
+					for i := 0; i < count; i++ {
+						if springStart {
+							r.ActorGrid[y+(dy*i)][x+(dx*i)].ItemHeight = maxHeight - (h >> 16)
+						} else {
+							r.ActorGrid[y+(dy*(count-i-1))][x+(dx*(count-i-1))].ItemHeight = maxHeight - (h >> 16)
+						}
+						log.Printf("(%d,%d) new ItemHeight: %d", x+(dx*i), y+(dy*i), maxHeight-(h>>16))
+						h += hc
+					}
 				}
 			}
 		}
