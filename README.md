@@ -6,6 +6,9 @@ Converts [Rise of the Triad](https://www.gog.com/game/rise_of_the_triad__dark_wa
 
 * Go 1.14+
 * Make
+* [quake101.wad file](https://www.wad-archive.com/wad/050ce481b07c283519e9e921e53db92a6a4d022b)
+
+Copy quake101.wad to the r2q-data/ folder in the repository root.
 
 ### Building the CLI tool
 
@@ -37,9 +40,21 @@ NOTE: you need to generate a Quake .wad file from the invocation above and pass 
 ./rott2quake -wad-out quake-rott.wad -rtl DARKWAR.RTL -rtl-map-outdir <dest dir>
 ```
 
+or, with DARKWAR.RTL in the r2q-data/ folder:
+
+```bash
+make dump-maps
+```
+
 If you're generating maps to play in Dusk, scale the map to at least 1.5 its size:
 ```bash
 ./rott2quake -wad-out quake-rott.wad -rtl DARKWAR.RTL -rtl-map-scale 1.5 -rtl-map-outdir <dest dir>
+```
+
+or, with DARKWAR.RTL in the r2q-data/ folder:
+
+```bash
+make dump-maps-dusk
 ```
 
 ### Dumping Quake .pak files to a folder
@@ -57,7 +72,7 @@ ROTT:
 
 Quake:
 ```bash
-./rott2quake -list -quake QUAKE101.WAD
+./rott2quake -list -quake r2q-data/quake101.wad
 ```
 
 
