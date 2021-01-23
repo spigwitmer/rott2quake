@@ -2,6 +2,7 @@ SOURCES := $(wildcard cmd/*/*.go pkg/*/*.go)
 GOPRIVATE := '*'
 export GOPRIVATE
 
+ADDITIONAL_WADS ?= r2q-data/QUAKE101.WAD
 additionalWadsParam := $(foreach wadPath,$(ADDITIONAL_WADS),-add-wad $(wadPath))
 
 TARGETS = rott2quake dump-palette
