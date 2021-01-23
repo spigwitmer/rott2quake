@@ -1164,7 +1164,7 @@ func AddExitPoints(rtlmap *RTLMapData, scale float64, dusk bool, qm *quakemap.Qu
 	}
 }
 
-func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale float64, dusk bool, additionalWads []string) *quakemap.QuakeMap {
+func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale float64, dusk bool, additionalWads []string, fgdFile string) *quakemap.QuakeMap {
 
 	// worldspawn:
 	// 1. build 128x128 floor
@@ -1193,6 +1193,9 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 	qm.InfoPlayerStart.Angle = playerAngle
 	additionalWads = append(additionalWads, textureWad)
 	qm.Wads = additionalWads
+	if fgdFile != "" {
+		qm.WorldSpawn.AdditionalKeys["_tb_def"] = fmt.Sprintf("external:%s", fgdFile)
+	}
 
 	floorBrush := quakemap.BasicCuboid(
 		0, 0, 0,
@@ -1273,7 +1276,11 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 					case wallInfo.InfoValue == 11, wallInfo.InfoValue == 12:
 						entity.OriginZ = floorDepth - 65.0 - float64(wallInfo.InfoValue-11)
 					case itemInfo.PlaceOnFloor == true:
-						entity.OriginZ = floorDepth
+						if dusk {
+							entity.OriginZ = floorDepth + (float64(itemInfo.DuskHeight) / 2.0) + itemInfo.DuskZOffset
+						} else {
+							entity.OriginZ = floorDepth + (float64(itemInfo.QuakeHeight) / 2.0) + itemInfo.QuakeZOffset
+						}
 					default:
 						entity.OriginZ = floorDepth + (gridSizeZ / 2.0)
 					}

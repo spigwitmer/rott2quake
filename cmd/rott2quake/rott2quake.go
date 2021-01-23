@@ -260,6 +260,7 @@ func main() {
 	var rtlMapScale float64
 	var wadExtractor lumps.ArchiveReader
 	var additionalWads MultiString
+	var fgdFile string
 
 	flag.StringVar(&rtlFile, "rtl", "", "RTL file")
 	flag.BoolVar(&isPak, "pak", false, "Input file is Quake .pak file")
@@ -268,6 +269,7 @@ func main() {
 	flag.BoolVar(&printRTLInfo, "print-rtl-info", false, "Print RTL metadata (requires -rtl)")
 	flag.StringVar(&wadOut, "wad-out", "", "output ripped image assets to Quake wad2 file (requires -dump)")
 	flag.Var(&additionalWads, "add-wad", "Path to additional WAD file to add to .map files. Can be specified multiple times.")
+	flag.StringVar(&fgdFile, "fgd", "", "Path to .fgd file to include in .map files.")
 	flag.BoolVar(&isQuakeWad, "quake", false, "wad specified is from Quake, not ROTT")
 	flag.BoolVar(&convertToDusk, "dusk", false, "generate maps for Dusk rather than Quake (requires -rtl-map-outdir)")
 	flag.StringVar(&rtlMapOutdir, "rtl-map-outdir", "", "Write RTL ASCII map out to this folder")
@@ -371,7 +373,7 @@ func main() {
 				log.Fatalf("Could not open %s for writing: %v\n", rtlQuakeMapFile, err)
 			}
 			defer quakeMapFhnd.Close()
-			qm := rtlfile.ConvertRTLMapToQuakeMapFile(&rtl.MapData[idx], wadOut, rtlMapScale, convertToDusk, additionalWads[:])
+			qm := rtlfile.ConvertRTLMapToQuakeMapFile(&rtl.MapData[idx], wadOut, rtlMapScale, convertToDusk, additionalWads[:], fgdFile)
 			if _, err = quakeMapFhnd.Write([]byte(qm.Render())); err != nil {
 				log.Fatalf("Could not write quake map file to %s: %v\n", rtlQuakeMapFile, err)
 			}
