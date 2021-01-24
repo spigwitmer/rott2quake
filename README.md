@@ -105,3 +105,9 @@ Quake:
   render the floor or ceiling.
 - Maps with more than 2 keys cannot be played in Quake. Maps with more
   than 3 keys cannot be played in Quake nor Dusk.
+
+
+## Special Thanks
+
+- The Quake Mapping Discord
+- The New Blood Discord
