@@ -1164,6 +1164,59 @@ func AddExitPoints(rtlmap *RTLMapData, scale float64, dusk bool, qm *quakemap.Qu
 	}
 }
 
+func AddEnemies(rtlmap *RTLMapData, scale float64, dusk bool, qm *quakemap.QuakeMap) {
+	var gridSizeX float64 = 64.0 * scale
+	var gridSizeY float64 = 64.0 * scale
+	var gridSizeZ float64 = 64.0 * scale
+	var floorDepth float64 = 64.0 * scale
+
+	for y := 0; y < 128; y++ {
+		for x := 0; x < 128; x++ {
+			actor := rtlmap.ActorGrid[y][x]
+			enemy := actor.Enemy
+			if enemy != nil {
+				entityName := enemy.ConversionInfo.EntityName(&actor, dusk)
+				if entityName == "" {
+					continue
+				}
+				entity := quakemap.NewEntity(0, entityName, qm)
+				entity.OriginX = (float64(x) + 0.5) * gridSizeX
+				entity.OriginY = (float64(y) + 0.5) * -gridSizeY
+
+				switch enemy.Difficulty {
+				case DifficultyEasy:
+					entity.SpawnFlags = quakemap.SPAWNFLAG_NotOnHard
+				case DifficultyHard:
+					entity.SpawnFlags = quakemap.SPAWNFLAG_NotOnEasy | quakemap.SPAWNFLAG_NotOnEasy
+				}
+
+				// TODO: Z axis placement needs to be cleaned up. Lots
+				// of redundant code that's also in item placement
+				switch {
+				case actor.InfoValue&0xff00 == 0xb000:
+					entity.OriginZ = floorDepth + (gridSizeZ / 2.0) + rtlmap.ZOffset(actor.InfoValue, scale)
+				case actor.Type == WALL_Platform:
+					// rt_door.c:243
+					var itemZOffset float64
+					switch actor.InfoValue {
+					case 1, 8, 9:
+						itemZOffset = float64(rtlmap.FloorHeight()-1) * gridSizeZ
+					case 4, 7:
+						itemZOffset = 0.0
+					case 5, 6:
+						itemZOffset = -gridSizeZ
+					}
+					entity.OriginZ = floorDepth + itemZOffset + (gridSizeZ / 2.0)
+				default:
+					entity.OriginZ = floorDepth + (gridSizeZ / 2.0)
+				}
+
+				qm.Entities = append(qm.Entities, entity)
+			}
+		}
+	}
+}
+
 func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale float64, dusk bool, additionalWads []string, fgdFile string) *quakemap.QuakeMap {
 
 	// worldspawn:
@@ -1305,6 +1358,7 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 	CreateDoorEntities(rtlmap, scale, dusk, qm)
 	LinkElevators(rtlmap, textureWad, floorDepth, gridSizeX, gridSizeY, gridSizeZ, scale, dusk, qm)
 	AddExitPoints(rtlmap, scale, dusk, qm)
+	AddEnemies(rtlmap, scale, dusk, qm)
 
 	// 2. TODO: clip brushes around floor extending height
 	return qm

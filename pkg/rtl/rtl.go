@@ -66,6 +66,8 @@ func (a *ActorType) String() string {
 		return "WALL_Door"
 	case SPR_GAD:
 		return "SPR_GAD"
+	case SPR_Enemy:
+		return "SPR_Enemy"
 	case SPR_Static:
 		return "SPR_Static"
 	default:
@@ -86,6 +88,7 @@ const (
 	WALL_Switch
 	WALL_Door
 	SPR_GAD
+	SPR_Enemy
 	SPR_Static
 )
 
@@ -119,6 +122,7 @@ type ActorInfo struct {
 	Item              *ItemInfo
 	ItemHeight        int
 	MapTriggers       []MapTrigger
+	Enemy             *EnemyInfo
 }
 
 type DoorInfo struct {
@@ -422,6 +426,7 @@ func NewRTL(rfile io.ReadSeeker) (*RTL, error) {
 		r.MapData[i].determineGADs()
 		if r.MapData[i].MapName() != "" {
 			r.MapData[i].processUndefinedHeights()
+			r.MapData[i].processEnemies()
 		}
 
 		for j := 0; j < 128; j++ {
@@ -593,6 +598,14 @@ func (r *RTLMapData) determineThinWallsAndDirections() {
 					r.ActorGrid[y][x].ThinWallDirection, _, _ = r.ThinWallDirection(x, y)
 				}
 			}
+		}
+	}
+}
+
+func (r *RTLMapData) processEnemies() {
+	for y := 0; y < 128; y++ {
+		for x := 0; x < 128; x++ {
+			r.ActorGrid[y][x].Enemy = GetEnemyInfoFromSpriteValue(r.ActorGrid[y][x].SpriteValue)
 		}
 	}
 }

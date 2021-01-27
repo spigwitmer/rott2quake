@@ -6,6 +6,12 @@ import (
 	"strings"
 )
 
+var (
+	SPAWNFLAG_NotOnEasy   int = 256
+	SPAWNFLAG_NotOnNormal int = 512
+	SPAWNFLAG_NotOnHard   int = 1024
+)
+
 type Plane struct {
 	X1, Y1, Z1       float64
 	X2, Y2, Z2       float64
