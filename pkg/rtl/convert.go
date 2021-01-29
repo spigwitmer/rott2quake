@@ -1180,14 +1180,30 @@ func AddEnemies(rtlmap *RTLMapData, scale float64, dusk bool, qm *quakemap.Quake
 					continue
 				}
 				entity := quakemap.NewEntity(0, entityName, qm)
+				AddDefaultEntityKeys(entity, &actor)
 				entity.OriginX = (float64(x) + 0.5) * gridSizeX
 				entity.OriginY = (float64(y) + 0.5) * -gridSizeY
+
+				var angle float64
+				switch enemy.Direction {
+				case DIR_East:
+					angle = 0.0
+				case DIR_North:
+					angle = 90.0
+				case DIR_West:
+					angle = 180.0
+				case DIR_South:
+					angle = 270.0
+				default:
+					log.Panicf("Unknown enemy direction: %d", int(enemy.Direction))
+				}
+				entity.AdditionalKeys["angle"] = fmt.Sprintf("%.02f", angle)
 
 				switch enemy.Difficulty {
 				case DifficultyEasy:
 					entity.SpawnFlags = quakemap.SPAWNFLAG_NotOnHard
 				case DifficultyHard:
-					entity.SpawnFlags = quakemap.SPAWNFLAG_NotOnEasy | quakemap.SPAWNFLAG_NotOnEasy
+					entity.SpawnFlags = quakemap.SPAWNFLAG_NotOnEasy | quakemap.SPAWNFLAG_NotOnNormal
 				}
 
 				// TODO: Z axis placement needs to be cleaned up. Lots
@@ -1204,7 +1220,7 @@ func AddEnemies(rtlmap *RTLMapData, scale float64, dusk bool, qm *quakemap.Quake
 					case 4, 7:
 						itemZOffset = 0.0
 					case 5, 6:
-						itemZOffset = -gridSizeZ
+						itemZOffset = gridSizeZ
 					}
 					entity.OriginZ = floorDepth + itemZOffset + (gridSizeZ / 2.0)
 				default:

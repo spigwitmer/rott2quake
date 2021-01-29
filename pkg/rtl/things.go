@@ -185,14 +185,9 @@ func AddAnkhCoin(x int, y int, gridSizeX float64, gridSizeY float64, gridSizeZ f
 
 	actor := r.ActorGrid[y][x]
 	entityName := item.QuakeEntityName
-	if dusk {
-		entityName = item.DuskEntityName
-	}
-	/* XXX
 	if !dusk {
 		return
 	}
-	*/
 
 	entity := quakemap.NewEntity(0, entityName, q)
 	AddDefaultEntityKeys(entity, &actor)
