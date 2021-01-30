@@ -1,5 +1,9 @@
 Converts [Rise of the Triad](https://www.gog.com/game/rise_of_the_triad__dark_war) maps and textures to Quake MAP and WAD files.
 
+## Screenshots
+
+![Dusk 1](imgs/screenshot1.png)
+
 ## Building
 
 ### Ingredients
