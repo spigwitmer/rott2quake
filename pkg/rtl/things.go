@@ -53,7 +53,7 @@ var Items = map[uint16]ItemInfo{
 	},
 	// heatseaker
 	0x34: ItemInfo{
-		0, 0x34, "weapon_lightning", "weapon_rifle", 0, 0, 0, 0, false, nil,
+		0, 0x34, "weapon_rocketlauncher", "weapon_rifle", 0, 0, 0, 0, false, nil,
 	},
 	// drunk missle
 	0x35: ItemInfo{
@@ -61,7 +61,7 @@ var Items = map[uint16]ItemInfo{
 	},
 	// flamewall
 	0x36: ItemInfo{
-		0, 0x36, "weapon_lightning", "weapon_shotgun", 0, 0, 0, 0, false, nil,
+		0, 0x36, "weapon_supershotgun", "weapon_shotgun", 0, 0, 0, 0, false, nil,
 	},
 	// split missle
 	0x37: ItemInfo{
