@@ -83,7 +83,7 @@ Quake:
 - [X] Platforms
 - [X] Trampolines
 - [X] Weapon placement
-- [ ] Enemy placement (TODO)
+- [X] Enemy placement
 - [X] Doors
 - [ ] Touchplate Triggers
   - [X] Pushwalls
