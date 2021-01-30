@@ -3,6 +3,7 @@ Converts [Rise of the Triad](https://www.gog.com/game/rise_of_the_triad__dark_wa
 ## Screenshots
 
 ![Dusk 1](imgs/screenshot1.png)
+![Quake 1](imgs/screenshot2.png)
 
 ## Building
 
