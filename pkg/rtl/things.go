@@ -87,15 +87,40 @@ var Items = map[uint16]ItemInfo{
 		0, 0x3b, "", "pickup_coin", 0, 0, 0, 0, false, AddAnkhCoin,
 	},
 
+	// priest porridge
+	0x24: ItemInfo{
+		0, 0x24, "item_health", "pickup_health_small", 0, 0, 0, 0, false, nil,
+	},
+	// monk meal
+	0x25: ItemInfo{
+		0, 0x25, "item_health", "pickup_health_medium", 0, 0, 0, 0, false, nil,
+	},
+	// small monk crystal
+	0x26: ItemInfo{
+		0, 0x26, "item_health", "pickup_health_medium", 0, 0, 0, 0, false, nil,
+	},
+	// large monk crystal
+	0x27: ItemInfo{
+		0, 0x27, "item_health", "pickup_health_large", 0, 0, 0, 0, false, nil,
+	},
+
 	// powerups
 
-	// elasto mode (nothing similar to it in Quake)
+	// god mode
+	0xfc: ItemInfo{
+		0, 0xfc, "item_artifact_invulnerability", "item_artifact_invulnerability", 0, 0, 0, 0, false, nil,
+	},
+	// mercury mode (nothing similar to it in Quake, so wing it)
+	0xfe: ItemInfo{
+		0, 0xfe, "item_artifact_super_damage", "pickup_climber", 0, 0, 0, 0, false, nil,
+	},
+	// elasto mode (also nothing similar to it in Quake)
 	0x104: ItemInfo{
 		0, 0x104, "item_artifact_invisibility", "prop_bottle", 0, 0, 0, 0, false, nil,
 	},
 	// shrooms mode (also nothing similar to it in Quake)
 	0x105: ItemInfo{
-		0, 0x104, "item_artifact_invisibility", "prop_bottle", 0, 0, 0, 0, false, nil,
+		0, 0x105, "item_artifact_invisibility", "prop_bottle", 0, 0, 0, 0, false, nil,
 	},
 
 	// armor
@@ -347,7 +372,7 @@ func AddTrampoline(x int, y int, gridSizeX float64, gridSizeY float64, gridSizeZ
 	item *ItemInfo, r *RTLMapData, q *quakemap.QuakeMap, dusk bool) {
 
 	if !dusk {
-		// not supported for quake
+		// just rocket jump i guess
 		return
 	}
 	entity := quakemap.NewEntity(0, item.DuskEntityName, q)
