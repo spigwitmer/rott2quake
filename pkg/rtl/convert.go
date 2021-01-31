@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"gitlab.com/camtap/rott2quake/pkg/quakemap"
 	"log"
+	"math"
 )
 
 // RTL to Quake MAP conversion functions
@@ -246,7 +247,8 @@ func CreateGAD(rtlmap *RTLMapData, actor *ActorInfo, scale float64, qm *quakemap
 
 	dX := float64(actor.X)*gridSizeX + (gridSizeX / 2.0)
 	dY := float64(actor.Y)*-gridSizeY - (gridSizeY / 2.0)
-	dZ := floorDepth + rtlmap.ZOffset(actor.InfoValue, scale)
+	zOffset := rtlmap.ZOffset(actor.InfoValue, scale)
+	dZ := floorDepth + zOffset
 
 	var gadBrushes []quakemap.Brush
 	for _, brush := range quakemap.GADBrushes {
@@ -332,6 +334,92 @@ func CreateGAD(rtlmap *RTLMapData, actor *ActorInfo, scale float64, qm *quakemap
 		GADEntity.AdditionalKeys[k] = v
 	}
 	qm.Entities = append(qm.Entities, GADEntity)
+
+	if actor.SpriteValue == StaticGAD {
+		// add clip textures around other static GADs that are less
+		// than 7 units taller/shorter to allow stepping onto them
+		// without jumping
+
+		Xmargin := (gridSizeX - GADEntity.Width()) / 2.0
+		Ymargin := (gridSizeY - GADEntity.Length()) / 2.0
+
+		addClipBrush := func(x1, y1, z1, x2, y2, z2 float64) {
+			clipBrush := quakemap.BasicCuboid(
+				x1, y1, z1,
+				x2, y2, z2,
+				"clip", scale, false)
+			qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, clipBrush)
+		}
+
+		// east
+		if actor.X < 127 && rtlmap.ActorGrid[actor.Y][actor.X+1].SpriteValue == StaticGAD {
+			neighborX := actor.X + 1
+			neighborY := actor.Y
+			neighborZOffset := rtlmap.ZOffset(rtlmap.ActorGrid[neighborY][neighborX].InfoValue, scale)
+			zDiff := neighborZOffset - zOffset
+			if math.Abs(zDiff) < (7 * scale) {
+				stepX1 := (float64(neighborX) * gridSizeX) + GADEntity.Width() + Xmargin
+				stepX2 := stepX1 + Xmargin
+				stepY1 := (float64(neighborY) * -gridSizeY) - Ymargin
+				stepY2 := stepY1 - GADEntity.Length()
+				stepZ1 := zOffset + (zDiff / 4.0)
+				stepZ2 := zOffset + (zDiff / 2.0)
+				addClipBrush(stepX1, stepY1, stepZ1, stepX2, stepY2, stepZ2)
+			}
+		}
+
+		// north
+		if actor.Y > 0 && rtlmap.ActorGrid[actor.Y-1][actor.X].SpriteValue == StaticGAD {
+			neighborX := actor.X
+			neighborY := actor.Y - 1
+			neighborZOffset := rtlmap.ZOffset(rtlmap.ActorGrid[neighborY][neighborX].InfoValue, scale)
+			zDiff := neighborZOffset - zOffset
+			if math.Abs(zDiff) < (7 * scale) {
+				stepY1 := float64(neighborY) * -gridSizeY
+				stepY2 := stepY1 - Ymargin
+				stepX1 := (float64(neighborX) * gridSizeX) + Xmargin
+				stepX2 := stepX1 + GADEntity.Width()
+				stepZ1 := zOffset + (zDiff / 4.0)
+				stepZ2 := zOffset + (zDiff / 2.0)
+				addClipBrush(stepX1, stepY1, stepZ1, stepX2, stepY2, stepZ2)
+			}
+		}
+
+		// west
+		if actor.X > 0 && rtlmap.ActorGrid[actor.Y][actor.X-1].SpriteValue == StaticGAD {
+			neighborX := actor.X - 1
+			neighborY := actor.Y
+			neighborZOffset := rtlmap.ZOffset(rtlmap.ActorGrid[neighborY][neighborX].InfoValue, scale)
+			zDiff := neighborZOffset - zOffset
+			if math.Abs(zDiff) < (7 * scale) {
+				stepX1 := float64(neighborX) * gridSizeX
+				stepX2 := stepX1 + Xmargin
+				stepY1 := (float64(neighborY) * -gridSizeY) - Ymargin
+				stepY2 := stepY1 - GADEntity.Length()
+				stepZ1 := zOffset + (zDiff / 4.0)
+				stepZ2 := zOffset + (zDiff / 2.0)
+				addClipBrush(stepX1, stepY1, stepZ1, stepX2, stepY2, stepZ2)
+			}
+		}
+
+		// south
+		if actor.Y < 127 && rtlmap.ActorGrid[actor.Y+1][actor.X].SpriteValue == StaticGAD {
+			neighborX := actor.X
+			neighborY := actor.Y + 1
+			neighborZOffset := rtlmap.ZOffset(rtlmap.ActorGrid[neighborY][neighborX].InfoValue, scale)
+			zDiff := neighborZOffset - zOffset
+			if math.Abs(zDiff) < (7 * scale) {
+				stepY1 := float64(neighborY)*-gridSizeY - Ymargin - GADEntity.Length()
+				stepY2 := stepY1 - Ymargin
+				stepX1 := (float64(neighborX) * gridSizeX) + Xmargin
+				stepX2 := stepX1 + GADEntity.Width()
+				stepZ1 := zOffset + (zDiff / 4.0)
+				stepZ2 := zOffset + (zDiff / 2.0)
+				addClipBrush(stepX1, stepY1, stepZ1, stepX2, stepY2, stepZ2)
+			}
+		}
+
+	}
 }
 
 func ClipHeight(rtlmap *RTLMapData, actor *ActorInfo, scale float64) float64 {
