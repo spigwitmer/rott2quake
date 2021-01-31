@@ -34,51 +34,51 @@ type EnemyInfo struct {
 var Enemies = map[string]EnemyConversionInfo{
 	"low_guard": EnemyConversionInfo{
 		QuakeEnemyNames: []string{"monster_army"},
-		DuskEnemyNames:  []string{"monster_leatherneck"},
+		DuskEnemyNames:  []string{"monster_mage"},
 	},
 	"sneaky_low_guard": EnemyConversionInfo{
 		QuakeEnemyNames: []string{"monster_ogre"},
-		DuskEnemyNames:  []string{"monster_leatherneck"},
+		DuskEnemyNames:  []string{"monster_mage"},
 	},
 	"high_guard": EnemyConversionInfo{
 		QuakeEnemyNames: []string{"monster_ogre_marksman"},
-		DuskEnemyNames:  []string{"monster_leatherneck"},
+		DuskEnemyNames:  []string{"monster_army"},
 	},
 	"overpatrol_guard": EnemyConversionInfo{
 		QuakeEnemyNames: []string{"monster_wizard"},
-		DuskEnemyNames:  []string{"monster_leatherneck"},
+		DuskEnemyNames:  []string{"monster_mage_red"},
 	},
 	"triad_enforcer": EnemyConversionInfo{
 		QuakeEnemyNames: []string{"monster_shambler"},
-		DuskEnemyNames:  []string{"monster_leatherneck"},
+		DuskEnemyNames:  []string{"monster_hell_knight"},
 	},
 	"lightning_guard": EnemyConversionInfo{
 		QuakeEnemyNames: []string{"monster_demon1"},
-		DuskEnemyNames:  []string{"monster_leatherneck"},
+		DuskEnemyNames:  []string{"monster_scarecrow"},
 	},
 	"monk": EnemyConversionInfo{
 		QuakeEnemyNames: []string{"monster_knight"},
-		DuskEnemyNames:  []string{"monster_leatherneck"},
+		DuskEnemyNames:  []string{"monster_priestess", "monster_wendigo"},
 	},
 	"fire_monk": EnemyConversionInfo{
-		QuakeEnemyNames: []string{"monster_hellknight"},
-		DuskEnemyNames:  []string{"monster_leatherneck"},
+		QuakeEnemyNames: []string{"monster_hell_knight"},
+		DuskEnemyNames:  []string{"monster_red_mage", "monster_wendigo"},
 	},
 	"robo_guard": EnemyConversionInfo{
 		QuakeEnemyNames: []string{"monster_enforcer"},
-		DuskEnemyNames:  []string{"monster_leatherneck"},
+		DuskEnemyNames:  []string{"monster_cartdog"},
 	},
 	"ballistikraft": EnemyConversionInfo{
 		QuakeEnemyNames: []string{"monster_enforcer"},
-		DuskEnemyNames:  []string{"monster_leatherneck"},
+		DuskEnemyNames:  []string{"monster_cowgirl"},
 	},
 	"gun_emplacement": EnemyConversionInfo{
 		QuakeEnemyNames: []string{"monster_dog"},
-		DuskEnemyNames:  []string{"monster_leatherneck"},
+		DuskEnemyNames:  []string{"monster_turret"},
 	},
 	"4_way_gun": EnemyConversionInfo{
 		QuakeEnemyNames: []string{"monster_dog"},
-		DuskEnemyNames:  []string{"monster_leatherneck"},
+		DuskEnemyNames:  []string{"monster_turret"},
 	},
 	// TODO: bosses
 }

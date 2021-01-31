@@ -86,6 +86,19 @@ var Items = map[uint16]ItemInfo{
 	0x3b: ItemInfo{
 		0, 0x3b, "", "pickup_coin", 0, 0, 0, 0, false, AddAnkhCoin,
 	},
+	// ringed pink ankh
+	0x3c: ItemInfo{
+		0, 0x3c, "", "pickup_diamond", 0, 0, 0, 0, false, AddAnkhCoin,
+	},
+
+	// one-up
+	0x28: ItemInfo{
+		0, 0x28, "", "pickup_health_hallowed", 0, 0, 0, 0, false, AddAnkhCoin,
+	},
+	// three-up
+	0x29: ItemInfo{
+		0, 0x28, "", "pickup_health_hallowed", 0, 0, 0, 0, false, AddAnkhCoin,
+	},
 
 	// priest porridge
 	0x24: ItemInfo{
@@ -209,12 +222,11 @@ func AddAnkhCoin(x int, y int, gridSizeX float64, gridSizeY float64, gridSizeZ f
 	item *ItemInfo, r *RTLMapData, q *quakemap.QuakeMap, dusk bool) {
 
 	actor := r.ActorGrid[y][x]
-	entityName := item.QuakeEntityName
 	if !dusk {
 		return
 	}
 
-	entity := quakemap.NewEntity(0, entityName, q)
+	entity := quakemap.NewEntity(0, item.DuskEntityName, q)
 	AddDefaultEntityKeys(entity, &actor)
 	entity.OriginX = (float64(x) + 0.5) * gridSizeX
 	entity.OriginY = (float64(y) + 0.5) * -gridSizeY
