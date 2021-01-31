@@ -31,6 +31,8 @@ type EnemyInfo struct {
 	ConversionInfo EnemyConversionInfo
 }
 
+// TODO: this needs to be configuration-driven
+
 var Enemies = map[string]EnemyConversionInfo{
 	"low_guard": EnemyConversionInfo{
 		QuakeEnemyNames: []string{"monster_army"},

@@ -24,6 +24,8 @@ type ItemInfo struct {
 	AddCallback     EntityAdderCallback // callback function (takes precedence over replacement entity names)
 }
 
+// TODO: this needs to be configuration-driven
+
 var Items = map[uint16]ItemInfo{
 	// weapons
 
