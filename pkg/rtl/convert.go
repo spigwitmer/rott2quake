@@ -347,74 +347,90 @@ func CreateGAD(rtlmap *RTLMapData, actor *ActorInfo, scale float64, qm *quakemap
 			clipBrush := quakemap.BasicCuboid(
 				x1, y1, z1,
 				x2, y2, z2,
-				"clip", scale, false)
-			qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, clipBrush)
+				"clip", 1.0, false)
+			clipEntity := quakemap.NewEntity(0, "func_detail", qm)
+			AddDefaultEntityKeys(clipEntity, actor)
+			clipEntity.Brushes = []quakemap.Brush{clipBrush}
+			qm.Entities = append(qm.Entities, clipEntity)
 		}
+
+		stepZCoords := func(neighborZOffset, zDiff float64) (float64, float64) {
+			var stepZ1, stepZ2 float64
+			switch {
+			case zDiff > 0:
+				stepZ1 = dZ + (GADEntity.Height() / 2.0)
+				stepZ2 = stepZ1 + (zDiff / 2.0)
+			case zDiff == 0:
+				stepZ1 = dZ + GADEntity.Height() - 1
+				stepZ2 = stepZ1 + 1
+			case zDiff < 0:
+				stepZ1 = floorDepth + neighborZOffset + (GADEntity.Height() / 2.0) - (zDiff / 2.0)
+				stepZ2 = stepZ1 - (zDiff / 2.0)
+			}
+			return stepZ1, stepZ2
+		}
+
+		maxStepHeight := 24 * scale
 
 		// east
 		if actor.X < 127 && rtlmap.ActorGrid[actor.Y][actor.X+1].SpriteValue == StaticGAD {
-			neighborX := actor.X + 1
-			neighborY := actor.Y
-			neighborZOffset := rtlmap.ZOffset(rtlmap.ActorGrid[neighborY][neighborX].InfoValue, scale)
+			neighbor := rtlmap.ActorGrid[actor.Y][actor.X+1]
+			neighborZOffset := rtlmap.ZOffset(neighbor.InfoValue, scale)
 			zDiff := neighborZOffset - zOffset
-			if math.Abs(zDiff) < (7 * scale) {
-				stepX1 := (float64(neighborX) * gridSizeX) + GADEntity.Width() + Xmargin
+			if math.Abs(zDiff) <= maxStepHeight {
+				log.Printf("(%d,%d)->(%d,%d) adding clip to east", actor.X, actor.Y, neighbor.X, neighbor.Y)
+				stepX1 := (float64(actor.X) * gridSizeX) + GADEntity.Width() + Xmargin
 				stepX2 := stepX1 + Xmargin
-				stepY1 := (float64(neighborY) * -gridSizeY) - Ymargin
+				stepY1 := (float64(actor.Y) * -gridSizeY) - Ymargin
 				stepY2 := stepY1 - GADEntity.Length()
-				stepZ1 := zOffset + (zDiff / 4.0)
-				stepZ2 := zOffset + (zDiff / 2.0)
+				stepZ1, stepZ2 := stepZCoords(neighborZOffset, zDiff)
+				log.Printf("(%d,%d)->(%d,%d) stepZ1 = %.02f, stepZ2 = %.02f", actor.X, actor.Y, neighbor.X, neighbor.Y,
+					stepZ1, stepZ2)
 				addClipBrush(stepX1, stepY1, stepZ1, stepX2, stepY2, stepZ2)
 			}
 		}
 
 		// north
 		if actor.Y > 0 && rtlmap.ActorGrid[actor.Y-1][actor.X].SpriteValue == StaticGAD {
-			neighborX := actor.X
-			neighborY := actor.Y - 1
-			neighborZOffset := rtlmap.ZOffset(rtlmap.ActorGrid[neighborY][neighborX].InfoValue, scale)
+			neighbor := rtlmap.ActorGrid[actor.Y-1][actor.X]
+			neighborZOffset := rtlmap.ZOffset(neighbor.InfoValue, scale)
 			zDiff := neighborZOffset - zOffset
-			if math.Abs(zDiff) < (7 * scale) {
-				stepY1 := float64(neighborY) * -gridSizeY
+			if math.Abs(zDiff) <= maxStepHeight {
+				stepY1 := float64(actor.Y) * -gridSizeY
 				stepY2 := stepY1 - Ymargin
-				stepX1 := (float64(neighborX) * gridSizeX) + Xmargin
+				stepX1 := (float64(actor.X) * gridSizeX) + Xmargin
 				stepX2 := stepX1 + GADEntity.Width()
-				stepZ1 := zOffset + (zDiff / 4.0)
-				stepZ2 := zOffset + (zDiff / 2.0)
+				stepZ1, stepZ2 := stepZCoords(neighborZOffset, zDiff)
 				addClipBrush(stepX1, stepY1, stepZ1, stepX2, stepY2, stepZ2)
 			}
 		}
 
 		// west
 		if actor.X > 0 && rtlmap.ActorGrid[actor.Y][actor.X-1].SpriteValue == StaticGAD {
-			neighborX := actor.X - 1
-			neighborY := actor.Y
-			neighborZOffset := rtlmap.ZOffset(rtlmap.ActorGrid[neighborY][neighborX].InfoValue, scale)
+			neighbor := rtlmap.ActorGrid[actor.Y][actor.X-1]
+			neighborZOffset := rtlmap.ZOffset(neighbor.InfoValue, scale)
 			zDiff := neighborZOffset - zOffset
-			if math.Abs(zDiff) < (7 * scale) {
-				stepX1 := float64(neighborX) * gridSizeX
+			if math.Abs(zDiff) <= maxStepHeight {
+				stepX1 := float64(actor.X) * gridSizeX
 				stepX2 := stepX1 + Xmargin
-				stepY1 := (float64(neighborY) * -gridSizeY) - Ymargin
+				stepY1 := (float64(actor.Y) * -gridSizeY) - Ymargin
 				stepY2 := stepY1 - GADEntity.Length()
-				stepZ1 := zOffset + (zDiff / 4.0)
-				stepZ2 := zOffset + (zDiff / 2.0)
+				stepZ1, stepZ2 := stepZCoords(neighborZOffset, zDiff)
 				addClipBrush(stepX1, stepY1, stepZ1, stepX2, stepY2, stepZ2)
 			}
 		}
 
 		// south
 		if actor.Y < 127 && rtlmap.ActorGrid[actor.Y+1][actor.X].SpriteValue == StaticGAD {
-			neighborX := actor.X
-			neighborY := actor.Y + 1
-			neighborZOffset := rtlmap.ZOffset(rtlmap.ActorGrid[neighborY][neighborX].InfoValue, scale)
+			neighbor := rtlmap.ActorGrid[actor.Y+1][actor.X]
+			neighborZOffset := rtlmap.ZOffset(neighbor.InfoValue, scale)
 			zDiff := neighborZOffset - zOffset
-			if math.Abs(zDiff) < (7 * scale) {
-				stepY1 := float64(neighborY)*-gridSizeY - Ymargin - GADEntity.Length()
+			if math.Abs(zDiff) <= maxStepHeight {
+				stepY1 := float64(actor.Y)*-gridSizeY - Ymargin - GADEntity.Length()
 				stepY2 := stepY1 - Ymargin
-				stepX1 := (float64(neighborX) * gridSizeX) + Xmargin
+				stepX1 := (float64(actor.X) * gridSizeX) + Xmargin
 				stepX2 := stepX1 + GADEntity.Width()
-				stepZ1 := zOffset + (zDiff / 4.0)
-				stepZ2 := zOffset + (zDiff / 2.0)
+				stepZ1, stepZ2 := stepZCoords(neighborZOffset, zDiff)
 				addClipBrush(stepX1, stepY1, stepZ1, stepX2, stepY2, stepZ2)
 			}
 		}
