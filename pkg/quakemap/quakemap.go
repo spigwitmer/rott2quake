@@ -230,6 +230,10 @@ func NewEntity(spawnFlags int, className string, qm *QuakeMap) *Entity {
 	return &e
 }
 
+func (e *Entity) AddBrush(b Brush) {
+	e.Brushes = append(e.Brushes, b)
+}
+
 func (e *Entity) Translate(dx, dy, dz float64) {
 	for i, _ := range e.Brushes {
 		e.Brushes[i].Translate(dx, dy, dz)
@@ -370,4 +374,14 @@ func (q *QuakeMap) Render() string {
 		output += "\n" + entity.Render()
 	}
 	return output
+}
+
+func (q *QuakeMap) SpawnEntity(className string, spawnFlags int) *Entity {
+	entity := NewEntity(spawnFlags, className, q)
+	q.Entities = append(q.Entities, entity)
+	return entity
+}
+
+func (q *QuakeMap) AddEntity(entity *Entity) {
+	q.Entities = append(q.Entities, entity)
 }

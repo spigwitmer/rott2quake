@@ -181,62 +181,52 @@ func LinkElevators(rtlmap *RTLMapData, textureWad string,
 		}
 
 		// elevator 1
-		floor1Entity := quakemap.NewEntity(0, "func_button", qm)
+		floor1Entity := qm.SpawnEntity("func_button", 0)
 		floor1Entity.AdditionalKeys["target"] = fmt.Sprintf("elev_%d_1_trigger", linkCode)
 		floor1Entity.AdditionalKeys["angle"] = button1Angle
 		floor1Entity.AdditionalKeys["lip"] = "1"
-		floor1Brush := quakemap.BasicCuboid(floor1ButtonX1, floor1ButtonY1, floorDepth,
+		floor1Entity.AddBrush(quakemap.BasicCuboid(floor1ButtonX1, floor1ButtonY1, floorDepth,
 			floor1ButtonX2, floor1ButtonY2, float64(rtlmap.FloorHeight()+1)*gridSizeZ,
-			"ELEV5", scale, false)
-		floor1Entity.Brushes = append(floor1Entity.Brushes, floor1Brush)
+			"ELEV5", scale, false))
 		AddDefaultEntityKeys(floor1Entity, &elev1.Switch)
-		qm.Entities = append(qm.Entities, floor1Entity)
 
-		floor1TriggerEntity := quakemap.NewEntity(0, "trigger_teleport", qm)
+		floor1TriggerEntity := qm.SpawnEntity("trigger_teleport", 0)
 		floor1TriggerEntity.AdditionalKeys["targetname"] = fmt.Sprintf("elev_%d_1_trigger", linkCode)
 		floor1TriggerEntity.AdditionalKeys["target"] = fmt.Sprintf("elev_%d_1", linkCode)
-		floor1TriggerEntityBrush := quakemap.BasicCuboid(float64(elev1.Floor.X)*gridSizeX, float64(elev1.Floor.Y)*-gridSizeY, floorDepth,
+		floor1TriggerEntity.AddBrush(quakemap.BasicCuboid(float64(elev1.Floor.X)*gridSizeX, float64(elev1.Floor.Y)*-gridSizeY, floorDepth,
 			float64(elev1.Floor.X+1)*gridSizeX, float64(elev1.Floor.Y+1)*-gridSizeY, floorDepth+gridSizeZ,
-			"__TB_empty", -1.0, false)
-		floor1TriggerEntity.Brushes = append(floor1TriggerEntity.Brushes, floor1TriggerEntityBrush)
-		qm.Entities = append(qm.Entities, floor1TriggerEntity)
+			"__TB_empty", -1.0, false))
 
-		floor1DestEntity := quakemap.NewEntity(0, "info_teleport_destination", qm)
+		floor1DestEntity := qm.SpawnEntity("info_teleport_destination", 0)
 		floor1DestEntity.OriginX = float64(elev2.Floor.X)*gridSizeX + (gridSizeX / 2)
 		floor1DestEntity.OriginY = float64(elev2.Floor.Y)*-gridSizeY - (gridSizeY / 2)
 		floor1DestEntity.OriginZ = floorDepth
 		floor1DestEntity.AdditionalKeys["targetname"] = fmt.Sprintf("elev_%d_1", linkCode)
 		floor1DestEntity.AdditionalKeys["angle"] = button2Angle
-		qm.Entities = append(qm.Entities, floor1DestEntity)
 
 		// elevator 2
-		floor2Entity := quakemap.NewEntity(0, "func_button", qm)
+		floor2Entity := qm.SpawnEntity("func_button", 0)
 		floor2Entity.AdditionalKeys["target"] = fmt.Sprintf("elev_%d_2_trigger", linkCode)
 		floor2Entity.AdditionalKeys["angle"] = button2Angle
 		floor2Entity.AdditionalKeys["lip"] = "1"
-		floor2Brush := quakemap.BasicCuboid(floor2ButtonX1, floor2ButtonY1, floorDepth,
+		floor2Entity.AddBrush(quakemap.BasicCuboid(floor2ButtonX1, floor2ButtonY1, floorDepth,
 			floor2ButtonX2, floor2ButtonY2, float64(rtlmap.FloorHeight()+1)*gridSizeZ,
-			"ELEV5", scale, false)
-		floor2Entity.Brushes = append(floor2Entity.Brushes, floor2Brush)
+			"ELEV5", scale, false))
 		AddDefaultEntityKeys(floor2Entity, &elev2.Switch)
-		qm.Entities = append(qm.Entities, floor2Entity)
 
-		floor2TriggerEntity := quakemap.NewEntity(0, "trigger_teleport", qm)
+		floor2TriggerEntity := qm.SpawnEntity("trigger_teleport", 0)
 		floor2TriggerEntity.AdditionalKeys["targetname"] = fmt.Sprintf("elev_%d_2_trigger", linkCode)
 		floor2TriggerEntity.AdditionalKeys["target"] = fmt.Sprintf("elev_%d_2", linkCode)
-		floor2TriggerEntityBrush := quakemap.BasicCuboid(float64(elev2.Floor.X)*gridSizeX, float64(elev2.Floor.Y)*-gridSizeY, floorDepth,
+		floor2TriggerEntity.AddBrush(quakemap.BasicCuboid(float64(elev2.Floor.X)*gridSizeX, float64(elev2.Floor.Y)*-gridSizeY, floorDepth,
 			float64(elev2.Floor.X+1)*gridSizeX, float64(elev2.Floor.Y+1)*-gridSizeY, floorDepth+gridSizeZ,
-			"__TB_empty", -1.0, false)
-		floor2TriggerEntity.Brushes = append(floor2TriggerEntity.Brushes, floor2TriggerEntityBrush)
-		qm.Entities = append(qm.Entities, floor2TriggerEntity)
+			"__TB_empty", -1.0, false))
 
-		floor2DestEntity := quakemap.NewEntity(0, "info_teleport_destination", qm)
+		floor2DestEntity := qm.SpawnEntity("info_teleport_destination", 0)
 		floor2DestEntity.OriginX = float64(elev1.Floor.X)*gridSizeX + (gridSizeX / 2)
 		floor2DestEntity.OriginY = float64(elev1.Floor.Y)*-gridSizeY - (gridSizeY / 2)
 		floor2DestEntity.OriginZ = floorDepth
 		floor2DestEntity.AdditionalKeys["targetname"] = fmt.Sprintf("elev_%d_2", linkCode)
 		floor2DestEntity.AdditionalKeys["angle"] = button1Angle
-		qm.Entities = append(qm.Entities, floor2DestEntity)
 	}
 }
 
@@ -278,14 +268,14 @@ func CreateGAD(rtlmap *RTLMapData, actor *ActorInfo, scale float64, qm *quakemap
 		initialCorner.AdditionalKeys["targetname"] = fmt.Sprintf("gadpath_%d_%d_init", actor.X, actor.Y)
 		initialCorner.AdditionalKeys["wait"] = "0.00001"
 		lastPathCorner = initialCorner
-		qm.Entities = append(qm.Entities, lastPathCorner)
+		qm.AddEntity(lastPathCorner)
 		entityKeys["target"] = initialCorner.AdditionalKeys["targetname"]
 		entityKeys["speed"] = fmt.Sprintf("%.02f", float64(moveInfo.Speed)*MovingObjectBaseSpeed*scale)
 
 		currentNode := gadPath
 		nodeToTargetNames := make(map[*PathNode]string)
 		for i := 0; i < numNodes; i++ {
-			currentPathCorner = quakemap.NewEntity(0, "path_corner", qm)
+			currentPathCorner = qm.SpawnEntity("path_corner", 0)
 			currentPathCorner.OriginZ = dZ
 			currentPathCorner.OriginX = (float64(currentNode.X))*gridSizeX + (gridSizeX / 2.0) - gadBrushes[1].Width()/2.0
 			currentPathCorner.OriginY = (float64(currentNode.Y))*-gridSizeY - (gridSizeY / 2.0) - gadBrushes[1].Length()/2.0
@@ -294,7 +284,6 @@ func CreateGAD(rtlmap *RTLMapData, actor *ActorInfo, scale float64, qm *quakemap
 			currentPathCorner.AdditionalKeys["targetname"] = targetName
 			currentPathCorner.AdditionalKeys["wait"] = "0.00001"
 			lastPathCorner.AdditionalKeys["target"] = targetName
-			qm.Entities = append(qm.Entities, currentPathCorner)
 			currentNode = currentNode.Next
 			lastPathCorner = currentPathCorner
 		}
@@ -323,17 +312,17 @@ func CreateGAD(rtlmap *RTLMapData, actor *ActorInfo, scale float64, qm *quakemap
 		entityKeys["target"] = upperPathEntityName
 		entityKeys["speed"] = fmt.Sprintf("%.02f", ElevatingGADBaseSpeed*scale)
 
-		qm.Entities = append(qm.Entities, upperPathEntity, lowerPathEntity)
+		qm.AddEntity(upperPathEntity)
+		qm.AddEntity(lowerPathEntity)
 	}
 
-	GADEntity := quakemap.NewEntity(0, entityClassname, qm)
+	GADEntity := qm.SpawnEntity(entityClassname, 0)
 	GADEntity.Brushes = gadBrushes
 	AddDefaultEntityKeys(GADEntity, actor)
 	GADEntity.AdditionalKeys["_r2q_zoffset"] = fmt.Sprintf("%.02f", rtlmap.ZOffset(actor.InfoValue, scale))
 	for k, v := range entityKeys {
 		GADEntity.AdditionalKeys[k] = v
 	}
-	qm.Entities = append(qm.Entities, GADEntity)
 
 	if actor.SpriteValue == StaticGAD {
 		// add clip textures around other static GADs that are less
@@ -348,10 +337,9 @@ func CreateGAD(rtlmap *RTLMapData, actor *ActorInfo, scale float64, qm *quakemap
 				x1, y1, z1,
 				x2, y2, z2,
 				"clip", 1.0, false)
-			clipEntity := quakemap.NewEntity(0, "func_detail", qm)
+			clipEntity := qm.SpawnEntity("func_detail", 0)
 			AddDefaultEntityKeys(clipEntity, actor)
 			clipEntity.Brushes = []quakemap.Brush{clipBrush}
-			qm.Entities = append(qm.Entities, clipEntity)
 		}
 
 		stepZCoords := func(neighborZOffset, zDiff float64) (float64, float64) {
@@ -477,7 +465,7 @@ func AddThinWallClipTextures(rtlmap *RTLMapData, actor *ActorInfo, scale float64
 				westClipZ-1,
 				"clip", scale, false,
 			)
-			qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, clipBrush)
+			qm.WorldSpawn.AddBrush(clipBrush)
 		}
 
 		eastClipZ := ClipHeight(rtlmap, &rtlmap.ActorGrid[actor.Y][actor.X+1], scale)
@@ -492,7 +480,7 @@ func AddThinWallClipTextures(rtlmap *RTLMapData, actor *ActorInfo, scale float64
 				eastClipZ-1,
 				"clip", scale, false,
 			)
-			qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, clipBrush)
+			qm.WorldSpawn.AddBrush(clipBrush)
 		}
 	} else {
 		northClipZ := ClipHeight(rtlmap, &rtlmap.ActorGrid[actor.Y-1][actor.X], scale)
@@ -507,7 +495,7 @@ func AddThinWallClipTextures(rtlmap *RTLMapData, actor *ActorInfo, scale float64
 				northClipZ-1,
 				"clip", scale, false,
 			)
-			qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, clipBrush)
+			qm.WorldSpawn.AddBrush(clipBrush)
 		}
 
 		southClipZ := ClipHeight(rtlmap, &rtlmap.ActorGrid[actor.Y+1][actor.X], scale)
@@ -522,7 +510,7 @@ func AddThinWallClipTextures(rtlmap *RTLMapData, actor *ActorInfo, scale float64
 				southClipZ-1,
 				"clip", scale, false,
 			)
-			qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, clipBrush)
+			qm.WorldSpawn.AddBrush(clipBrush)
 		}
 	}
 }
@@ -557,21 +545,21 @@ func CreateThinWall(rtlmap *RTLMapData, x, y int, scale float64, qm *quakemap.Qu
 			var z2 float64 = floorDepth + float64(rtlmap.FloorHeight()-1)*gridSizeZ
 			wallColumn := quakemap.BasicCuboid(x1, y1, z1, x2, y2, z2,
 				texName, scale, false)
-			qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, wallColumn)
+			qm.WorldSpawn.AddBrush(wallColumn)
 		case 4:
 			// above only
 			var z1 float64 = floorDepth + float64(rtlmap.FloorHeight()-1)*gridSizeZ
 			var z2 float64 = floorDepth + float64(rtlmap.FloorHeight())*gridSizeZ
 			wallColumn := quakemap.BasicCuboid(x1, y1, z1, x2, y2, z2,
 				texName, scale, false)
-			qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, wallColumn)
+			qm.WorldSpawn.AddBrush(wallColumn)
 		case 5:
 			// below only
 			var z1 float64 = floorDepth
 			var z2 float64 = floorDepth + gridSizeZ
 			wallColumn := quakemap.BasicCuboid(x1, y1, z1, x2, y2, z2,
 				texName, scale, false)
-			qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, wallColumn)
+			qm.WorldSpawn.AddBrush(wallColumn)
 		case 6:
 			// middle passable
 			var bottomz1 float64 = floorDepth
@@ -582,29 +570,29 @@ func CreateThinWall(rtlmap *RTLMapData, x, y int, scale float64, qm *quakemap.Qu
 				texName, scale, false)
 			wallColumn2 := quakemap.BasicCuboid(x1, y1, topz1, x2, y2, topz2,
 				texName, scale, false)
-			qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, wallColumn1)
-			qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, wallColumn2)
+			qm.WorldSpawn.AddBrush(wallColumn1)
+			qm.WorldSpawn.AddBrush(wallColumn2)
 		case 7:
 			// everything but below
 			var z1 float64 = floorDepth + gridSizeZ
 			var z2 float64 = floorDepth + float64(rtlmap.FloorHeight())*gridSizeZ
 			wallColumn := quakemap.BasicCuboid(x1, y1, z1, x2, y2, z2,
 				texName, scale, false)
-			qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, wallColumn)
+			qm.WorldSpawn.AddBrush(wallColumn)
 		case 8:
 			// middle only
 			var z1 float64 = floorDepth + gridSizeZ
 			var z2 float64 = floorDepth + float64(rtlmap.FloorHeight()-1)*gridSizeZ
 			wallColumn := quakemap.BasicCuboid(x1, y1, z1, x2, y2, z2,
 				texName, scale, false)
-			qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, wallColumn)
+			qm.WorldSpawn.AddBrush(wallColumn)
 		case 9:
 			// everything but above
 			var z1 float64 = floorDepth
 			var z2 float64 = floorDepth + float64(rtlmap.FloorHeight()-1)*gridSizeZ
 			wallColumn := quakemap.BasicCuboid(x1, y1, z1, x2, y2, z2,
 				texName, scale, false)
-			qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, wallColumn)
+			qm.WorldSpawn.AddBrush(wallColumn)
 		}
 
 		AddThinWallClipTextures(rtlmap, &actor, scale, qm)
@@ -639,12 +627,11 @@ func CreateWallSwitchTrigger(rtlmap *RTLMapData, actor *ActorInfo, scale float64
 	wallColumnBrush := quakemap.BasicCuboid(x1, y1, z1,
 		x2, y2, z2,
 		"__TB_empty", scale, true)
-	triggerEntity := quakemap.NewEntity(0, "trigger_multiple", qm)
+	triggerEntity := qm.SpawnEntity("trigger_multiple", 0)
 	triggerEntity.AdditionalKeys["target"] = fmt.Sprintf("trigger_%d_%d", actor.X, actor.Y)
 	triggerEntity.AdditionalKeys["message"] = "Switch Triggered."
-	triggerEntity.Brushes = append(triggerEntity.Brushes, wallColumnBrush)
+	triggerEntity.AddBrush(wallColumnBrush)
 	AddDefaultEntityKeys(triggerEntity, actor)
-	qm.Entities = append(qm.Entities, triggerEntity)
 }
 
 func CreateTouchplate(rtlmap *RTLMapData, actor *ActorInfo, scale float64, qm *quakemap.QuakeMap) {
@@ -655,15 +642,14 @@ func CreateTouchplate(rtlmap *RTLMapData, actor *ActorInfo, scale float64, qm *q
 
 	relayTargetName := fmt.Sprintf("trigger_%d_%d", actor.X, actor.Y)
 
-	triggerEntity := quakemap.NewEntity(0, "trigger_once", qm)
+	triggerEntity := qm.SpawnEntity("trigger_once", 0)
 	triggerEntity.AdditionalKeys["target"] = relayTargetName
 	triggerEntity.AdditionalKeys["message"] = "Touchplate Triggered"
-	triggerEntity.Brushes = append(triggerEntity.Brushes,
+	triggerEntity.AddBrush(
 		quakemap.BasicCuboid(float64(actor.X)*gridSizeX, float64(actor.Y)*-gridSizeY, floorDepth,
 			float64(actor.X+1)*gridSizeX, float64(actor.Y+1)*-gridSizeY, floorDepth+gridSizeZ,
 			"__TB_empty", scale, false))
 	AddDefaultEntityKeys(triggerEntity, actor)
-	qm.Entities = append(qm.Entities, triggerEntity)
 }
 
 func CreateSingleUnitWall(rtlmap *RTLMapData, x, y int, scale float64, textureName string, qm *quakemap.QuakeMap) {
@@ -688,7 +674,8 @@ func CreateSingleUnitWall(rtlmap *RTLMapData, x, y int, scale float64, textureNa
 	wallColumn := quakemap.BasicCuboid(x1, y1, wallz1,
 		x2, y2, wallz2,
 		"WALL22", scale, false)
-	qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, gateColumn, wallColumn)
+	qm.WorldSpawn.AddBrush(gateColumn)
+	qm.WorldSpawn.AddBrush(wallColumn)
 }
 
 func CreateRegularWall(rtlmap *RTLMapData, x, y int, scale float64, qm *quakemap.QuakeMap) {
@@ -748,12 +735,12 @@ func CreateRegularWallSingleTexture(rtlmap *RTLMapData, x, y int, scale float64,
 		initialCorner.AdditionalKeys["targetname"] = fmt.Sprintf("movewallpath_%d_%d_init", actor.X, actor.Y)
 		initialCorner.AdditionalKeys["wait"] = "0.00001"
 		lastPathCorner = initialCorner
-		qm.Entities = append(qm.Entities, lastPathCorner)
+		qm.AddEntity(lastPathCorner)
 
 		currentNode := wallPath
 		nodeToTargetNames := make(map[*PathNode]string)
 		for i := 0; i < numNodes; i++ {
-			currentPathCorner = quakemap.NewEntity(0, "path_corner", qm)
+			currentPathCorner = qm.SpawnEntity("path_corner", 0)
 			currentPathCorner.OriginZ = cornerZ
 			currentPathCorner.OriginX = (float64(currentNode.X)) * gridSizeX
 			currentPathCorner.OriginY = (float64(currentNode.Y) + 1) * -gridSizeY
@@ -762,7 +749,6 @@ func CreateRegularWallSingleTexture(rtlmap *RTLMapData, x, y int, scale float64,
 			currentPathCorner.AdditionalKeys["targetname"] = targetName
 			currentPathCorner.AdditionalKeys["wait"] = "0.00001"
 			lastPathCorner.AdditionalKeys["target"] = targetName
-			qm.Entities = append(qm.Entities, currentPathCorner)
 			currentNode = currentNode.Next
 			lastPathCorner = currentPathCorner
 		}
@@ -780,9 +766,9 @@ func CreateRegularWallSingleTexture(rtlmap *RTLMapData, x, y int, scale float64,
 	// make static walls part of the worldspawn,
 	// everything else a separate entity
 	if spriteVal == 0 && infoVal == 0 && !actor.Damage {
-		qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, wallColumn)
+		qm.WorldSpawn.AddBrush(wallColumn)
 	} else {
-		entity := quakemap.NewEntity(0, entityType, qm)
+		entity := qm.SpawnEntity(entityType, 0)
 		entity.Brushes = []quakemap.Brush{wallColumn}
 		entity.AdditionalKeys["_x"] = fmt.Sprintf("%d", actor.X)
 		entity.AdditionalKeys["_y"] = fmt.Sprintf("%d", actor.Y)
@@ -802,13 +788,12 @@ func CreateRegularWallSingleTexture(rtlmap *RTLMapData, x, y int, scale float64,
 				triggerY := int(infoVal) & 0xff
 
 				// create trigger_relay to match the touchplate/switch
-				relayEntity := quakemap.NewEntity(0, "trigger_relay", qm)
+				relayEntity := qm.SpawnEntity("trigger_relay", 0)
 				relayEntity.OriginX = (float64(actor.X) + 0.5) * gridSizeX
 				relayEntity.OriginY = (float64(actor.Y) + 0.5) * -gridSizeY
 				relayEntity.OriginZ = floorDepth + (float64(rtlmap.FloorHeight()+1))*gridSizeZ
 				relayEntity.AdditionalKeys["targetname"] = fmt.Sprintf("trigger_%d_%d", triggerX, triggerY)
 				relayEntity.AdditionalKeys["target"] = wallTargetName
-				qm.Entities = append(qm.Entities, relayEntity)
 			} else if spriteVal < 256 {
 				var tx1, ty1, tx2, ty2 float64
 
@@ -839,30 +824,28 @@ func CreateRegularWallSingleTexture(rtlmap *RTLMapData, x, y int, scale float64,
 					panic("yes you're stuck implementing diagonal pushwall triggers")
 				}
 				// add pushwall trigger_once entity within the wall
-				pushWallTriggerEntity := quakemap.NewEntity(0, "trigger_once", qm)
-				pushWallTriggerEntity.Brushes = append(pushWallTriggerEntity.Brushes,
-					quakemap.BasicCuboid(tx1, ty1, z1, tx2, ty2, z2, "__TB_empty", scale, true))
+				pushWallTriggerEntity := qm.SpawnEntity("trigger_once", 0)
+				pushWallTriggerEntity.AddBrush(
+					quakemap.BasicCuboid(tx1, ty1, z1, tx2, ty2, z2, "trigger", scale, true),
+				)
 				pushWallTriggerEntity.AdditionalKeys["_x"] = fmt.Sprintf("%d", actor.X)
 				pushWallTriggerEntity.AdditionalKeys["_y"] = fmt.Sprintf("%d", actor.Y)
 				pushWallTriggerEntity.AdditionalKeys["target"] = wallTargetName
 				pushWallTriggerEntity.AdditionalKeys["targetname"] = fmt.Sprintf("movewallpath_%d_%d_push", actor.X, actor.Y)
-				qm.Entities = append(qm.Entities, pushWallTriggerEntity)
 				entity.AdditionalKeys["targetname"] = fmt.Sprintf("movewallpath_%d_%d_wall", actor.X, actor.Y)
 			}
 			entity.AdditionalKeys["speed"] = fmt.Sprintf("%.02f", float64(moveWallInfo.Speed)*MovingObjectBaseSpeed*scale)
 		}
-		qm.Entities = append(qm.Entities, entity)
 
 		if entityType == "func_wall" && actor.Damage {
 			// add trigger_hurt over wall to mimic a damaging wall
-			hurtEntity := quakemap.NewEntity(0, "trigger_hurt", qm)
+			hurtEntity := qm.SpawnEntity("trigger_hurt", 0)
 			hurtEntity.Brushes = append(hurtEntity.Brushes, quakemap.BasicCuboid(x1, y1, z1,
 				x2, y2, z2,
 				texName, scale, true))
 			hurtEntity.AdditionalKeys["_x"] = fmt.Sprintf("%d", actor.X)
 			hurtEntity.AdditionalKeys["_y"] = fmt.Sprintf("%d", actor.Y)
 			AddDefaultEntityKeys(hurtEntity, &actor)
-			qm.Entities = append(qm.Entities, hurtEntity)
 		}
 	}
 }
@@ -895,10 +878,9 @@ func CreatePlatform(rtlmap *RTLMapData, x, y int, scale float64, qm *quakemap.Qu
 			aboveColumn := quakemap.BasicCuboid(x1, y1, abovez1, x2, y2, abovez2,
 				"{"+platformInfo.Above,
 				scale, false)
-			aboveEntity := quakemap.NewEntity(0, aboveClassName, qm)
-			aboveEntity.Brushes = append(aboveEntity.Brushes, aboveColumn)
+			aboveEntity := qm.SpawnEntity(aboveClassName, 0)
+			aboveEntity.AddBrush(aboveColumn)
 			AddDefaultEntityKeys(aboveEntity, &actor)
-			qm.Entities = append(qm.Entities, aboveEntity)
 		}
 
 		// middle
@@ -908,7 +890,7 @@ func CreatePlatform(rtlmap *RTLMapData, x, y int, scale float64, qm *quakemap.Qu
 			mwColumn := quakemap.BasicCuboid(x1, y1, middlez1, x2, y2, middlez2,
 				"{"+platformInfo.Middle,
 				scale, false)
-			qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, mwColumn)
+			qm.WorldSpawn.AddBrush(mwColumn)
 		}
 
 		// bottom
@@ -920,10 +902,9 @@ func CreatePlatform(rtlmap *RTLMapData, x, y int, scale float64, qm *quakemap.Qu
 			column := quakemap.BasicCuboid(x1, y1, z1, x2, y2, z2,
 				"{"+platformInfo.Bottom,
 				scale, false)
-			bottomEntity := quakemap.NewEntity(0, className, qm)
-			bottomEntity.Brushes = append(bottomEntity.Brushes, column)
+			bottomEntity := qm.SpawnEntity(className, 0)
+			bottomEntity.AddBrush(column)
 			AddDefaultEntityKeys(bottomEntity, &actor)
-			qm.Entities = append(qm.Entities, bottomEntity)
 		}
 	}
 }
@@ -1012,14 +993,13 @@ func CreateMaskedWall(rtlmap *RTLMapData, x, y int, scale float64, qm *quakemap.
 			cuboidParams.East.TexScaleX *= xScaleFactor
 			cuboidParams.West.TexScaleX *= xScaleFactor
 			aboveColumn := quakemap.BuildCuboidBrush(x1, y1, abovez1, x2, y2, abovez2, cuboidParams)
-			aboveEntity := quakemap.NewEntity(0, aboveClassName, qm)
-			aboveEntity.Brushes = append(aboveEntity.Brushes, aboveColumn)
+			aboveEntity := qm.SpawnEntity(aboveClassName, 0)
+			aboveEntity.AddBrush(aboveColumn)
 			if maskedWallInfo.IsSwitch {
 				aboveEntity.AdditionalKeys["target"] = fmt.Sprintf("trigger_%d_%d", wallInfo.X, wallInfo.Y)
 				aboveEntity.AdditionalKeys["lip"] = fmt.Sprintf("%.02f", 64.0*scale)
 			}
 			AddDefaultEntityKeys(aboveEntity, &wallInfo)
-			qm.Entities = append(qm.Entities, aboveEntity)
 		}
 
 		// middle
@@ -1033,10 +1013,9 @@ func CreateMaskedWall(rtlmap *RTLMapData, x, y int, scale float64, qm *quakemap.
 			cuboidParams.East.TexScaleX *= xScaleFactor
 			cuboidParams.West.TexScaleX *= xScaleFactor
 			mwColumn := quakemap.BuildCuboidBrush(x1, y1, middlez1, x2, y2, middlez2, cuboidParams)
-			middleEntity := quakemap.NewEntity(0, middleClassName, qm)
-			middleEntity.Brushes = append(middleEntity.Brushes, mwColumn)
+			middleEntity := qm.SpawnEntity(middleClassName, 0)
+			middleEntity.AddBrush(mwColumn)
 			AddDefaultEntityKeys(middleEntity, &wallInfo)
-			qm.Entities = append(qm.Entities, middleEntity)
 		}
 
 		// bottom
@@ -1051,10 +1030,9 @@ func CreateMaskedWall(rtlmap *RTLMapData, x, y int, scale float64, qm *quakemap.
 			cuboidParams.East.TexScaleX *= xScaleFactor
 			cuboidParams.West.TexScaleX *= xScaleFactor
 			column := quakemap.BuildCuboidBrush(x1, y1, z1, x2, y2, z2, cuboidParams)
-			bottomEntity := quakemap.NewEntity(0, className, qm)
-			bottomEntity.Brushes = append(bottomEntity.Brushes, column)
+			bottomEntity := qm.SpawnEntity(className, 0)
+			bottomEntity.AddBrush(column)
 			AddDefaultEntityKeys(bottomEntity, &wallInfo)
-			qm.Entities = append(qm.Entities, bottomEntity)
 		}
 
 		// TODO: sides
@@ -1083,7 +1061,7 @@ func CreateDoorEntities(rtlmap *RTLMapData, scale float64, dusk bool, qm *quakem
 	var timedTriggerEntity *quakemap.Entity
 
 	for doornum, door := range rtlmap.GetDoors() {
-		doorEntity := quakemap.NewEntity(0, "func_door", qm)
+		doorEntity := qm.SpawnEntity("func_door", 0)
 		timeBeforeOpen := 0
 		flipTextures := false
 		if door.Direction == WALLDIR_NorthSouth {
@@ -1142,14 +1120,15 @@ func CreateDoorEntities(rtlmap *RTLMapData, scale float64, dusk bool, qm *quakem
 				cuboidParams.East.TexScaleX *= -1.0
 				cuboidParams.West.TexScaleX *= -1.0
 			}
-			doorBrush := quakemap.BuildCuboidBrush(x1, y1, z1, x2, y2, z2, cuboidParams)
-			doorEntity.Brushes = append(doorEntity.Brushes, doorBrush)
+			doorEntity.AddBrush(
+				quakemap.BuildCuboidBrush(x1, y1, z1, x2, y2, z2, cuboidParams),
+			)
 			AddDefaultEntityKeys(doorEntity, &doorTile)
 			aboveBrush := quakemap.BasicCuboid(abovex1, abovey1, z2,
 				abovex2, abovey2, floorDepth+float64(rtlmap.FloorHeight())*gridSizeZ,
 				texInfo.AltTexture,
 				scale, false)
-			qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, aboveBrush)
+			qm.WorldSpawn.AddBrush(aboveBrush)
 		}
 
 		doorEntity.AdditionalKeys["_r2q_grid_start_x"] = fmt.Sprintf("%d", door.Tiles[0].X)
@@ -1167,7 +1146,7 @@ func CreateDoorEntities(rtlmap *RTLMapData, scale float64, dusk bool, qm *quakem
 				for y := 0; y < 128; y++ {
 					for x := 0; x < 128; x++ {
 						if rtlmap.ActorGrid[y][x].Type != WALL_Door && rtlmap.SpritePlane[y][x] == uint16(door.Lock+0x1c) {
-							entity := quakemap.NewEntity(0, availKeys[keyToUse], qm)
+							entity := qm.SpawnEntity(availKeys[keyToUse], 0)
 							entity.OriginX = float64(x)*gridSizeX + (gridSizeX / 2)
 							entity.OriginY = float64(y)*-gridSizeY - (gridSizeY / 2.0)
 							entity.OriginZ = floorDepth + (gridSizeZ / 2)
@@ -1177,7 +1156,6 @@ func CreateDoorEntities(rtlmap *RTLMapData, scale float64, dusk bool, qm *quakem
 								// entity's origin
 								entity.OriginZ += 600.0
 							}
-							qm.Entities = append(qm.Entities, entity)
 						}
 					}
 				}
@@ -1219,7 +1197,7 @@ func CreateDoorEntities(rtlmap *RTLMapData, scale float64, dusk bool, qm *quakem
 			entityName := fmt.Sprintf("door_%d_%d", door.Tiles[0].X, door.Tiles[0].Y)
 			doorEntity.AdditionalKeys["targetname"] = entityName
 			doorEntity.AdditionalKeys["wait"] = "-1"
-			triggerEntity := quakemap.NewEntity(0, "trigger_relay", qm)
+			triggerEntity := qm.SpawnEntity("trigger_relay", 0)
 			triggerEntity.AdditionalKeys["target"] = entityName
 			triggerEntity.AdditionalKeys["targetname"] = "timed_delay_trigger"
 			triggerEntity.AdditionalKeys["delay"] = fmt.Sprintf("%d", timeBeforeOpen)
@@ -1227,21 +1205,17 @@ func CreateDoorEntities(rtlmap *RTLMapData, scale float64, dusk bool, qm *quakem
 			triggerEntity.OriginX = float64(door.Tiles[0].X)*gridSizeX + (gridSizeX / 2)
 			triggerEntity.OriginY = float64(door.Tiles[0].Y)*-gridSizeY - (gridSizeY / 2.0)
 			triggerEntity.OriginZ = floorDepth + (gridSizeZ / 2)
-			qm.Entities = append(qm.Entities, triggerEntity)
 
 			if timedTriggerEntity == nil {
-				timedTriggerEntity := quakemap.NewEntity(0, "trigger_once", qm)
+				timedTriggerEntity := qm.SpawnEntity("trigger_once", 0)
 				timedTriggerEntity.AdditionalKeys["target"] = "timed_delay_trigger"
-				timedTriggerEntity.Brushes = append(timedTriggerEntity.Brushes, quakemap.BasicCuboid(
+				timedTriggerEntity.AddBrush(quakemap.BasicCuboid(
 					float64(rtlmap.SpawnX)*gridSizeX, float64(rtlmap.SpawnY)*-gridSizeY, floorDepth,
 					float64(rtlmap.SpawnX+1)*gridSizeX, float64(rtlmap.SpawnY+1)*-gridSizeY, floorDepth+gridSizeZ,
-					"__TB_empty", scale, false,
+					"trigger", scale, false,
 				))
-				qm.Entities = append(qm.Entities, timedTriggerEntity)
 			}
 		}
-
-		qm.Entities = append(qm.Entities, doorEntity)
 	}
 }
 
@@ -1260,11 +1234,10 @@ func AddExitPoints(rtlmap *RTLMapData, scale float64, dusk bool, qm *quakemap.Qu
 			(float64(point.X)+0.75)*gridSizeX,
 			(float64(point.Y)+0.75)*-gridSizeY,
 			floorDepth+gridSizeZ,
-			"__TB_empty", scale, false)
-		entity := quakemap.NewEntity(0, "trigger_changelevel", qm)
+			"trigger", scale, false)
+		entity := qm.SpawnEntity("trigger_changelevel", 0)
 		entity.AdditionalKeys["map"] = fmt.Sprintf("map%03d", point.DestMap)
-		entity.Brushes = append(entity.Brushes, brush)
-		qm.Entities = append(qm.Entities, entity)
+		entity.AddBrush(brush)
 	}
 }
 
@@ -1283,7 +1256,7 @@ func AddEnemies(rtlmap *RTLMapData, scale float64, dusk bool, qm *quakemap.Quake
 				if entityName == "" {
 					continue
 				}
-				entity := quakemap.NewEntity(0, entityName, qm)
+				entity := qm.SpawnEntity(entityName, 0)
 				AddDefaultEntityKeys(entity, &actor)
 				entity.OriginX = (float64(x) + 0.5) * gridSizeX
 				entity.OriginY = (float64(y) + 0.5) * -gridSizeY
@@ -1330,8 +1303,6 @@ func AddEnemies(rtlmap *RTLMapData, scale float64, dusk bool, qm *quakemap.Quake
 				default:
 					entity.OriginZ = floorDepth + (gridSizeZ / 2.0)
 				}
-
-				qm.Entities = append(qm.Entities, entity)
 			}
 		}
 	}
@@ -1375,7 +1346,7 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 		floorWidth, -floorLength, floorDepth,
 		rtlmap.FloorTexture(),
 		scale, false)
-	qm.WorldSpawn.Brushes = []quakemap.Brush{floorBrush}
+	qm.WorldSpawn.AddBrush(floorBrush)
 
 	// add ceiling if declared
 	ceilTexture := rtlmap.CeilingTexture()
@@ -1387,7 +1358,7 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 			floorWidth, -floorLength, ceilz2,
 			ceilTexture,
 			scale, false)
-		qm.WorldSpawn.Brushes = append(qm.WorldSpawn.Brushes, ceilBrush)
+		qm.WorldSpawn.AddBrush(ceilBrush)
 	}
 
 	// spawn walls, items, static entities
@@ -1424,7 +1395,7 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 						continue
 					}
 
-					entity := quakemap.NewEntity(0, entityName, qm)
+					entity := qm.SpawnEntity(entityName, 0)
 					entity.OriginX = float64(x)*gridSizeX + (gridSizeX / 2.0)
 					entity.OriginY = float64(y)*-gridSizeY - (gridSizeY / 2.0)
 					switch {
@@ -1457,7 +1428,6 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 					default:
 						entity.OriginZ = floorDepth + (gridSizeZ / 2.0)
 					}
-					qm.Entities = append(qm.Entities, entity)
 				}
 			}
 

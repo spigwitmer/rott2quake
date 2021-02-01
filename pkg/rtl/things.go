@@ -228,7 +228,7 @@ func AddAnkhCoin(x int, y int, gridSizeX float64, gridSizeY float64, gridSizeZ f
 		return
 	}
 
-	entity := quakemap.NewEntity(0, item.DuskEntityName, q)
+	entity := q.SpawnEntity(item.DuskEntityName, 0)
 	AddDefaultEntityKeys(entity, &actor)
 	entity.OriginX = (float64(x) + 0.5) * gridSizeX
 	entity.OriginY = (float64(y) + 0.5) * -gridSizeY
@@ -243,7 +243,6 @@ func AddAnkhCoin(x int, y int, gridSizeX float64, gridSizeY float64, gridSizeZ f
 	case actor.InfoValue == 0x0c:
 		entity.OriginZ = (float64(r.FloorHeight()+1) * gridSizeZ) - ((float64(actor.ItemHeight+32) * gridSizeZ) / 64.0)
 	}
-	q.Entities = append(q.Entities, entity)
 }
 
 // adds column or push column
@@ -271,14 +270,14 @@ func AddColumn(x int, y int, gridSizeX float64, gridSizeY float64, gridSizeZ flo
 		pushTrigger = true
 	}
 
-	entity := quakemap.NewEntity(0, entityType, q)
+	entity := q.SpawnEntity(entityType, 0)
 	AddDefaultEntityKeys(entity, actor)
 	for _, brush := range quakemap.PushColumnBrushes {
 		newBrush := brush.Clone()
 		// NOTE: this assumes that the .map file created for it
 		// has it centered at the origin
 		newBrush.Scale(0.0, 0.0, 0.0, (gridSizeX / 64.0))
-		entity.Brushes = append(entity.Brushes, newBrush)
+		entity.AddBrush(newBrush)
 	}
 
 	// build trigger_once right at the edge of the column
@@ -332,13 +331,12 @@ func AddColumn(x int, y int, gridSizeX float64, gridSizeY float64, gridSizeZ flo
 		entity.AdditionalKeys["targetname"] = tgtColumn
 		entity.AdditionalKeys["target"] = tgtPathStart
 
-		initialCorner := quakemap.NewEntity(0, "path_corner", q)
+		initialCorner := q.SpawnEntity("path_corner", 0)
 		initialCorner.OriginX = float64(x)*gridSizeX + (gridSizeX-entity.Width())/2.0
 		initialCorner.OriginY = float64(y+1)*-gridSizeY + (gridSizeY-entity.Length())/2.0
 		initialCorner.OriginZ = gridSizeZ
 		initialCorner.AdditionalKeys["targetname"] = tgtPathStart
 		initialCorner.AdditionalKeys["target"] = tgtPathEnd
-		q.Entities = append(q.Entities, initialCorner)
 
 		// only move 1 unit instead of 2 if there's a wall
 		if !r.ActorGrid[y+(touchdy*2)][x+(touchdx*2)].IsWall() {
@@ -346,39 +344,34 @@ func AddColumn(x int, y int, gridSizeX float64, gridSizeY float64, gridSizeZ flo
 			touchdy *= 2
 		}
 
-		endCorner := quakemap.NewEntity(0, "path_corner", q)
+		endCorner := q.SpawnEntity("path_corner", 0)
 		endCorner.OriginX = initialCorner.OriginX + (float64(touchdx) * gridSizeX)
 		endCorner.OriginY = initialCorner.OriginY - (float64(touchdy) * gridSizeY)
 		endCorner.OriginZ = gridSizeZ
 		endCorner.AdditionalKeys["targetname"] = tgtPathEnd
 		endCorner.AdditionalKeys["target"] = "idontexist"
 		endCorner.AdditionalKeys["wait"] = "-1"
-		q.Entities = append(q.Entities, endCorner)
 
-		pushEntityRelay := quakemap.NewEntity(0, "trigger_relay", q)
+		pushEntityRelay := q.SpawnEntity("trigger_relay", 0)
 		pushEntityRelay.OriginX = (float64(x) + 0.5) * gridSizeZ
 		pushEntityRelay.OriginY = (float64(y) + 0.5) * -gridSizeY
 		pushEntityRelay.OriginZ = gridSizeZ * 2.5
 		pushEntityRelay.AdditionalKeys["targetname"] = tgtRelay
 		pushEntityRelay.AdditionalKeys["target"] = tgtColumn
-		q.Entities = append(q.Entities, pushEntityRelay)
 
 		if actor.InfoValue == 0 {
-			pushEntity := quakemap.NewEntity(0, "trigger_once", q)
-			pushEntity.Brushes = append(pushEntity.Brushes, quakemap.BasicCuboid(
+			pushEntity := q.SpawnEntity("trigger_once", 0)
+			pushEntity.AddBrush(quakemap.BasicCuboid(
 				touchx1, touchy1, touchz1,
 				touchx2, touchy2, touchz2,
-				"clip", (gridSizeX/64.0), false,
+				"trigger", (gridSizeX / 64.0), false,
 			))
 			pushEntity.AdditionalKeys["target"] = tgtRelay
-			q.Entities = append(q.Entities, pushEntity)
 		} else {
 			r.AddTrigger(actor, touchplateX, touchplateY, TRIGGER_WallPush)
 		}
 
 	}
-
-	q.Entities = append(q.Entities, entity)
 }
 
 // adds trampolines right on the floor
@@ -389,7 +382,7 @@ func AddTrampoline(x int, y int, gridSizeX float64, gridSizeY float64, gridSizeZ
 		// just rocket jump i guess
 		return
 	}
-	entity := quakemap.NewEntity(0, item.DuskEntityName, q)
+	entity := q.SpawnEntity(item.DuskEntityName, 0)
 	entity.OriginX = float64(x)*gridSizeX + (gridSizeX / 2.0)
 	entity.OriginY = float64(y)*-gridSizeY - (gridSizeY / 2.0)
 	entity.OriginZ = gridSizeZ
@@ -397,7 +390,6 @@ func AddTrampoline(x int, y int, gridSizeX float64, gridSizeY float64, gridSizeZ
 	// this logarithmic formula is a ballpark factor that just Seems Right(tm)
 	jumpAmount := math.Log10(float64(r.FloorHeight())+0.5) * ((gridSizeZ / 64) / 2)
 	entity.AdditionalKeys["amount"] = fmt.Sprintf("%02f", jumpAmount)
-	q.Entities = append(q.Entities, entity)
 }
 
 // adds static spinning blades centered in the grid
@@ -409,13 +401,12 @@ func AddSpinningBlades(x int, y int, gridSizeX float64, gridSizeY float64, gridS
 		return
 	}
 	entityName := item.DuskEntityName
-	entity := quakemap.NewEntity(0, entityName, q)
+	entity := q.SpawnEntity(entityName, 0)
 	entity.OriginX = float64(x)*gridSizeX + (gridSizeX / 2.0)
 	entity.OriginY = float64(y)*-gridSizeY - (gridSizeY / 2.0)
 	entity.OriginZ = gridSizeZ * 1.5
 	entity.AdditionalKeys["damage"] = "10.0"
 	entity.AdditionalKeys["frequency"] = "0.8"
-	q.Entities = append(q.Entities, entity)
 }
 
 // adds static flamethrowers on the bottom facing up
@@ -427,11 +418,10 @@ func AddFlamethrower(x int, y int, gridSizeX float64, gridSizeY float64, gridSiz
 		return
 	}
 	entityName := item.DuskEntityName
-	entity := quakemap.NewEntity(0, entityName, q)
+	entity := q.SpawnEntity(entityName, 0)
 	entity.OriginX = float64(x)*gridSizeX + (gridSizeX / 2.0)
 	entity.OriginY = float64(y)*-gridSizeY - (gridSizeY / 2.0)
 	entity.OriginZ = gridSizeZ
-	q.Entities = append(q.Entities, entity)
 }
 
 func AddFireballShooter(x int, y int, gridSizeX float64, gridSizeY float64, gridSizeZ float64,
@@ -464,11 +454,10 @@ func AddFireballShooter(x int, y int, gridSizeX float64, gridSizeY float64, grid
 		yoffset = -(gridSizeY / 2.0)
 	}
 
-	entity := quakemap.NewEntity(0, entityName, q)
+	entity := q.SpawnEntity(entityName, 0)
 	entity.OriginX = float64(x)*gridSizeX + (gridSizeX / 2) + xoffset
 	entity.OriginY = float64(y)*-gridSizeY - (gridSizeY / 2) + yoffset
 	entity.OriginZ = gridSizeZ * 1.5
 	entity.AdditionalKeys["angle"] = fmt.Sprintf("%02f", angle)
 	entity.AdditionalKeys["damage"] = "30"
-	q.Entities = append(q.Entities, entity)
 }
