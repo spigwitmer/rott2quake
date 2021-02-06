@@ -230,7 +230,7 @@ func LinkElevators(rtlmap *RTLMapData, textureWad string,
 	}
 }
 
-func CreateGAD(rtlmap *RTLMapData, actor *ActorInfo, scale float64, qm *quakemap.QuakeMap) {
+func CreateGAD(rtlmap *RTLMapData, actor *ActorInfo, scale float64, dusk bool, qm *quakemap.QuakeMap) {
 	var gridSizeX float64 = 64.0 * scale
 	var gridSizeY float64 = 64.0 * scale
 	var floorDepth float64 = 64.0 * scale
@@ -338,6 +338,18 @@ func CreateGAD(rtlmap *RTLMapData, actor *ActorInfo, scale float64, qm *quakemap
 				x2, y2, z2,
 				"clip", 1.0, false)
 			clipEntity := qm.SpawnEntity("func_detail", 0)
+			if dusk {
+				// FIXME when clip textures are no longer busted in Dusk,
+				// see https://discord.com/channels/240195284695646209/586508960128040961/799031954728419348
+				clipEntity.ClassName = "func_wall"
+				clipEntity.AdditionalKeys["rendermode"] = "1"
+				clipEntity.AdditionalKeys["renderamt"] = "0"
+				clipBrush = quakemap.BasicCuboid(
+					x1, y1, z1,
+					x2, y2, z2,
+					// just pick an arbitrary texture besides "clip"
+					"FLRCL1", 1.0, false)
+			}
 			AddDefaultEntityKeys(clipEntity, actor)
 			clipEntity.Brushes = []quakemap.Brush{clipBrush}
 		}
@@ -1279,8 +1291,6 @@ func AddEnemies(rtlmap *RTLMapData, scale float64, dusk bool, qm *quakemap.Quake
 				switch enemy.Difficulty {
 				case DifficultyEasy:
 					entity.SpawnFlags = quakemap.SPAWNFLAG_NotOnHard
-				case DifficultyHard:
-					entity.SpawnFlags = quakemap.SPAWNFLAG_NotOnEasy | quakemap.SPAWNFLAG_NotOnNormal
 				}
 
 				// TODO: Z axis placement needs to be cleaned up. Lots
@@ -1379,7 +1389,7 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 			case WALL_MaskedWall:
 				CreateMaskedWall(rtlmap, x, y, scale, qm)
 			case SPR_GAD:
-				CreateGAD(rtlmap, &wallInfo, scale, qm)
+				CreateGAD(rtlmap, &wallInfo, scale, dusk, qm)
 			}
 
 			if itemInfo != nil {

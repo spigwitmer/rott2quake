@@ -3,7 +3,7 @@ package rtl
 type Difficulty int
 
 var (
-	DifficultyEasy Difficulty = 1
+	DifficultyEasy Difficulty = 1 // basically represents difficulties below "Crezzy Man"
 	DifficultyHard Difficulty = 2
 )
 
