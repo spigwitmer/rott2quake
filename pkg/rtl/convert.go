@@ -56,6 +56,29 @@ func ClassNameForMaskedWall(w *MaskedWallInfo, position string) string {
 	return "func_detail"
 }
 
+func SpawnClipEntity(x1, y1, z1, x2, y2, z2 float64, actor *ActorInfo, dusk bool, qm *quakemap.QuakeMap) *quakemap.Entity {
+	clipBrush := quakemap.BasicCuboid(
+		x1, y1, z1,
+		x2, y2, z2,
+		"clip", 1.0, false)
+	clipEntity := qm.SpawnEntity("func_detail", 0)
+	if dusk {
+		// FIXME when clip textures are no longer busted in Dusk,
+		// see https://discord.com/channels/240195284695646209/586508960128040961/799031954728419348
+		clipEntity.ClassName = "func_wall"
+		clipEntity.AdditionalKeys["rendermode"] = "1"
+		clipEntity.AdditionalKeys["renderamt"] = "0"
+		clipBrush = quakemap.BasicCuboid(
+			x1, y1, z1,
+			x2, y2, z2,
+			// just pick an arbitrary texture besides "clip"
+			"FLRCL1", 1.0, false)
+	}
+	AddDefaultEntityKeys(clipEntity, actor)
+	clipEntity.Brushes = []quakemap.Brush{clipBrush}
+	return clipEntity
+}
+
 func AddDefaultEntityKeys(entity *quakemap.Entity, actor *ActorInfo) {
 	entity.AdditionalKeys["_r2q_x"] = fmt.Sprintf("%d", actor.X)
 	entity.AdditionalKeys["_r2q_y"] = fmt.Sprintf("%d", actor.Y)
@@ -344,28 +367,6 @@ func CreateGAD(rtlmap *RTLMapData, actor *ActorInfo, scale float64, dusk bool, q
 		Xmargin := (gridSizeX - GADEntity.Width()) / 2.0
 		Ymargin := (gridSizeY - GADEntity.Length()) / 2.0
 
-		addClipBrush := func(x1, y1, z1, x2, y2, z2 float64) {
-			clipBrush := quakemap.BasicCuboid(
-				x1, y1, z1,
-				x2, y2, z2,
-				"clip", 1.0, false)
-			clipEntity := qm.SpawnEntity("func_detail", 0)
-			if dusk {
-				// FIXME when clip textures are no longer busted in Dusk,
-				// see https://discord.com/channels/240195284695646209/586508960128040961/799031954728419348
-				clipEntity.ClassName = "func_wall"
-				clipEntity.AdditionalKeys["rendermode"] = "1"
-				clipEntity.AdditionalKeys["renderamt"] = "0"
-				clipBrush = quakemap.BasicCuboid(
-					x1, y1, z1,
-					x2, y2, z2,
-					// just pick an arbitrary texture besides "clip"
-					"FLRCL1", 1.0, false)
-			}
-			AddDefaultEntityKeys(clipEntity, actor)
-			clipEntity.Brushes = []quakemap.Brush{clipBrush}
-		}
-
 		stepZCoords := func(neighborZOffset, zDiff float64) (float64, float64) {
 			var stepZ1, stepZ2 float64
 			switch {
@@ -398,7 +399,8 @@ func CreateGAD(rtlmap *RTLMapData, actor *ActorInfo, scale float64, dusk bool, q
 				stepZ1, stepZ2 := stepZCoords(neighborZOffset, zDiff)
 				log.Printf("(%d,%d)->(%d,%d) stepZ1 = %.02f, stepZ2 = %.02f", actor.X, actor.Y, neighbor.X, neighbor.Y,
 					stepZ1, stepZ2)
-				addClipBrush(stepX1, stepY1, stepZ1, stepX2, stepY2, stepZ2)
+				_ = SpawnClipEntity(stepX1, stepY1, stepZ1, stepX2, stepY2, stepZ2,
+					actor, dusk, qm)
 			}
 		}
 
@@ -413,7 +415,8 @@ func CreateGAD(rtlmap *RTLMapData, actor *ActorInfo, scale float64, dusk bool, q
 				stepX1 := (float64(actor.X) * gridSizeX) + Xmargin
 				stepX2 := stepX1 + GADEntity.Width()
 				stepZ1, stepZ2 := stepZCoords(neighborZOffset, zDiff)
-				addClipBrush(stepX1, stepY1, stepZ1, stepX2, stepY2, stepZ2)
+				_ = SpawnClipEntity(stepX1, stepY1, stepZ1, stepX2, stepY2, stepZ2,
+					actor, dusk, qm)
 			}
 		}
 
@@ -428,7 +431,8 @@ func CreateGAD(rtlmap *RTLMapData, actor *ActorInfo, scale float64, dusk bool, q
 				stepY1 := (float64(actor.Y) * -gridSizeY) - Ymargin
 				stepY2 := stepY1 - GADEntity.Length()
 				stepZ1, stepZ2 := stepZCoords(neighborZOffset, zDiff)
-				addClipBrush(stepX1, stepY1, stepZ1, stepX2, stepY2, stepZ2)
+				_ = SpawnClipEntity(stepX1, stepY1, stepZ1, stepX2, stepY2, stepZ2,
+					actor, dusk, qm)
 			}
 		}
 
@@ -443,7 +447,8 @@ func CreateGAD(rtlmap *RTLMapData, actor *ActorInfo, scale float64, dusk bool, q
 				stepX1 := (float64(actor.X) * gridSizeX) + Xmargin
 				stepX2 := stepX1 + GADEntity.Width()
 				stepZ1, stepZ2 := stepZCoords(neighborZOffset, zDiff)
-				addClipBrush(stepX1, stepY1, stepZ1, stepX2, stepY2, stepZ2)
+				_ = SpawnClipEntity(stepX1, stepY1, stepZ1, stepX2, stepY2, stepZ2,
+					actor, dusk, qm)
 			}
 		}
 
@@ -468,7 +473,7 @@ func ClipHeight(rtlmap *RTLMapData, actor *ActorInfo, scale float64) float64 {
 	}
 }
 
-func AddThinWallClipTextures(rtlmap *RTLMapData, actor *ActorInfo, scale float64, qm *quakemap.QuakeMap) {
+func AddThinWallClipTextures(rtlmap *RTLMapData, actor *ActorInfo, scale float64, dusk bool, qm *quakemap.QuakeMap) {
 	var gridSizeX float64 = 64.0 * scale
 	var gridSizeY float64 = 64.0 * scale
 
@@ -480,66 +485,62 @@ func AddThinWallClipTextures(rtlmap *RTLMapData, actor *ActorInfo, scale float64
 		westClipZ := ClipHeight(rtlmap, &rtlmap.ActorGrid[actor.Y][actor.X-1], scale)
 		if westClipZ > 0.0 {
 			// clip tile to west
-			clipBrush := quakemap.BasicCuboid(
+			_ = SpawnClipEntity(
 				float64(actor.X)*gridSizeX,
 				float64(actor.Y)*-gridSizeY,
 				westClipZ,
 				(float64(actor.X)+0.5)*gridSizeX,
 				float64(actor.Y+1)*-gridSizeY,
 				westClipZ-1,
-				"clip", scale, false,
+				actor, dusk, qm,
 			)
-			qm.WorldSpawn.AddBrush(clipBrush)
 		}
 
 		eastClipZ := ClipHeight(rtlmap, &rtlmap.ActorGrid[actor.Y][actor.X+1], scale)
 		if eastClipZ > 0.0 {
 			// clip tile to east
-			clipBrush := quakemap.BasicCuboid(
+			_ = SpawnClipEntity(
 				(float64(actor.X)+0.5)*gridSizeX,
 				float64(actor.Y)*-gridSizeY,
 				eastClipZ,
 				float64(actor.X+1)*gridSizeX,
 				float64(actor.Y+1)*-gridSizeY,
 				eastClipZ-1,
-				"clip", scale, false,
+				actor, dusk, qm,
 			)
-			qm.WorldSpawn.AddBrush(clipBrush)
 		}
 	} else {
 		northClipZ := ClipHeight(rtlmap, &rtlmap.ActorGrid[actor.Y-1][actor.X], scale)
 		if northClipZ > 0.0 {
 			// clip tile to north
-			clipBrush := quakemap.BasicCuboid(
+			_ = SpawnClipEntity(
 				float64(actor.X)*gridSizeX,
 				float64(actor.Y)*-gridSizeY,
 				northClipZ,
 				float64(actor.X+1)*gridSizeX,
 				(float64(actor.Y)+0.5)*-gridSizeY,
 				northClipZ-1,
-				"clip", scale, false,
+				actor, dusk, qm,
 			)
-			qm.WorldSpawn.AddBrush(clipBrush)
 		}
 
 		southClipZ := ClipHeight(rtlmap, &rtlmap.ActorGrid[actor.Y+1][actor.X], scale)
 		if southClipZ > 0.0 {
 			// clip tile to south
-			clipBrush := quakemap.BasicCuboid(
+			_ = SpawnClipEntity(
 				float64(actor.X)*gridSizeX,
 				(float64(actor.Y)+0.5)*-gridSizeY,
 				southClipZ,
 				float64(actor.X+1)*gridSizeX,
 				float64(actor.Y+1)*-gridSizeY,
 				southClipZ-1,
-				"clip", scale, false,
+				actor, dusk, qm,
 			)
-			qm.WorldSpawn.AddBrush(clipBrush)
 		}
 	}
 }
 
-func CreateThinWall(rtlmap *RTLMapData, x, y int, scale float64, qm *quakemap.QuakeMap) {
+func CreateThinWall(rtlmap *RTLMapData, x, y int, scale float64, dusk bool, qm *quakemap.QuakeMap) {
 	var x1, y1, x2, y2 float64
 	var gridSizeX float64 = 64.0 * scale
 	var gridSizeY float64 = 64.0 * scale
@@ -619,7 +620,7 @@ func CreateThinWall(rtlmap *RTLMapData, x, y int, scale float64, qm *quakemap.Qu
 			qm.WorldSpawn.AddBrush(wallColumn)
 		}
 
-		AddThinWallClipTextures(rtlmap, &actor, scale, qm)
+		AddThinWallClipTextures(rtlmap, &actor, scale, dusk, qm)
 	}
 }
 
@@ -933,7 +934,7 @@ func CreatePlatform(rtlmap *RTLMapData, x, y int, scale float64, qm *quakemap.Qu
 	}
 }
 
-func CreateMaskedWall(rtlmap *RTLMapData, x, y int, scale float64, qm *quakemap.QuakeMap) {
+func CreateMaskedWall(rtlmap *RTLMapData, x, y int, scale float64, dusk bool, qm *quakemap.QuakeMap) {
 	var gridSizeX float64 = 64.0 * scale
 	var gridSizeY float64 = 64.0 * scale
 	var gridSizeZ float64 = 64.0 * scale
@@ -1061,7 +1062,7 @@ func CreateMaskedWall(rtlmap *RTLMapData, x, y int, scale float64, qm *quakemap.
 
 		// TODO: sides
 
-		AddThinWallClipTextures(rtlmap, &wallInfo, scale, qm)
+		AddThinWallClipTextures(rtlmap, &wallInfo, scale, dusk, qm)
 
 	} else {
 		panic(fmt.Sprintf("Masked wall at %d,%d has non-existent ID (%d)", x, y, wallInfo.MaskedWallID))
@@ -1393,13 +1394,13 @@ func ConvertRTLMapToQuakeMapFile(rtlmap *RTLMapData, textureWad string, scale fl
 			case WALL_Regular, WALL_Elevator:
 				CreateRegularWall(rtlmap, x, y, scale, qm)
 			case WALL_ThinWall:
-				CreateThinWall(rtlmap, x, y, scale, qm)
+				CreateThinWall(rtlmap, x, y, scale, dusk, qm)
 			case WALL_AnimatedWall:
 				CreateRegularWall(rtlmap, x, y, scale, qm)
 			case WALL_Platform:
 				CreatePlatform(rtlmap, x, y, scale, qm)
 			case WALL_MaskedWall:
-				CreateMaskedWall(rtlmap, x, y, scale, qm)
+				CreateMaskedWall(rtlmap, x, y, scale, dusk, qm)
 			case SPR_GAD:
 				CreateGAD(rtlmap, &wallInfo, scale, dusk, qm)
 			}
