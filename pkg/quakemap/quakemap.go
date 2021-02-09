@@ -142,6 +142,12 @@ func (b *Brush) Height() float64 {
 	return vertMax - vertMin
 }
 
+func (b *Brush) SetTextureForAllPlanes(textureName string) {
+	for i, _ := range b.Planes {
+		b.Planes[i].Texture = textureName
+	}
+}
+
 // scale the plane vertices with (cx, cy, cz) as the focal point
 func (b *Brush) Scale(cx, cy, cz, scale float64) {
 	doScale := func(sx, sy, sz *float64) {

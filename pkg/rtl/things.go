@@ -433,31 +433,37 @@ func AddFireballShooter(x int, y int, gridSizeX float64, gridSizeY float64, grid
 	}
 	actor := r.ActorGrid[y][x]
 
-	var xoffset, yoffset, angle float64
+	var xoffset, yoffset float64
+	var angle int
 
 	switch WallDirection((actor.SpriteValue - 0x8c) * 2) {
 	case DIR_East:
-		angle = 0.0
+		angle = 0
 		xoffset = (gridSizeX / 2.0)
 		yoffset = 0.0
 	case DIR_North:
-		angle = 90.0
+		angle = 90
 		xoffset = 0.0
 		yoffset = (gridSizeY / 2.0)
 	case DIR_West:
-		angle = 180.0
+		angle = 180
 		xoffset = -(gridSizeX / 2.0)
 		yoffset = 0.0
 	case DIR_South:
-		angle = 270.0
+		angle = 270
 		xoffset = 0.0
 		yoffset = -(gridSizeY / 2.0)
+	}
+
+	if dusk {
+		// Dusk's fireball shooters fire in the opposite direction
+		angle = (angle + 180) % 360
 	}
 
 	entity := q.SpawnEntity(entityName, 0)
 	entity.OriginX = float64(x)*gridSizeX + (gridSizeX / 2) + xoffset
 	entity.OriginY = float64(y)*-gridSizeY - (gridSizeY / 2) + yoffset
 	entity.OriginZ = gridSizeZ * 1.5
-	entity.AdditionalKeys["angle"] = fmt.Sprintf("%02f", angle)
+	entity.AdditionalKeys["angle"] = fmt.Sprintf("%d", angle)
 	entity.AdditionalKeys["damage"] = "30"
 }

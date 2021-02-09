@@ -249,6 +249,18 @@ func CreateGAD(rtlmap *RTLMapData, actor *ActorInfo, scale float64, dusk bool, q
 	entityClassname := "func_detail"
 	entityKeys := make(map[string]string)
 
+	clipBrush := gadBrushes[len(gadBrushes)-1]
+	if dusk {
+		// HACK/FIXME: Dusk SDK ignores clip textures, so make them separate
+		// entities. Assume last brush is the surrounding clip texture.
+		clipBrush.SetTextureForAllPlanes("FLRCL1")
+		clipEntity := qm.SpawnEntity("func_wall", 0)
+		clipEntity.AdditionalKeys["rendermode"] = "1"
+		clipEntity.AdditionalKeys["renderamt"] = "0"
+		clipEntity.AddBrush(clipBrush)
+		gadBrushes = gadBrushes[0 : len(gadBrushes)-1]
+	}
+
 	switch actor.SpriteValue {
 	case MovingGADEast, MovingGADNorth, MovingGADWest, MovingGADSouth:
 		// build trackpath
@@ -262,8 +274,8 @@ func CreateGAD(rtlmap *RTLMapData, actor *ActorInfo, scale float64, dusk bool, q
 			log.Panicf("GAD at (%d,%d) not perpetual?", actor.X, actor.Y)
 		}
 		initialCorner := quakemap.NewEntity(0, "path_corner", qm)
-		initialCorner.OriginX = dX - gadBrushes[1].Width()/2.0
-		initialCorner.OriginY = dY - gadBrushes[1].Length()/2.0
+		initialCorner.OriginX = dX - clipBrush.Width()/2.0
+		initialCorner.OriginY = dY - clipBrush.Length()/2.0
 		initialCorner.OriginZ = dZ
 		initialCorner.AdditionalKeys["targetname"] = fmt.Sprintf("gadpath_%d_%d_init", actor.X, actor.Y)
 		initialCorner.AdditionalKeys["wait"] = "0.00001"
@@ -277,8 +289,8 @@ func CreateGAD(rtlmap *RTLMapData, actor *ActorInfo, scale float64, dusk bool, q
 		for i := 0; i < numNodes; i++ {
 			currentPathCorner = qm.SpawnEntity("path_corner", 0)
 			currentPathCorner.OriginZ = dZ
-			currentPathCorner.OriginX = (float64(currentNode.X))*gridSizeX + (gridSizeX / 2.0) - gadBrushes[1].Width()/2.0
-			currentPathCorner.OriginY = (float64(currentNode.Y))*-gridSizeY - (gridSizeY / 2.0) - gadBrushes[1].Length()/2.0
+			currentPathCorner.OriginX = (float64(currentNode.X))*gridSizeX + (gridSizeX / 2.0) - clipBrush.Width()/2.0
+			currentPathCorner.OriginY = (float64(currentNode.Y))*-gridSizeY - (gridSizeY / 2.0) - clipBrush.Length()/2.0
 			targetName := fmt.Sprintf("gadpath_%d_%d_%d", actor.X, actor.Y, i)
 			nodeToTargetNames[currentNode] = targetName
 			currentPathCorner.AdditionalKeys["targetname"] = targetName
@@ -295,16 +307,16 @@ func CreateGAD(rtlmap *RTLMapData, actor *ActorInfo, scale float64, dusk bool, q
 		lowerPathEntityName := fmt.Sprintf("gad_%d_%d_lower", actor.X, actor.Y)
 
 		upperPathEntity := quakemap.NewEntity(0, "path_corner", qm)
-		upperPathEntity.OriginX = dX - gadBrushes[1].Width()/2.0
-		upperPathEntity.OriginY = dY - gadBrushes[1].Length()/2.0
+		upperPathEntity.OriginX = dX - clipBrush.Width()/2.0
+		upperPathEntity.OriginY = dY - clipBrush.Length()/2.0
 		upperPathEntity.OriginZ = dZ
 		upperPathEntity.AdditionalKeys["target"] = lowerPathEntityName
 		upperPathEntity.AdditionalKeys["targetname"] = upperPathEntityName
 		upperPathEntity.AdditionalKeys["wait"] = "1"
 
 		lowerPathEntity := quakemap.NewEntity(0, "path_corner", qm)
-		lowerPathEntity.OriginX = dX - gadBrushes[1].Width()/2.0
-		lowerPathEntity.OriginY = dY - gadBrushes[1].Length()/2.0
+		lowerPathEntity.OriginX = dX - clipBrush.Width()/2.0
+		lowerPathEntity.OriginY = dY - clipBrush.Length()/2.0
 		lowerPathEntity.OriginZ = floorDepth
 		lowerPathEntity.AdditionalKeys["target"] = upperPathEntityName
 		lowerPathEntity.AdditionalKeys["targetname"] = lowerPathEntityName
